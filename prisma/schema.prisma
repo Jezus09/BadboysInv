@@ -1,0 +1,198 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  avatar               String
+  createdAt            DateTime              @default(now())
+  id                   String                @id
+  inventory            String?
+  name                 String
+  syncedAt             DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  coins                Decimal?              @default(0) @db.Decimal(10, 2)
+  authTokens           ApiAuthToken[]
+  currencyTransactions CurrencyTransaction[]
+  caches               UserCache[]
+  groups               UserGroup[]
+  preferences          UserPreference?
+  overwrites           UserRule[]
+  caseOpenings         CaseOpening[]
+  sentTrades           Trade[]               @relation("SentTrades")
+  receivedTrades       Trade[]               @relation("ReceivedTrades")
+}
+
+model UserCache {
+  body      String
+  timestamp DateTime
+  url       String
+  userId    String
+  args      String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([url, userId])
+}
+
+model UserPreference {
+  language         String?
+  userId           String  @id
+  background       String?
+  statsForNerds    String?
+  hideFreeItems    String?
+  hideFilters      String?
+  hideNewItemLabel String?
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ApiCredential {
+  apiKey     String         @id
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  scope      String?
+  comment    String?
+  authTokens ApiAuthToken[]
+}
+
+model ApiAuthToken {
+  apiKey     String
+  createdAt  DateTime      @default(now())
+  token      String        @id @default(uuid())
+  userId     String
+  credential ApiCredential @relation(fields: [apiKey], references: [apiKey], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Rule {
+  name            String      @id @unique
+  type            String      @default("string")
+  value           String
+  groupOverwrites GroupRule[]
+  userOverwrites  UserRule[]
+}
+
+model UserRule {
+  name   String
+  userId String
+  value  String
+  rule   Rule   @relation(fields: [name], references: [name], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([name, userId])
+}
+
+model Group {
+  id         String      @id
+  priority   Int         @default(0)
+  overwrites GroupRule[]
+  users      UserGroup[]
+}
+
+model UserGroup {
+  groupId String
+  userId  String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+}
+
+model GroupRule {
+  groupId String
+  name    String
+  value   String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  rule    Rule   @relation(fields: [name], references: [name], onDelete: Cascade)
+
+  @@id([groupId, name])
+}
+
+model CurrencyTransaction {
+  id            String   @id @default(uuid())
+  userId        String
+  amount        Decimal  @db.Decimal(10, 2)
+  type          String
+  reason        String?
+  description   String?
+  relatedUserId String?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ShopItem {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  category    String   // "key", "case", "item"
+  itemId      Int?     // CS2 economy item ID
+  enabled     Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([enabled])
+}
+
+model CaseOpening {
+  id              String   @id @default(uuid())
+  userId          String
+  userName        String   // Cache user name for display
+  userAvatar      String   // Cache user avatar for display
+  caseItemId      Int      // CS2 economy item ID of the case
+  caseName        String   // Cache case name for display
+  keyItemId       Int?     // CS2 economy item ID of the key used
+  keyName         String?  // Cache key name for display
+  unlockedItemId  Int      // CS2 economy item ID of the unlocked item
+  unlockedName    String   // Cache unlocked item name for display
+  unlockedRarity  String?  // Cache unlocked item rarity for display
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model Trade {
+  id                String      @id @default(uuid())
+  senderUserId      String      // User who initiated the trade
+  receiverUserId    String      // User who receives the trade
+  senderItems       String      // JSON array of sender's items
+  receiverItems     String      // JSON array of receiver's items
+  senderCoins       Decimal     @default(0) // Coins offered by sender
+  receiverCoins     Decimal     @default(0) // Coins offered by receiver
+  status            TradeStatus @default(PENDING)
+  message           String?     // Optional message from sender
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  expiresAt         DateTime    // Trade expiration time
+  completedAt       DateTime?   // When trade was completed/cancelled
+  
+  // Relations
+  senderUser        User        @relation("SentTrades", fields: [senderUserId], references: [id], onDelete: Cascade)
+  receiverUser      User        @relation("ReceivedTrades", fields: [receiverUserId], references: [id], onDelete: Cascade)
+
+  @@index([senderUserId])
+  @@index([receiverUserId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum TradeStatus {
+  PENDING     // Waiting for receiver to respond
+  ACCEPTED    // Receiver accepted, waiting for completion
+  DECLINED    // Receiver declined
+  COMPLETED   // Trade successfully completed
+  CANCELLED   // Cancelled by sender
+  EXPIRED     // Trade expired
+}
