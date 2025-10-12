@@ -35,4 +35,6 @@ The documentation is divided into several sections:
 
 - [Self-hosting](https://github.com/ianlucas/cs2-inventory-simulator/blob/main/docs/self-hosting.md)
 - [Rules](https://github.com/ianlucas/cs2-inventory-simulator/blob/main/docs/rules.md)
-- [API for Developers](https://github.com/ianlucas/cs2-inventory-simulator/blob/main/docs/api.md)
+- [API for Developers](https://github.com/ianlucas/cs2-inventory-simulator/blob/main/docs/api.md) - Quick API reference
+- [Comprehensive API Documentation](https://github.com/ianlucas/cs2-inventory-simulator/blob/main/docs/comprehensive-api-documentation.md) - Complete API, functions, and components documentation
+- [Developer Guide](https://github.com/ianlucas/cs2-inventory-simulator/blob/main/docs/developer-guide.md) - Practical examples and development patterns

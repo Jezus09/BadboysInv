@@ -2,6 +2,10 @@
 
 CS2 Inventory Simulator exposes a couple of endpoints to be used in other applications.
 
+> **📚 For complete documentation** including all public functions, components, hooks, and advanced examples, see the [Comprehensive API Documentation](./comprehensive-api-documentation.md) and [Developer Guide](./developer-guide.md).
+
+## Quick Reference
+
 ## Get user inventory
 
 ```http
