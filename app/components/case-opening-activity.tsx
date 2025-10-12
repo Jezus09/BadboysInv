@@ -43,6 +43,20 @@ export function CaseOpeningActivity({ className = "" }: CaseOpeningActivityProps
   const [caseOpenings, setCaseOpenings] = useState<CaseOpening[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const fetchCaseOpenings = useCallback(async () => {
     try {
@@ -176,110 +190,209 @@ export function CaseOpeningActivity({ className = "" }: CaseOpeningActivityProps
 
   if (loading) {
     return (
-      <div className={`bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 flex flex-col ${className}`}>
-        <div className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-          <i className="fas fa-history"></i>
-          Ládanyitási előzmények
-        </div>
-        <div className="text-gray-400 text-center py-8 flex-1 flex items-center justify-center">
-          <div>
-            <i className="fas fa-spinner fa-spin text-2xl mb-2"></i>
-            <div>Betöltés...</div>
+      <div className={`
+        ${isMobile 
+          ? `fixed ${isCollapsed ? 'left-2' : 'left-2 right-2'} top-4 z-30 transition-all duration-300 ease-in-out` 
+          : 'bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 flex flex-col'
+        } 
+        ${className}
+      `}>
+        {isMobile && (
+          <div className="flex items-center justify-between bg-neutral-800/50 border border-neutral-700 rounded-lg p-2 backdrop-blur-sm">
+            <div className="text-white font-bold text-sm flex items-center gap-2">
+              <i className="fas fa-history"></i>
+              {!isCollapsed && "Ládanyitási előzmények"}
+            </div>
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="text-white hover:text-gray-300 transition-colors p-1"
+              aria-label={isCollapsed ? "Kibontás" : "Összecsukás"}
+            >
+              <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'} text-sm`}></i>
+            </button>
           </div>
-        </div>
+        )}
+        
+        {(!isMobile || !isCollapsed) && (
+          <div className={`
+            ${isMobile 
+              ? 'bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 mt-2 backdrop-blur-sm max-h-96 overflow-hidden' 
+              : ''
+            }
+          `}>
+            {!isMobile && (
+              <div className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                <i className="fas fa-history"></i>
+                Ládanyitási előzmények
+              </div>
+            )}
+            <div className="text-gray-400 text-center py-8 flex-1 flex items-center justify-center">
+              <div>
+                <i className="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                <div>Betöltés...</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   if (caseOpenings.length === 0) {
     return (
-      <div className={`bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 flex flex-col ${className}`}>
-        <div className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-          <i className="fas fa-history"></i>
-          Ládanyitási előzmények
-        </div>
-        <div className="text-gray-400 text-center py-8 flex-1 flex items-center justify-center">
-          <div>
-            <i className="fas fa-box-open text-2xl mb-2"></i>
-            <div>Még nincs ládanyitás</div>
+      <div className={`
+        ${isMobile 
+          ? `fixed ${isCollapsed ? 'left-2' : 'left-2 right-2'} top-4 z-30 transition-all duration-300 ease-in-out` 
+          : 'bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 flex flex-col'
+        } 
+        ${className}
+      `}>
+        {isMobile && (
+          <div className="flex items-center justify-between bg-neutral-800/50 border border-neutral-700 rounded-lg p-2 backdrop-blur-sm">
+            <div className="text-white font-bold text-sm flex items-center gap-2">
+              <i className="fas fa-history"></i>
+              {!isCollapsed && "Ládanyitási előzmények"}
+            </div>
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="text-white hover:text-gray-300 transition-colors p-1"
+              aria-label={isCollapsed ? "Kibontás" : "Összecsukás"}
+            >
+              <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'} text-sm`}></i>
+            </button>
           </div>
-        </div>
+        )}
+        
+        {(!isMobile || !isCollapsed) && (
+          <div className={`
+            ${isMobile 
+              ? 'bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 mt-2 backdrop-blur-sm max-h-96 overflow-hidden' 
+              : ''
+            }
+          `}>
+            {!isMobile && (
+              <div className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                <i className="fas fa-history"></i>
+                Ládanyitási előzmények
+              </div>
+            )}
+            <div className="text-gray-400 text-center py-8 flex-1 flex items-center justify-center">
+              <div>
+                <i className="fas fa-box-open text-2xl mb-2"></i>
+                <div>Még nincs ládanyitás</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className={`bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 flex flex-col ${className}`}>
-      <div className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-        <i className="fas fa-history"></i>
-        Ládanyitási előzmények
-      </div>
-
-      <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1">
-        {caseOpenings.map((opening, index) => (
-          <div 
-            key={opening.id} 
-            className="bg-neutral-900/50 border border-neutral-600 rounded-lg p-3 hover:bg-neutral-900/70 transition-all duration-300 animate-in fade-in slide-in-from-top"
-            style={{ animationDelay: `${index * 50}ms` }}
+    <div className={`
+      ${isMobile 
+        ? `fixed ${isCollapsed ? 'left-2' : 'left-2 right-2'} top-4 z-30 transition-all duration-300 ease-in-out` 
+        : 'bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 flex flex-col'
+      } 
+      ${className}
+    `}>
+      {isMobile && (
+        <div className="flex items-center justify-between bg-neutral-800/50 border border-neutral-700 rounded-lg p-2 backdrop-blur-sm">
+          <div className="text-white font-bold text-sm flex items-center gap-2">
+            <i className="fas fa-history"></i>
+            {!isCollapsed && "Ládanyitási előzmények"}
+          </div>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="text-white hover:text-gray-300 transition-colors p-1"
+            aria-label={isCollapsed ? "Kibontás" : "Összecsukás"}
           >
-            {/* User info */}
-            <div className="flex items-center gap-2 mb-2">
-              {opening.user.avatar ? (
-                <img 
-                  src={opening.user.avatar} 
-                  alt={opening.user.name}
-                  className="w-6 h-6 rounded-full"
-                />
-              ) : (
-                <div className="w-6 h-6 rounded-full bg-neutral-600 flex items-center justify-center">
-                  <i className="fas fa-user text-xs text-gray-400"></i>
-                </div>
-              )}
-              <span className="text-white font-medium text-sm">
-                {opening.user.name}
-              </span>
-              <span className="text-gray-400 text-xs ml-auto">
-                {formatTimeAgo(opening.createdAt)}
-              </span>
+            <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'} text-sm`}></i>
+          </button>
+        </div>
+      )}
+      
+      {(!isMobile || !isCollapsed) && (
+        <div className={`
+          ${isMobile 
+            ? 'bg-neutral-800/50 border border-neutral-700 rounded-lg p-4 mt-2 backdrop-blur-sm max-h-96 overflow-hidden' 
+            : ''
+          }
+        `}>
+          {!isMobile && (
+            <div className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+              <i className="fas fa-history"></i>
+              Ládanyitási előzmények
             </div>
+          )}
 
-            {/* Case and item info */}
-            <div className="text-sm">
-              <div className="flex items-center gap-3">
-                <i className="fas fa-arrow-right text-gray-500 text-xs"></i>
-                
-                {/* Large item image with overlay text */}
-                <div 
-                  className="relative cursor-pointer group flex-1"
-                  onMouseEnter={() => setHoveredItemId(opening.id)}
-                  onMouseLeave={() => setHoveredItemId(null)}
-                >
-                  <div className="relative w-28 h-28 mx-auto">
+          <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1">
+            {caseOpenings.map((opening, index) => (
+              <div 
+                key={opening.id} 
+                className="bg-neutral-900/50 border border-neutral-600 rounded-lg p-3 hover:bg-neutral-900/70 transition-all duration-300 animate-in fade-in slide-in-from-top"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                {/* User info */}
+                <div className="flex items-center gap-2 mb-2">
+                  {opening.user.avatar ? (
                     <img 
-                      src={hoveredItemId === opening.id ? getCaseImage(opening.caseItemId) : getItemImage(opening.unlockedItemId)}
-                      alt={hoveredItemId === opening.id ? opening.caseName : opening.unlockedName}
-                      className="w-full h-full object-contain rounded-lg transition-all duration-300 transform group-hover:scale-105"
-                      style={{ 
-                        border: `3px solid ${getRarityColor(opening.unlockedRarity)}`
-                      }}
+                      src={opening.user.avatar} 
+                      alt={opening.user.name}
+                      className="w-6 h-6 rounded-full"
                     />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-neutral-600 flex items-center justify-center">
+                      <i className="fas fa-user text-xs text-gray-400"></i>
+                    </div>
+                  )}
+                  <span className="text-white font-medium text-sm">
+                    {opening.user.name}
+                  </span>
+                  <span className="text-gray-400 text-xs ml-auto">
+                    {formatTimeAgo(opening.createdAt)}
+                  </span>
+                </div>
+
+                {/* Case and item info */}
+                <div className="text-sm">
+                  <div className="flex items-center gap-3">
+                    <i className="fas fa-arrow-right text-gray-500 text-xs"></i>
                     
-                    {/* Text overlay on image */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white px-2 py-1 rounded-b-lg">
-                      <div 
-                        className="text-xs font-medium text-center"
-                        style={{ color: getRarityColor(opening.unlockedRarity) }}
-                      >
-                        {hoveredItemId === opening.id ? opening.caseName : opening.unlockedName}
+                    {/* Large item image with overlay text */}
+                    <div 
+                      className="relative cursor-pointer group flex-1"
+                      onMouseEnter={() => setHoveredItemId(opening.id)}
+                      onMouseLeave={() => setHoveredItemId(null)}
+                    >
+                      <div className={`relative ${isMobile ? 'w-20 h-20' : 'w-28 h-28'} mx-auto`}>
+                        <img 
+                          src={hoveredItemId === opening.id ? getCaseImage(opening.caseItemId) : getItemImage(opening.unlockedItemId)}
+                          alt={hoveredItemId === opening.id ? opening.caseName : opening.unlockedName}
+                          className="w-full h-full object-contain rounded-lg transition-all duration-300 transform group-hover:scale-105"
+                          style={{ 
+                            border: `3px solid ${getRarityColor(opening.unlockedRarity)}`
+                          }}
+                        />
+                        
+                        {/* Text overlay on image */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white px-2 py-1 rounded-b-lg">
+                          <div 
+                            className={`${isMobile ? 'text-xs' : 'text-xs'} font-medium text-center`}
+                            style={{ color: getRarityColor(opening.unlockedRarity) }}
+                          >
+                            {hoveredItemId === opening.id ? opening.caseName : opening.unlockedName}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

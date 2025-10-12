@@ -152,10 +152,17 @@ export default function App() {
             </ItemSelectorProvider>
           )}
           
-          {/* Case Opening Activity Feed - positioned on the left */}
+          {/* Case Opening Activity Feed - responsive positioning */}
           {caseOpeningActivity && appProps.user && (
-            <div className="fixed left-4 top-4 bottom-4 z-30 w-80">
+            <div className="hidden md:block fixed left-4 top-4 bottom-4 z-30 w-80">
               <CaseOpeningActivity className="h-full" />
+            </div>
+          )}
+          
+          {/* Mobile Case Opening Activity */}
+          {caseOpeningActivity && appProps.user && (
+            <div className="md:hidden">
+              <CaseOpeningActivity />
             </div>
           )}
           
