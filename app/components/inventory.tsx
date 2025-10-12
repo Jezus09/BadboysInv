@@ -163,7 +163,7 @@ export function Inventory() {
   async function triggerPluginInventorySync(steamId: string) {
     try {
       console.log("Sending refresh request for SteamID:", steamId);
-      const response = await fetch("http://localhost:5005/api/refresh-inventory", {
+      const response = await fetch("http://cs2badboys.ggwp.cc:5005/api/refresh-inventory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ SteamId: steamId })
