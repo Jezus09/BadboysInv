@@ -121,11 +121,11 @@ export default function CS2ServerPage() {
           
           <div className="space-y-4">
             <SettingsLabel label="Auto-sync inventory">
-              <EditorToggle checked={autoSync} onChange={setAutoSync} />
+              <EditorToggle checked={autoSync} onChange={(e) => setAutoSync(e.target.checked)} />
             </SettingsLabel>
             
             <SettingsLabel label="Sync on server join">
-              <EditorToggle checked={syncOnJoin} onChange={setSyncOnJoin} />
+              <EditorToggle checked={syncOnJoin} onChange={(e) => setSyncOnJoin(e.target.checked)} />
             </SettingsLabel>
           </div>
         </div>

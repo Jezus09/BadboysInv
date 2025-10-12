@@ -22,8 +22,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { trades, totalCount } = await getTradeHistory(user.id, page, limit);
   const totalPages = Math.ceil(totalCount / limit);
   
+  // Convert Date objects to strings for the interface
+  const serializedTrades = trades.map(trade => ({
+    ...trade,
+    createdAt: trade.createdAt.toISOString(),
+    updatedAt: trade.updatedAt.toISOString(),
+    completedAt: trade.completedAt?.toISOString() || null
+  }));
+  
   return data({ 
-    trades, 
+    trades: serializedTrades, 
     currentPage: page, 
     totalPages,
     totalCount 

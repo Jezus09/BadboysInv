@@ -43,8 +43,8 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     switch (actionType) {
       case "sync_inventory": {
         // Sync user's inventory with CS2 server
-        const userInventory = await getUserInventory(userId);
-        const inventory = parseInventory(userInventory?.inventory);
+        const userInventoryString = await getUserInventory(userId);
+        const inventory = parseInventory(userInventoryString);
         
         if (inventory && params.steamId) {
           const success = await cs2Server.syncPlayerInventory(
