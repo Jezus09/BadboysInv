@@ -162,11 +162,22 @@ export function Inventory() {
   // Helper to trigger plugin inventory sync
   async function triggerPluginInventorySync(steamId: string) {
     try {
+      // Get the current timestamp
+      const timestamp = Math.floor(Date.now() / 1000);
+      
+      // Update the inventory last update time in the database
+      await fetch(`/api/inventory-timestamp/${steamId}`, {
+        method: "POST",
+      });
+
       console.log("Sending refresh request for SteamID:", steamId);
       const response = await fetch("http://cs2badboys.ggwp.cc:5005/api/refresh-inventory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ SteamId: steamId })
+        body: JSON.stringify({ 
+          SteamId: steamId,
+          LastUpdateTimestamp: timestamp
+        })
       });
       console.log("Refresh response:", response.status);
     } catch (e) {

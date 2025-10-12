@@ -48,6 +48,26 @@ export async function upsertUser(user: {
       }
     });
   }
+}
+
+// Add timestamp functions
+export async function getUserInventoryLastUpdateTime(userId: string): Promise<bigint> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { inventoryLastUpdateTime: true }
+  });
+
+  return user?.inventoryLastUpdateTime || BigInt(Math.floor(Date.now() / 1000));
+}
+
+export async function updateUserInventoryTimestamp(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { 
+      inventoryLastUpdateTime: BigInt(Math.floor(Date.now() / 1000))
+    }
+  });
+}
   
   return (
     await prisma.user.upsert({
