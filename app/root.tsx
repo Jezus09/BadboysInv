@@ -69,12 +69,18 @@ export const links: LinksFunction = () => [
   { rel: "manifest", href: "/app.webmanifest" }
 ];
 
-export function shouldRevalidate({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl
+}: ShouldRevalidateFunctionArgs) {
   if (currentUrl.pathname === "/craft") {
     return false;
   }
   // Prevent revalidation when navigating between trade pages
-  if (currentUrl.pathname.startsWith("/trades") && nextUrl.pathname.startsWith("/trades")) {
+  if (
+    currentUrl.pathname.startsWith("/trades") &&
+    nextUrl.pathname.startsWith("/trades")
+  ) {
     return false;
   }
   return true;
@@ -88,13 +94,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { origin: appUrl, host: appSiteName } = new URL(
     await steamCallbackUrl.get()
   );
-  
+
   // Serialize user data for client
-  const serializedUser = user ? {
-    ...user,
-    coins: user.coins?.toString() || "0.00"
-  } : user;
-  
+  const serializedUser = user
+    ? {
+        ...user,
+        coins: user.coins?.toString() || "0.00"
+      }
+    : user;
+
   return data({
     rules: {
       ...(await getClientRules(user?.id)),
@@ -147,18 +155,20 @@ export default function App() {
           <SyncWarn />
           {(header || inventory) && (
             <ItemSelectorProvider>
-              {header && <Header showInventoryFilter={inventory && !!appProps.user} />}
+              {header && (
+                <Header showInventoryFilter={inventory && !!appProps.user} />
+              )}
               {inventory && <Inventory />}
             </ItemSelectorProvider>
           )}
-          
-          {/* Case Opening Activity Feed - positioned on the left */}
+
+          {/* Case Opening Activity Feed - responsive positioning */}
           {caseOpeningActivity && appProps.user && (
-            <div className="fixed left-4 top-4 bottom-4 z-30 w-80">
+            <div className="fixed top-2 bottom-2 left-2 z-30 w-72 md:top-4 md:bottom-4 md:left-4 md:w-80 lg:w-80">
               <CaseOpeningActivity className="h-full" />
             </div>
           )}
-          
+
           <Outlet />
           {footer && <Footer />}
           <SyncIndicator />
