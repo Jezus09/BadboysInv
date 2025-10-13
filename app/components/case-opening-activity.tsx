@@ -212,13 +212,13 @@ export function CaseOpeningActivity({
         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+            className="flex h-6 w-6 items-center justify-center rounded bg-neutral-700/50 text-gray-300 transition-all duration-200 hover:bg-neutral-600 hover:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
           >
             <i
-              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
+              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-xs transition-transform duration-200`}
             ></i>
           </button>
           <i className="fas fa-history"></i>
@@ -246,13 +246,13 @@ export function CaseOpeningActivity({
         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+            className="flex h-6 w-6 items-center justify-center rounded bg-neutral-700/50 text-gray-300 transition-all duration-200 hover:bg-neutral-600 hover:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
           >
             <i
-              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
+              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-xs transition-transform duration-200`}
             ></i>
           </button>
           <i className="fas fa-history"></i>
@@ -279,13 +279,13 @@ export function CaseOpeningActivity({
       <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+          className="flex h-6 w-6 items-center justify-center rounded bg-neutral-700/50 text-gray-300 transition-all duration-200 hover:bg-neutral-600 hover:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
           aria-label={
             isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
           }
         >
           <i
-            className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
+            className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-xs transition-transform duration-200`}
           ></i>
         </button>
         <i className="fas fa-history"></i>
