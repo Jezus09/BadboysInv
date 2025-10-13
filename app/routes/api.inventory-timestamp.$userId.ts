@@ -1,8 +1,8 @@
-import type { ActionArgs, LoaderArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { json } from "react-router";
 import { getUserInventoryLastUpdateTime, updateUserInventoryTimestamp } from "~/models/user.server";
 
-export async function loader({ params }: LoaderArgs) {
+export async function loader({ params }: LoaderFunctionArgs) {
   const { userId } = params;
   
   if (!userId) {
@@ -18,7 +18,7 @@ export async function loader({ params }: LoaderArgs) {
   }
 }
 
-export async function action({ request, params }: ActionArgs) {
+export async function action({ request, params }: ActionFunctionArgs) {
   const { userId } = params;
   
   if (!userId) {
