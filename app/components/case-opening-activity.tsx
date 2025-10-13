@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { CS2Economy } from "@ianlucas/cs2-lib";
-import { useIsDesktop } from "./hooks/use-is-desktop";
+import { useWindowSize } from "@uidotdev/usehooks";
 
 interface CaseOpening {
   id: string;
@@ -46,13 +46,20 @@ export function CaseOpeningActivity({
   const [caseOpenings, setCaseOpenings] = useState<CaseOpening[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
-  const isDesktop = useIsDesktop();
-  const [isCollapsed, setIsCollapsed] = useState(!isDesktop);
+  const { width } = useWindowSize();
+  
+  // Start collapsed on mobile (mobile-first approach)
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [initializedCollapse, setInitializedCollapse] = useState(false);
 
-  // Update collapsed state when screen size changes
+  // Initialize collapse state based on screen size once on first render
   useEffect(() => {
-    setIsCollapsed(!isDesktop);
-  }, [isDesktop]);
+    if (!initializedCollapse && width !== null) {
+      // Expand on desktop (width > 1024), keep collapsed on mobile
+      setIsCollapsed(width <= 1024);
+      setInitializedCollapse(true);
+    }
+  }, [width, initializedCollapse]);
 
   const fetchCaseOpenings = useCallback(async () => {
     try {
