@@ -6,7 +6,11 @@
 import type { ActionFunctionArgs } from "react-router";
 import { data } from "react-router";
 import { requireUser } from "~/auth.server";
-import { addCoins, getUserCoins, subtractCoins } from "~/models/currency.server";
+import {
+  addCoins,
+  getUserCoins,
+  subtractCoins
+} from "~/models/currency.server";
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUser(request);
@@ -34,7 +38,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const updatedCoins = await getUserCoins(user.id);
-  return data({ 
+  return data({
     success: true,
     coins: updatedCoins.toFixed(2)
   });

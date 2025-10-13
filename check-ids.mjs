@@ -1,5 +1,5 @@
 // A simple script to check CS2 item IDs
-import { CS2Economy, CS2ItemType } from '@ianlucas/cs2-lib';
+import { CS2Economy, CS2ItemType } from "@ianlucas/cs2-lib";
 
 console.log("Checking CS2 item IDs...\n");
 
@@ -8,8 +8,8 @@ console.log("=== KEYS ===");
 const keys = CS2Economy.filterItems({ type: CS2ItemType.Key });
 console.log(`Found ${keys.length} keys:`);
 
-keys.slice(0, 10).forEach(key => {
-  console.log(`ID: ${key.id}, Name: ${key.name || 'Unnamed'}`);
+keys.slice(0, 10).forEach((key) => {
+  console.log(`ID: ${key.id}, Name: ${key.name || "Unnamed"}`);
 });
 
 // Find all containers (cases)
@@ -17,14 +17,14 @@ console.log("\n=== CONTAINERS (Cases) ===");
 const containers = CS2Economy.filterItems({ type: CS2ItemType.Container });
 console.log(`Found ${containers.length} containers:`);
 
-containers.slice(0, 10).forEach(container => {
-  console.log(`ID: ${container.id}, Name: ${container.name || 'Unnamed'}`);
+containers.slice(0, 10).forEach((container) => {
+  console.log(`ID: ${container.id}, Name: ${container.name || "Unnamed"}`);
 });
 
 // Try to find the CS:GO Weapon Case Key specifically
 console.log("\n=== Looking for CS:GO Weapon Case Key ===");
-const weaponCaseKey = keys.find(key => 
-  key.name && key.name.toLowerCase().includes('weapon case key')
+const weaponCaseKey = keys.find(
+  (key) => key.name && key.name.toLowerCase().includes("weapon case key")
 );
 
 if (weaponCaseKey) {

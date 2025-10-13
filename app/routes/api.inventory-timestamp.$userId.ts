@@ -1,9 +1,12 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { getUserInventoryLastUpdateTime, updateUserInventoryTimestamp } from "~/models/user.server";
+import {
+  getUserInventoryLastUpdateTime,
+  updateUserInventoryTimestamp
+} from "~/models/user.server";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { userId } = params;
-  
+
   if (!userId) {
     return Response.json({ error: "Missing user ID" }, { status: 400 });
   }
@@ -19,7 +22,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export async function action({ request, params }: ActionFunctionArgs) {
   const { userId } = params;
-  
+
   if (!userId) {
     return Response.json({ error: "Missing user ID" }, { status: 400 });
   }

@@ -29,13 +29,13 @@ export async function getUserCoins(userId: string): Promise<Decimal> {
 export const getCoins = getUserCoins;
 
 export async function addCoins(
-  userId: string, 
-  amount: number | Decimal, 
-  reason?: string, 
+  userId: string,
+  amount: number | Decimal,
+  reason?: string,
   description?: string
 ) {
   const decimalAmount = new Decimal(amount);
-  
+
   // Update user coins
   const updatedUser = await prisma.user.update({
     where: { id: userId },
@@ -60,18 +60,18 @@ export async function addCoins(
 }
 
 export async function subtractCoins(
-  userId: string, 
-  amount: number | Decimal, 
-  reason?: string, 
+  userId: string,
+  amount: number | Decimal,
+  reason?: string,
   description?: string
 ): Promise<{ success: boolean; coins?: Decimal; error?: string }> {
   const decimalAmount = new Decimal(amount);
   const currentCoins = await getUserCoins(userId);
-  
+
   if (currentCoins.lessThan(decimalAmount)) {
-    return { 
-      success: false, 
-      error: "Insufficient balance" 
+    return {
+      success: false,
+      error: "Insufficient balance"
     };
   }
 
@@ -109,11 +109,11 @@ export async function transferCoins(
 ): Promise<{ success: boolean; error?: string }> {
   const decimalAmount = new Decimal(amount);
   const fromUserCoins = await getUserCoins(fromUserId);
-  
+
   if (fromUserCoins.lessThan(decimalAmount)) {
-    return { 
-      success: false, 
-      error: "Insufficient balance" 
+    return {
+      success: false,
+      error: "Insufficient balance"
     };
   }
 
@@ -159,8 +159,8 @@ export async function transferCoins(
 }
 
 export async function getCurrencyTransactions(
-  userId: string, 
-  limit = 50, 
+  userId: string,
+  limit = 50,
   offset = 0
 ) {
   return await prisma.currencyTransaction.findMany({

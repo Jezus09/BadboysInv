@@ -3,7 +3,7 @@ import { getUserInventoryLastUpdateTime } from "~/models/user.server";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const { userId } = params;
-  
+
   if (!userId) {
     return Response.json({ error: "Missing user ID" }, { status: 400 });
   }

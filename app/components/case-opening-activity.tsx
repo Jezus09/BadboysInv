@@ -47,7 +47,7 @@ export function CaseOpeningActivity({
   const [loading, setLoading] = useState(true);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const { width } = useWindowSize();
-  
+
   // Start collapsed on mobile (mobile-first approach)
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [initializedCollapse, setInitializedCollapse] = useState(false);
@@ -205,18 +205,20 @@ export function CaseOpeningActivity({
   if (loading) {
     return (
       <div
-        className={`rounded-lg border border-neutral-700 transition-all duration-300 ${
-          isCollapsed 
-            ? "bg-neutral-800/30 p-2" 
-            : "bg-neutral-800/50 p-4"
-        } flex flex-col ${className}`}
+        className={`flex flex-col rounded-lg border border-neutral-700 transition-all duration-300 ${
+          isCollapsed
+            ? "w-auto bg-neutral-800/30 p-2"
+            : "max-h-[calc(100vh-1rem)] w-72 bg-neutral-800/50 p-4 md:max-h-[calc(100vh-2rem)] md:w-80 lg:w-80"
+        } ${className}`}
       >
-        <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}>
+        <div
+          className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}
+        >
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              isCollapsed 
-                ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl" 
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              isCollapsed
+                ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl"
                 : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
             }`}
             aria-label={
@@ -229,8 +231,12 @@ export function CaseOpeningActivity({
               }`}
             ></i>
           </button>
-          <i className="fas fa-history"></i>
-          {!isCollapsed && "Ládanyitási előzmények"}
+          {!isCollapsed && (
+            <>
+              <i className="fas fa-history"></i>
+              <span>Ládanyitási előzmények</span>
+            </>
+          )}
         </div>
         {!isCollapsed && (
           <div className="flex flex-1 items-center justify-center py-8 text-center text-gray-400">
@@ -247,18 +253,20 @@ export function CaseOpeningActivity({
   if (caseOpenings.length === 0) {
     return (
       <div
-        className={`rounded-lg border border-neutral-700 transition-all duration-300 ${
-          isCollapsed 
-            ? "bg-neutral-800/30 p-2" 
-            : "bg-neutral-800/50 p-4"
-        } flex flex-col ${className}`}
+        className={`flex flex-col rounded-lg border border-neutral-700 transition-all duration-300 ${
+          isCollapsed
+            ? "w-auto bg-neutral-800/30 p-2"
+            : "max-h-[calc(100vh-1rem)] w-72 bg-neutral-800/50 p-4 md:max-h-[calc(100vh-2rem)] md:w-80 lg:w-80"
+        } ${className}`}
       >
-        <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}>
+        <div
+          className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}
+        >
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              isCollapsed 
-                ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl" 
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              isCollapsed
+                ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl"
                 : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
             }`}
             aria-label={
@@ -271,8 +279,12 @@ export function CaseOpeningActivity({
               }`}
             ></i>
           </button>
-          <i className="fas fa-history"></i>
-          {!isCollapsed && "Ládanyitási előzmények"}
+          {!isCollapsed && (
+            <>
+              <i className="fas fa-history"></i>
+              <span>Ládanyitási előzmények</span>
+            </>
+          )}
         </div>
         {!isCollapsed && (
           <div className="flex flex-1 items-center justify-center py-8 text-center text-gray-400">
@@ -288,18 +300,20 @@ export function CaseOpeningActivity({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 transition-all duration-300 ${
-        isCollapsed 
-          ? "bg-neutral-800/30 p-2" 
-          : "bg-neutral-800/50 p-4"
-      } flex flex-col ${className}`}
+      className={`flex flex-col rounded-lg border border-neutral-700 transition-all duration-300 ${
+        isCollapsed
+          ? "w-auto bg-neutral-800/30 p-2"
+          : "max-h-[calc(100vh-1rem)] w-72 bg-neutral-800/50 p-4 md:max-h-[calc(100vh-2rem)] md:w-80 lg:w-80"
+      } ${className}`}
     >
-      <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}>
+      <div
+        className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}
+      >
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            isCollapsed 
-              ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl" 
+          className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            isCollapsed
+              ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl"
               : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
           }`}
           aria-label={
@@ -312,8 +326,12 @@ export function CaseOpeningActivity({
             }`}
           ></i>
         </button>
-        <i className="fas fa-history"></i>
-        {!isCollapsed && "Ládanyitási előzmények"}
+        {!isCollapsed && (
+          <>
+            <i className="fas fa-history"></i>
+            <span>Ládanyitási előzmények</span>
+          </>
+        )}
       </div>
 
       {!isCollapsed && (

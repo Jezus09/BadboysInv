@@ -9,7 +9,10 @@ import { CS2Inventory } from "@ianlucas/cs2-lib";
 import { useInventory, useRules } from "./app-context";
 import { getJson } from "~/utils/fetch";
 import { parseInventory } from "~/utils/inventory";
-import { ApiActionResyncData, ApiActionResyncUrl } from "~/routes/api.action.resync._index";
+import {
+  ApiActionResyncData,
+  ApiActionResyncUrl
+} from "~/routes/api.action.resync._index";
 import { TradeItemCard } from "./trade-item-card";
 import { CurrencyDisplay } from "./currency-display";
 
@@ -31,7 +34,12 @@ interface TradeActionModalProps {
   onClose: () => void;
 }
 
-export function TradeActionModal({ trade, action, isOpen, onClose }: TradeActionModalProps) {
+export function TradeActionModal({
+  trade,
+  action,
+  isOpen,
+  onClose
+}: TradeActionModalProps) {
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const revalidator = useRevalidator();
@@ -48,7 +56,8 @@ export function TradeActionModal({ trade, action, isOpen, onClose }: TradeAction
   const refreshInventory = async () => {
     try {
       console.log("Manually refreshing inventory after trade...");
-      const { syncedAt, inventory } = await getJson<ApiActionResyncData>(ApiActionResyncUrl);
+      const { syncedAt, inventory } =
+        await getJson<ApiActionResyncData>(ApiActionResyncUrl);
       setInventory(
         new CS2Inventory({
           data: parseInventory(inventory),
@@ -67,14 +76,14 @@ export function TradeActionModal({ trade, action, isOpen, onClose }: TradeAction
     if (fetcher.state === "idle" && fetcher.data?.success && isProcessing) {
       setIsProcessing(false);
       onClose();
-      
+
       // For successful accept action, refresh inventory and navigate appropriately
       if (action === "accept" && fetcher.data.success) {
         // First refresh the inventory manually
         refreshInventory().then(() => {
           // Then revalidate the current page to get fresh data
           revalidator.revalidate();
-          
+
           // Navigate to trades page to see updated list
           setTimeout(() => {
             navigate("/trades", { replace: true });
@@ -84,157 +93,178 @@ export function TradeActionModal({ trade, action, isOpen, onClose }: TradeAction
         // For decline/cancel, just revalidate current page
         revalidator.revalidate();
       }
-    } else if (fetcher.state === "idle" && (fetcher.data?.error || !fetcher.data?.success) && isProcessing) {
+    } else if (
+      fetcher.state === "idle" &&
+      (fetcher.data?.error || !fetcher.data?.success) &&
+      isProcessing
+    ) {
       setIsProcessing(false);
-      
+
       // Show error message to user
       if (fetcher.data?.message) {
         alert(`Trade failed: ${fetcher.data.message}`);
       } else {
         alert("Trade failed: An error occurred while processing the trade.");
       }
-      
+
       // Keep modal open if there was an error so user can see the error and try again
     }
-  }, [fetcher.state, fetcher.data, isProcessing, action, onClose, navigate, revalidator, inventoryMaxItems, inventoryStorageUnitMaxItems, setInventory]);
+  }, [
+    fetcher.state,
+    fetcher.data,
+    isProcessing,
+    action,
+    onClose,
+    navigate,
+    revalidator,
+    inventoryMaxItems,
+    inventoryStorageUnitMaxItems,
+    setInventory
+  ]);
 
   const handleAction = async () => {
     setIsProcessing(true);
-    
+
     fetcher.submit(
       {
         action,
-        tradeId: trade.id,
+        tradeId: trade.id
       },
       {
         method: "POST",
-        action: "/api/trade",
+        action: "/api/trade"
       }
     );
   };
 
   const getActionColor = () => {
     switch (action) {
-      case "accept": return "bg-green-600 hover:bg-green-700";
-      case "decline": return "bg-red-600 hover:bg-red-700";
-      case "cancel": return "bg-gray-600 hover:bg-gray-700";
+      case "accept":
+        return "bg-green-600 hover:bg-green-700";
+      case "decline":
+        return "bg-red-600 hover:bg-red-700";
+      case "cancel":
+        return "bg-gray-600 hover:bg-gray-700";
     }
   };
 
   const getActionText = () => {
     switch (action) {
-      case "accept": return "Accept Trade";
-      case "decline": return "Decline Trade";
-      case "cancel": return "Cancel Trade";
+      case "accept":
+        return "Accept Trade";
+      case "decline":
+        return "Decline Trade";
+      case "cancel":
+        return "Cancel Trade";
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+      <div className="mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-gray-800 p-6">
+        <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">{getActionText()}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-xl"
+            className="text-xl text-gray-400 hover:text-white"
           >
             ×
           </button>
         </div>
 
         {/* Trader Info */}
-        <div className="flex items-center space-x-3 mb-6 p-4 bg-gray-700 rounded-lg">
-          <img 
-            src={trade.senderUser.avatar} 
+        <div className="mb-6 flex items-center space-x-3 rounded-lg bg-gray-700 p-4">
+          <img
+            src={trade.senderUser.avatar}
             alt={trade.senderUser.name}
-            className="w-12 h-12 rounded-full"
+            className="h-12 w-12 rounded-full"
           />
           <div>
-            <h3 className="text-white font-medium">{trade.senderUser.name}</h3>
-            <p className="text-gray-400 text-sm">Trade partner</p>
+            <h3 className="font-medium text-white">{trade.senderUser.name}</h3>
+            <p className="text-sm text-gray-400">Trade partner</p>
           </div>
         </div>
 
         {/* Trade Message */}
         {trade.message && (
-          <div className="mb-6 p-4 bg-gray-700 rounded-lg">
-            <h4 className="text-white font-medium mb-2">Message:</h4>
+          <div className="mb-6 rounded-lg bg-gray-700 p-4">
+            <h4 className="mb-2 font-medium text-white">Message:</h4>
             <p className="text-gray-300 italic">"{trade.message}"</p>
           </div>
         )}
 
         {/* Trade Items */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
-            <h4 className="text-white font-medium mb-3">They offer:</h4>
-            
+            <h4 className="mb-3 font-medium text-white">They offer:</h4>
+
             {/* Items */}
             {senderItems.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-4">
+              <div className="mb-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {senderItems.map((item: any, index: number) => (
-                  <TradeItemCard
-                    key={index}
-                    item={item}
-                    disabled={true}
-                  />
+                  <TradeItemCard key={index} item={item} disabled={true} />
                 ))}
               </div>
             )}
-            
+
             {/* Coins */}
             {trade.senderCoins && Number(trade.senderCoins) > 0 && (
-              <div className="bg-gray-700 p-3 rounded flex items-center gap-2">
-                <CurrencyDisplay 
-                  amount={trade.senderCoins.toString()} 
-                  className="text-yellow-400 font-medium"
+              <div className="flex items-center gap-2 rounded bg-gray-700 p-3">
+                <CurrencyDisplay
+                  amount={trade.senderCoins.toString()}
+                  className="font-medium text-yellow-400"
                   showIcon={true}
                 />
               </div>
             )}
-            
-            {senderItems.length === 0 && (!trade.senderCoins || Number(trade.senderCoins) === 0) && (
-              <p className="text-gray-500 text-sm">No items or coins offered</p>
-            )}
+
+            {senderItems.length === 0 &&
+              (!trade.senderCoins || Number(trade.senderCoins) === 0) && (
+                <p className="text-sm text-gray-500">
+                  No items or coins offered
+                </p>
+              )}
           </div>
-          
+
           <div>
-            <h4 className="text-white font-medium mb-3">They want:</h4>
-            
+            <h4 className="mb-3 font-medium text-white">They want:</h4>
+
             {/* Items */}
             {receiverItems.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-4">
+              <div className="mb-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {receiverItems.map((item: any, index: number) => (
-                  <TradeItemCard
-                    key={index}
-                    item={item}
-                    disabled={true}
-                  />
+                  <TradeItemCard key={index} item={item} disabled={true} />
                 ))}
               </div>
             )}
-            
+
             {/* Coins */}
             {trade.receiverCoins && Number(trade.receiverCoins) > 0 && (
-              <div className="bg-gray-700 p-3 rounded flex items-center gap-2">
-                <CurrencyDisplay 
-                  amount={trade.receiverCoins.toString()} 
-                  className="text-yellow-400 font-medium"
+              <div className="flex items-center gap-2 rounded bg-gray-700 p-3">
+                <CurrencyDisplay
+                  amount={trade.receiverCoins.toString()}
+                  className="font-medium text-yellow-400"
                   showIcon={true}
                 />
               </div>
             )}
-            
-            {receiverItems.length === 0 && (!trade.receiverCoins || Number(trade.receiverCoins) === 0) && (
-              <p className="text-gray-500 text-sm">No specific items or coins requested</p>
-            )}
+
+            {receiverItems.length === 0 &&
+              (!trade.receiverCoins || Number(trade.receiverCoins) === 0) && (
+                <p className="text-sm text-gray-500">
+                  No specific items or coins requested
+                </p>
+              )}
           </div>
         </div>
 
         {/* Warning for accept */}
         {action === "accept" && (
-          <div className="mb-6 p-4 bg-yellow-900 border border-yellow-700 rounded-lg">
-            <p className="text-yellow-300 text-sm">
-              ⚠️ This action cannot be undone. The trade will be validated to ensure both parties still have all the required items before proceeding.
+          <div className="mb-6 rounded-lg border border-yellow-700 bg-yellow-900 p-4">
+            <p className="text-sm text-yellow-300">
+              ⚠️ This action cannot be undone. The trade will be validated to
+              ensure both parties still have all the required items before
+              proceeding.
             </p>
           </div>
         )}
@@ -244,15 +274,15 @@ export function TradeActionModal({ trade, action, isOpen, onClose }: TradeAction
           <button
             onClick={handleAction}
             disabled={isProcessing}
-            className={`flex-1 py-3 px-6 rounded-lg font-medium text-white transition-colors ${getActionColor()} disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`flex-1 rounded-lg px-6 py-3 font-medium text-white transition-colors ${getActionColor()} disabled:cursor-not-allowed disabled:opacity-50`}
           >
             {isProcessing ? "Processing..." : getActionText()}
           </button>
-          
+
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="flex-1 py-3 px-6 rounded-lg font-medium text-white bg-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-lg bg-gray-600 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>

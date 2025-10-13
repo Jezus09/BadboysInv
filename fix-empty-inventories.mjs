@@ -1,18 +1,15 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function fixEmptyInventories() {
   try {
-    console.log('Looking for users with empty inventories...');
-    
+    console.log("Looking for users with empty inventories...");
+
     // Find users with null or empty inventory
     const usersWithoutInventory = await prisma.user.findMany({
       where: {
-        OR: [
-          { inventory: null },
-          { inventory: '' }
-        ]
+        OR: [{ inventory: null }, { inventory: "" }]
       },
       select: {
         id: true,
@@ -21,10 +18,12 @@ async function fixEmptyInventories() {
       }
     });
 
-    console.log(`Found ${usersWithoutInventory.length} users with empty inventories`);
+    console.log(
+      `Found ${usersWithoutInventory.length} users with empty inventories`
+    );
 
     if (usersWithoutInventory.length === 0) {
-      console.log('No users need inventory initialization.');
+      console.log("No users need inventory initialization.");
       return;
     }
 
@@ -36,7 +35,7 @@ async function fixEmptyInventories() {
 
     for (const user of usersWithoutInventory) {
       console.log(`Initializing inventory for user: ${user.name} (${user.id})`);
-      
+
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -46,10 +45,9 @@ async function fixEmptyInventories() {
       });
     }
 
-    console.log('✅ All inventories have been initialized!');
-    
+    console.log("✅ All inventories have been initialized!");
   } catch (error) {
-    console.error('❌ Error fixing inventories:', error);
+    console.error("❌ Error fixing inventories:", error);
   } finally {
     await prisma.$disconnect();
   }
