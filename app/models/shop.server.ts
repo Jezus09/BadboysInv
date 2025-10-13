@@ -12,11 +12,7 @@ import { prisma } from "~/db.server";
 export async function getShopItems() {
   return prisma.shopItem.findMany({
     where: { enabled: true },
-    orderBy: [
-      { category: "asc" },
-      { sortOrder: "asc" },
-      { name: "asc" }
-    ]
+    orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { name: "asc" }]
   });
 }
 
@@ -35,9 +31,14 @@ export async function getShopItem(id: string) {
 export async function purchaseShopItem(
   userId: string,
   shopItemId: string
-): Promise<{ success: boolean; message: string; newBalance?: string; itemId?: number }> {
+): Promise<{
+  success: boolean;
+  message: string;
+  newBalance?: string;
+  itemId?: number;
+}> {
   const shopItem = await getShopItem(shopItemId);
-  
+
   if (!shopItem || !shopItem.enabled) {
     return { success: false, message: "Item not found or disabled" };
   }
@@ -52,11 +53,11 @@ export async function purchaseShopItem(
   }
 
   const userCoins = user.coins || new Decimal(0);
-  
+
   if (userCoins.lt(shopItem.price)) {
-    return { 
-      success: false, 
-      message: `Insufficient funds. Need $${shopItem.price}, you have $${userCoins.toFixed(2)}` 
+    return {
+      success: false,
+      message: `Insufficient funds. Need $${shopItem.price}, you have $${userCoins.toFixed(2)}`
     };
   }
 
@@ -93,7 +94,6 @@ export async function purchaseShopItem(
       itemId: shopItem.itemId || undefined,
       newBalance: (result.coins || new Decimal(0)).toFixed(2)
     };
-
   } catch (error) {
     console.error("Purchase error:", error);
     return { success: false, message: "Purchase failed. Please try again." };
@@ -105,13 +105,10 @@ export async function purchaseShopItem(
  */
 export async function getShopItemsByCategory(category: string) {
   return prisma.shopItem.findMany({
-    where: { 
+    where: {
       enabled: true,
-      category 
+      category
     },
-    orderBy: [
-      { sortOrder: "asc" },
-      { name: "asc" }
-    ]
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
   });
 }

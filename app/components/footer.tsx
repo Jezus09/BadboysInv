@@ -12,14 +12,14 @@ export function Footer() {
   const { sourceCommit, appFooterName } = useRules();
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 py-3 text-sm text-neutral-400 select-none z-10">
+    <footer className="fixed right-0 bottom-0 left-0 z-10 py-3 text-sm text-neutral-400 select-none">
       <div className="text-center">
         <div className="mb-1">
           &copy; {new Date().getFullYear()} Badboys Inventory
         </div>
         <div className="text-xs">
           Found an issue?{" "}
-          <span className="underline cursor-pointer hover:text-blue-500">
+          <span className="cursor-pointer underline hover:text-blue-500">
             Report it here
           </span>
           .

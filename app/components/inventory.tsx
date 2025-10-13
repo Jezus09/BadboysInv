@@ -45,21 +45,22 @@ import { UnlockCase } from "./unlock-case";
 export function Inventory() {
   const translate = useTranslate();
   const user = useUser();
-  
+
   // Ha nincs bejelentkezett user, jelenítsd meg a bejelentkezési üzenetet
   if (!user) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-20">
-        <div className="bg-stone-800/95 backdrop-blur-sm rounded-sm p-8 max-w-md mx-4 border border-stone-700 shadow-2xl">
-          <h2 className="font-display text-2xl font-bold text-white mb-4 [font-stretch:62.5%] uppercase text-center">
+      <div className="fixed inset-0 z-20 flex items-center justify-center">
+        <div className="mx-4 max-w-md rounded-sm border border-stone-700 bg-stone-800/95 p-8 shadow-2xl backdrop-blur-sm">
+          <h2 className="font-display mb-4 text-center text-2xl font-bold text-white uppercase [font-stretch:62.5%]">
             Bejelentkezés szükséges
           </h2>
-          <p className="text-neutral-300 mb-6 leading-relaxed text-center">
-            Jelentkezz be Steam-mel a skin-ek megtekintéséhez és a leltár használatához.
+          <p className="mb-6 text-center leading-relaxed text-neutral-300">
+            Jelentkezz be Steam-mel a skin-ek megtekintéséhez és a leltár
+            használatához.
           </p>
           <div className="flex justify-center">
             <ModalButton
-              onClick={() => window.location.href = "/sign-in"}
+              onClick={() => (window.location.href = "/sign-in")}
               variant="primary"
               className="inline-flex items-center gap-2"
             >
@@ -71,7 +72,7 @@ export function Inventory() {
       </div>
     );
   }
-  
+
   const sync = useSync();
   const items = useInventoryItems();
   const { filterItems } = useInventoryFilter();
@@ -162,23 +163,17 @@ export function Inventory() {
   // Helper to trigger plugin inventory sync
   async function triggerPluginInventorySync(steamId: string) {
     try {
-      // Get the current timestamp
-      const timestamp = Math.floor(Date.now() / 1000);
-      
-      // Update the inventory last update time in the database
-      await fetch(`/api/inventory-timestamp/${steamId}`, {
-        method: "POST",
-      });
-
-      console.log("Sending refresh request for SteamID:", steamId);
-      const response = await fetch("http://cs2badboys.ggwp.cc:5005/api/refresh-inventory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          SteamId: steamId,
-          LastUpdateTimestamp: timestamp
-        })
-      });
+      // Helyes plugin endpoint és payload
+      const response = await fetch(
+        "http://cs2badboys.ggwp.cc:5005/api/plugin/refresh-inventory",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            SteamId: steamId
+          })
+        }
+      );
       console.log("Refresh response:", response.status);
     } catch (e) {
       console.error("Failed to refresh inventory:", e);
@@ -193,7 +188,7 @@ export function Inventory() {
     );
     setInventory(inventory.equip(uid, team));
     sync({ type: SyncAction.Equip, uid: uid, team });
-    
+
     // Send refresh request to plugin if user is logged in
     if (user?.id) {
       triggerPluginInventorySync(user.id);

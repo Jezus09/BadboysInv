@@ -48,37 +48,41 @@ export function UnlockCaseContainerAddKey({
 
   async function handleAddClick() {
     if (isProcessing) return;
-    
+
     setIsProcessing(true);
     try {
       const quantity = parseInt(amount);
-      
+
       // First, get all key shop items to find the matching one
       const response = await fetch("/api/shop?category=key");
       const shopData = await response.json();
-      
+
       if (!shopData.success) {
         alert("Nem sikerült betölteni a kulcsokat a shop-ból.");
         return;
       }
-      
+
       // Find a key shop item that matches the needed key itemId
-      const matchingKeyShopItem = shopData.items.find((item: any) => 
-        item.itemId === neededKeyItem.id
+      const matchingKeyShopItem = shopData.items.find(
+        (item: any) => item.itemId === neededKeyItem.id
       );
-      
+
       if (!matchingKeyShopItem) {
-        alert(`Nem található kulcs a shop-ban ehhez a ládához: ${neededKeyItem.name}`);
+        alert(
+          `Nem található kulcs a shop-ban ehhez a ládához: ${neededKeyItem.name}`
+        );
         return;
       }
-      
+
       const keyPrice = parseFloat(matchingKeyShopItem.price);
       const totalCost = keyPrice * quantity;
-      
+
       // Check if user has enough coins
       const userBalance = user ? parseFloat((user as any).coins || "0") : 0;
       if (userBalance < totalCost) {
-        alert(`Nincs elég pénzed! Szükséges: $${totalCost.toFixed(2)}, van: $${userBalance.toFixed(2)}`);
+        alert(
+          `Nincs elég pénzed! Szükséges: $${totalCost.toFixed(2)}, van: $${userBalance.toFixed(2)}`
+        );
         return;
       }
 
@@ -89,7 +93,6 @@ export function UnlockCaseContainerAddKey({
         quantity
       });
       toggleConfirmModal();
-      
     } catch (error) {
       console.error("Purchase preparation error:", error);
       alert("Hiba történt a vásárlás előkészítése során.");
@@ -100,7 +103,7 @@ export function UnlockCaseContainerAddKey({
 
   async function handleConfirmPurchase() {
     if (!purchaseInfo) return;
-    
+
     setIsProcessing(true);
     try {
       // Purchase keys from shop
@@ -113,13 +116,13 @@ export function UnlockCaseContainerAddKey({
           quantity: purchaseInfo.quantity.toString()
         })
       });
-      
+
       const result = await purchaseResponse.json();
-      
+
       if (result.success) {
         // Close confirmation modal
         toggleConfirmModal();
-        
+
         // Add keys to inventory
         const inventoryItem = { id: neededKeyItem.id };
         range(purchaseInfo.quantity).forEach(() => {
@@ -129,7 +132,7 @@ export function UnlockCaseContainerAddKey({
             item: inventoryItem
           });
         });
-        
+
         // Find the first key and unlock case
         const firstKey = inventory
           .getAll()
@@ -176,7 +179,7 @@ export function UnlockCaseContainerAddKey({
         onClick={handleAddClick}
         disabled={isProcessing}
       />
-      
+
       {/* Confirmation Modal */}
       {showConfirmModal && purchaseInfo && (
         <Modal className="w-[420px]" fixed>
@@ -186,13 +189,16 @@ export function UnlockCaseContainerAddKey({
           />
           <div className="px-4 py-2">
             <div className="text-center">
-              <h3 className="text-lg font-bold text-white mb-4">
+              <h3 className="mb-4 text-lg font-bold text-white">
                 {purchaseInfo.quantity}x {neededKeyItem.name}
               </h3>
-              <p className="text-neutral-300 mb-4">
-                Összeg: <span className="font-bold text-yellow-400">${purchaseInfo.totalCost.toFixed(2)}</span>
+              <p className="mb-4 text-neutral-300">
+                Összeg:{" "}
+                <span className="font-bold text-yellow-400">
+                  ${purchaseInfo.totalCost.toFixed(2)}
+                </span>
               </p>
-              <p className="text-neutral-400 text-sm mb-6">
+              <p className="mb-6 text-sm text-neutral-400">
                 Biztosan meg szeretnéd vásárolni ezeket a kulcsokat?
               </p>
             </div>

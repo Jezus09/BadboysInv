@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 
 interface LazyImageProps {
   src: string;
@@ -42,7 +42,7 @@ export function LazyImage({ src, alt, className, style }: LazyImageProps) {
           src={src}
           alt={alt}
           className={`transition-opacity duration-300 ${
-            isLoaded ? 'opacity-100' : 'opacity-0'
+            isLoaded ? "opacity-100" : "opacity-0"
           } ${className}`}
           style={style}
           onLoad={() => setIsLoaded(true)}
