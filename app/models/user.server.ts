@@ -32,22 +32,25 @@ export async function upsertUser(user: {
     storageUnitMaxItems: 256
   }).stringify();
   
-  // Check if user exists and if their inventory needs initialization
-  const existingUser = await prisma.user.findUnique({
-    where: { id: user.steamID },
-    select: { inventory: true }
-  });
-  
-  if (existingUser && !existingUser.inventory) {
-    // User exists but has no inventory - initialize it
-    await prisma.user.update({
-      where: { id: user.steamID },
-      data: {
+  return (
+    await prisma.user.upsert({
+      select: {
+        id: true
+      },
+      create: {
+        id: user.steamID,
         inventory: emptyInventory,
+        coins: 0,
         ...data
+      },
+      update: {
+        ...data
+      },
+      where: {
+        id: user.steamID
       }
-    });
-  }
+    })
+  ).id;
 }
 
 // Add timestamp functions
@@ -67,27 +70,6 @@ export async function updateUserInventoryTimestamp(userId: string): Promise<void
       inventoryLastUpdateTime: BigInt(Math.floor(Date.now() / 1000))
     }
   });
-}
-  
-  return (
-    await prisma.user.upsert({
-      select: {
-        id: true
-      },
-      create: {
-        id: user.steamID,
-        inventory: emptyInventory, // Initialize with empty inventory
-        coins: 0, // Explicit default coins
-        ...data
-      },
-      update: {
-        ...data
-      },
-      where: {
-        id: user.steamID
-      }
-    })
-  ).id;
 }
 
 export async function findUniqueUser(userId: string) {
