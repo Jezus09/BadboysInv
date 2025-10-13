@@ -17,7 +17,6 @@ model User {
   syncedAt             DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   coins                Decimal?              @default(0) @db.Decimal(10, 2)
-  inventoryLastUpdateTime BigInt             @default(0)
   authTokens           ApiAuthToken[]
   currencyTransactions CurrencyTransaction[]
   caches               UserCache[]
