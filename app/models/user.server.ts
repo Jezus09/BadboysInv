@@ -24,14 +24,14 @@ export async function upsertUser(user: {
     avatar: user.avatar.medium,
     name: user.nickname
   };
-  
+
   // Create an empty inventory for new users
   const emptyInventory = new CS2Inventory({
     data: { items: [], version: 1 },
     maxItems: 256, // Default max items
     storageUnitMaxItems: 256
   }).stringify();
-  
+
   return (
     await prisma.user.upsert({
       select: {
@@ -54,7 +54,9 @@ export async function upsertUser(user: {
 }
 
 // Add timestamp functions
-export async function getUserInventoryLastUpdateTime(userId: string): Promise<bigint> {
+export async function getUserInventoryLastUpdateTime(
+  userId: string
+): Promise<bigint> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { inventoryLastUpdateTime: true }
@@ -63,10 +65,12 @@ export async function getUserInventoryLastUpdateTime(userId: string): Promise<bi
   return user?.inventoryLastUpdateTime || BigInt(Math.floor(Date.now() / 1000));
 }
 
-export async function updateUserInventoryTimestamp(userId: string): Promise<void> {
+export async function updateUserInventoryTimestamp(
+  userId: string
+): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
-    data: { 
+    data: {
       inventoryLastUpdateTime: BigInt(Math.floor(Date.now() / 1000))
     }
   });

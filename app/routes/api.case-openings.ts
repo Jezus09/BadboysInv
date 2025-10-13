@@ -6,7 +6,7 @@ import { findUniqueUser } from "~/models/user.server";
 
 const getCaseOpeningsSchema = z.object({
   limit: z.coerce.number().optional().default(50),
-  offset: z.coerce.number().optional().default(0),
+  offset: z.coerce.number().optional().default(0)
 });
 
 export async function loader({ request }: { request: Request }) {
@@ -20,29 +20,29 @@ export async function loader({ request }: { request: Request }) {
       take: params.limit,
       skip: params.offset,
       orderBy: {
-        createdAt: "desc",
+        createdAt: "desc"
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            avatar: true,
-          },
-        },
-      },
+            avatar: true
+          }
+        }
+      }
     });
 
     return data({
       success: true,
-      data: caseOpenings,
+      data: caseOpenings
     });
   } catch (error) {
     console.error("Error fetching case openings:", error);
     return data(
       {
         success: false,
-        error: "Failed to fetch case openings",
+        error: "Failed to fetch case openings"
       },
       { status: 500 }
     );
@@ -56,7 +56,7 @@ const createCaseOpeningSchema = z.object({
   keyName: z.string().optional(),
   unlockedItemId: z.number(),
   unlockedName: z.string(),
-  unlockedRarity: z.string(),
+  unlockedRarity: z.string()
 });
 
 export async function action({ request }: { request: Request }) {
@@ -70,18 +70,12 @@ export async function action({ request }: { request: Request }) {
 
     const userId = await getRequestUserId(request);
     if (!userId) {
-      return data(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+      return data({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await findUniqueUser(userId);
     if (!user) {
-      return data(
-        { success: false, error: "User not found" },
-        { status: 404 }
-      );
+      return data({ success: false, error: "User not found" }, { status: 404 });
     }
 
     const body = await request.json();
@@ -98,29 +92,29 @@ export async function action({ request }: { request: Request }) {
         keyName: data_.keyName,
         unlockedItemId: data_.unlockedItemId,
         unlockedName: data_.unlockedName,
-        unlockedRarity: data_.unlockedRarity,
+        unlockedRarity: data_.unlockedRarity
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            avatar: true,
-          },
-        },
-      },
+            avatar: true
+          }
+        }
+      }
     });
 
     return data({
       success: true,
-      data: caseOpening,
+      data: caseOpening
     });
   } catch (error) {
     console.error("Error creating case opening:", error);
     return data(
       {
         success: false,
-        error: "Failed to save case opening",
+        error: "Failed to save case opening"
       },
       { status: 500 }
     );

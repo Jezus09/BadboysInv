@@ -15,10 +15,13 @@ export function useRootLayout(): {
 
   // Hide inventory on shop and trades pages to give more space
   const hideInventoryOnShop = location.pathname === "/shop";
-  const hideInventoryOnTrades = location.pathname === "/trades" || location.pathname.startsWith("/trades/");
+  const hideInventoryOnTrades =
+    location.pathname === "/trades" || location.pathname.startsWith("/trades/");
 
   // Show case opening activity on main pages (not on auth pages, etc.)
-  const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(location.pathname);
+  const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(
+    location.pathname
+  );
 
   return {
     footer: true,

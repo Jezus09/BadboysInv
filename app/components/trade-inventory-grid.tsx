@@ -29,14 +29,16 @@ export function TradeInventoryGrid({
   className = ""
 }: TradeInventoryGridProps) {
   const isItemSelected = (item: any) => {
-    return selectedItems.some(selected => selected.uid === item.uid);
+    return selectedItems.some((selected) => selected.uid === item.uid);
   };
 
   const isAtMaxItems = maxItems && selectedItems.length >= maxItems;
 
   return (
-    <div className={`bg-black/30 rounded-lg p-4 border border-neutral-700/50 backdrop-blur-sm ${className}`}>
-      <h3 className="font-display text-white font-medium mb-4 flex items-center justify-between">
+    <div
+      className={`rounded-lg border border-neutral-700/50 bg-black/30 p-4 backdrop-blur-sm ${className}`}
+    >
+      <h3 className="font-display mb-4 flex items-center justify-between font-medium text-white">
         <span>{title}</span>
         {maxItems && (
           <span className="font-display text-sm text-neutral-400">
@@ -44,17 +46,17 @@ export function TradeInventoryGrid({
           </span>
         )}
       </h3>
-      
+
       {items.length === 0 ? (
-        <div className="flex items-center justify-center h-32 font-display text-neutral-400">
+        <div className="font-display flex h-32 items-center justify-center text-neutral-400">
           {emptyMessage}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3 gap-4 justify-items-center">
+        <div className="grid grid-cols-2 justify-items-center gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
           {items.map((item, index) => {
             const selected = isItemSelected(item);
             const disabled = !selected && Boolean(isAtMaxItems);
-            
+
             return (
               <TradeItemCard
                 key={item.uid || index}

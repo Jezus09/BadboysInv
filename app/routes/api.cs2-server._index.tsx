@@ -21,7 +21,7 @@ export const ApiCS2ServerUrl = "/api/cs2-server";
  */
 export const action = api(async ({ request }: Route.ActionArgs) => {
   await middleware(request);
-  
+
   if (request.method !== "POST") {
     throw methodNotAllowed;
   }
@@ -32,12 +32,20 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
   }
 
   const body = await request.json();
-  const { action: actionType, ...params } = z.object({
-    action: z.enum(["sync_inventory", "give_item", "player_connect", "player_disconnect", "item_event"]),
-    steamId: z.string().optional(),
-    itemId: z.string().optional(),
-    itemAction: z.enum(["pickup", "drop"]).optional()
-  }).parse(body);
+  const { action: actionType, ...params } = z
+    .object({
+      action: z.enum([
+        "sync_inventory",
+        "give_item",
+        "player_connect",
+        "player_disconnect",
+        "item_event"
+      ]),
+      steamId: z.string().optional(),
+      itemId: z.string().optional(),
+      itemAction: z.enum(["pickup", "drop"]).optional()
+    })
+    .parse(body);
 
   try {
     switch (actionType) {
@@ -45,16 +53,18 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         // Sync user's inventory with CS2 server
         const userInventory = await getUserInventory(userId);
         const inventory = parseInventory(userInventory?.inventory);
-        
+
         if (inventory && params.steamId) {
           const success = await cs2Server.syncPlayerInventory(
-            params.steamId, 
+            params.steamId,
             Object.values(inventory.items)
           );
-          
-          return data({ 
-            success, 
-            message: success ? "Inventory synced successfully" : "Failed to sync inventory"
+
+          return data({
+            success,
+            message: success
+              ? "Inventory synced successfully"
+              : "Failed to sync inventory"
           });
         }
         break;
@@ -63,9 +73,12 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       case "give_item": {
         // Give specific item to player
         if (params.steamId && params.itemId) {
-          const success = await cs2Server.givePlayerItem(params.steamId, params.itemId);
-          return data({ 
-            success, 
+          const success = await cs2Server.givePlayerItem(
+            params.steamId,
+            params.itemId
+          );
+          return data({
+            success,
             message: success ? "Item given successfully" : "Failed to give item"
           });
         }
@@ -93,7 +106,11 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       case "item_event": {
         // Handle item pickup/drop events
         if (params.steamId && params.itemId && params.itemAction) {
-          await cs2ServerWebhooks.onItemEvent(params.steamId, params.itemId, params.itemAction);
+          await cs2ServerWebhooks.onItemEvent(
+            params.steamId,
+            params.itemId,
+            params.itemAction
+          );
           return data({ success: true, message: "Item event handled" });
         }
         break;
@@ -101,13 +118,15 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     }
 
     return data({ success: false, message: "Invalid request parameters" });
-    
   } catch (error) {
     console.error("CS2 Server integration error:", error);
-    return data({ 
-      success: false, 
-      message: "Internal server error" 
-    }, { status: 500 });
+    return data(
+      {
+        success: false,
+        message: "Internal server error"
+      },
+      { status: 500 }
+    );
   }
 });
 
@@ -116,7 +135,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
  */
 export const loader = api(async ({ request }: Route.LoaderArgs) => {
   await middleware(request);
-  
+
   const userId = await getRequestUserId(request);
   if (!userId) {
     return redirect("/");
@@ -126,7 +145,7 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     serverConfig: {
       connected: true, // Check actual connection status
       serverName: process.env.CS2_SERVER_NAME || "CS2 Server",
-      playerCount: 0, // Get from server if available
+      playerCount: 0 // Get from server if available
     },
     features: {
       inventorySync: true,
