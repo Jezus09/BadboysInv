@@ -1,9 +1,9 @@
-import type { LoaderArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "react-router";
+import { json } from "react-router";
 import { getUser } from "~/auth.server";
 import { getUserInventoryLastUpdateTime } from "~/models/user.server";
 
-export async function loader({ request, params }: LoaderArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
   const { userId } = params;
   
   if (!userId) {

@@ -32,43 +32,6 @@ export async function upsertUser(user: {
     storageUnitMaxItems: 256
   }).stringify();
   
-  // Check if user exists and if their inventory needs initialization
-  const existingUser = await prisma.user.findUnique({
-    where: { id: user.steamID },
-    select: { inventory: true }
-  });
-  
-  if (existingUser && !existingUser.inventory) {
-    // User exists but has no inventory - initialize it
-    await prisma.user.update({
-      where: { id: user.steamID },
-      data: {
-        inventory: emptyInventory,
-        ...data
-      }
-    });
-  }
-}
-
-// Add timestamp functions
-export async function getUserInventoryLastUpdateTime(userId: string): Promise<bigint> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { inventoryLastUpdateTime: true }
-  });
-
-  return user?.inventoryLastUpdateTime || BigInt(Math.floor(Date.now() / 1000));
-}
-
-export async function updateUserInventoryTimestamp(userId: string): Promise<void> {
-  await prisma.user.update({
-    where: { id: userId },
-    data: { 
-      inventoryLastUpdateTime: BigInt(Math.floor(Date.now() / 1000))
-    }
-  });
-}
-  
   return (
     await prisma.user.upsert({
       select: {
@@ -88,6 +51,25 @@ export async function updateUserInventoryTimestamp(userId: string): Promise<void
       }
     })
   ).id;
+}
+
+// Add timestamp functions
+export async function getUserInventoryLastUpdateTime(userId: string): Promise<bigint> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { inventoryLastUpdateTime: true }
+  });
+
+  return user?.inventoryLastUpdateTime || BigInt(Math.floor(Date.now() / 1000));
+}
+
+export async function updateUserInventoryTimestamp(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { 
+      inventoryLastUpdateTime: BigInt(Math.floor(Date.now() / 1000))
+    }
+  });
 }
 
 export async function findUniqueUser(userId: string) {
