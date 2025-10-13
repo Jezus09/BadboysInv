@@ -205,20 +205,28 @@ export function CaseOpeningActivity({
   if (loading) {
     return (
       <div
-        className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-          isCollapsed ? "p-2" : "p-4"
+        className={`rounded-lg border border-neutral-700 transition-all duration-300 ${
+          isCollapsed 
+            ? "bg-neutral-800/30 p-2" 
+            : "bg-neutral-800/50 p-4"
         } flex flex-col ${className}`}
       >
-        <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+        <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex h-6 w-6 items-center justify-center rounded bg-neutral-700/50 text-gray-300 transition-all duration-200 hover:bg-neutral-600 hover:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              isCollapsed 
+                ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl" 
+                : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
+            }`}
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
           >
             <i
-              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-xs transition-transform duration-200`}
+              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm transition-all duration-200 ${
+                isCollapsed ? "drop-shadow-sm" : ""
+              }`}
             ></i>
           </button>
           <i className="fas fa-history"></i>
@@ -239,20 +247,28 @@ export function CaseOpeningActivity({
   if (caseOpenings.length === 0) {
     return (
       <div
-        className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-          isCollapsed ? "p-2" : "p-4"
+        className={`rounded-lg border border-neutral-700 transition-all duration-300 ${
+          isCollapsed 
+            ? "bg-neutral-800/30 p-2" 
+            : "bg-neutral-800/50 p-4"
         } flex flex-col ${className}`}
       >
-        <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+        <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex h-6 w-6 items-center justify-center rounded bg-neutral-700/50 text-gray-300 transition-all duration-200 hover:bg-neutral-600 hover:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              isCollapsed 
+                ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl" 
+                : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
+            }`}
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
           >
             <i
-              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-xs transition-transform duration-200`}
+              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm transition-all duration-200 ${
+                isCollapsed ? "drop-shadow-sm" : ""
+              }`}
             ></i>
           </button>
           <i className="fas fa-history"></i>
@@ -272,20 +288,28 @@ export function CaseOpeningActivity({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-        isCollapsed ? "p-2" : "p-4"
+      className={`rounded-lg border border-neutral-700 transition-all duration-300 ${
+        isCollapsed 
+          ? "bg-neutral-800/30 p-2" 
+          : "bg-neutral-800/50 p-4"
       } flex flex-col ${className}`}
     >
-      <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+      <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="flex h-6 w-6 items-center justify-center rounded bg-neutral-700/50 text-gray-300 transition-all duration-200 hover:bg-neutral-600 hover:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            isCollapsed 
+              ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl" 
+              : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
+          }`}
           aria-label={
             isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
           }
         >
           <i
-            className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-xs transition-transform duration-200`}
+            className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm transition-all duration-200 ${
+              isCollapsed ? "drop-shadow-sm" : ""
+            }`}
           ></i>
         </button>
         <i className="fas fa-history"></i>
