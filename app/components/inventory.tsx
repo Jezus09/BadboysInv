@@ -159,32 +159,6 @@ export function Inventory() {
   const { closeInspectItem, handleInspectItem, inspectItem, isInspectingItem } =
     useInspectItem();
 
-  // Helper to trigger plugin inventory sync
-  async function triggerPluginInventorySync(steamId: string) {
-    try {
-      // Get the current timestamp
-      const timestamp = Math.floor(Date.now() / 1000);
-      
-      // Update the inventory last update time in the database
-      await fetch(`/api/inventory-timestamp/${steamId}`, {
-        method: "POST",
-      });
-
-      console.log("Sending refresh request for SteamID:", steamId);
-      const response = await fetch("http://cs2badboys.ggwp.cc:5005/api/refresh-inventory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          SteamId: steamId,
-          LastUpdateTimestamp: timestamp
-        })
-      });
-      console.log("Refresh response:", response.status);
-    } catch (e) {
-      console.error("Failed to refresh inventory:", e);
-    }
-  }
-
   function handleEquip(uid: number, team?: CS2TeamValues) {
     playSound(
       inventory.get(uid).type === CS2ItemType.MusicKit
@@ -193,11 +167,6 @@ export function Inventory() {
     );
     setInventory(inventory.equip(uid, team));
     sync({ type: SyncAction.Equip, uid: uid, team });
-    
-    // Send refresh request to plugin if user is logged in
-    if (user?.id) {
-      triggerPluginInventorySync(user.id);
-    }
   }
 
   function handleUnequip(uid: number, team?: CS2TeamValues) {
