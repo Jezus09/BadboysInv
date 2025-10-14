@@ -41,6 +41,8 @@ import { RenameStorageUnit } from "./rename-storage-unit";
 import { ScrapeItemSticker } from "./scrape-item-sticker";
 import { SwapItemsStatTrak } from "./swap-items-stattrak";
 import { UnlockCase } from "./unlock-case";
+import { useSellMarketplace } from "./hooks/use-sell-marketplace";
+import { SellItemMarketplace } from "./sell-item-marketplace";
 
 export function Inventory() {
   const translate = useTranslate();
@@ -160,6 +162,13 @@ export function Inventory() {
   const { closeInspectItem, handleInspectItem, inspectItem, isInspectingItem } =
     useInspectItem();
 
+  const {
+    closeSellMarketplace,
+    handleSellMarketplace,
+    isSelling,
+    sellItem
+  } = useSellMarketplace();
+
   // Helper to trigger plugin inventory sync
   async function triggerPluginInventorySync(steamId: string) {
     try {
@@ -199,6 +208,11 @@ export function Inventory() {
     playSound("inventory_item_close");
     setInventory(inventory.unequip(uid, team));
     sync({ type: SyncAction.Unequip, uid: uid, team });
+
+    // Send refresh request to plugin if user is logged in
+    if (user?.id) {
+      triggerPluginInventorySync(user.id);
+    }
   }
 
   function handleRemove(uid: number) {
@@ -222,6 +236,7 @@ export function Inventory() {
     closeScrapeItemSticker();
     closeSwapItemsStatTrak();
     closeUnlockCase();
+    closeSellMarketplace();
   }
 
   function handleSelectItem(uid: number) {
@@ -298,6 +313,7 @@ export function Inventory() {
                     onSwapItemsStatTrak: handleSwapItemsStatTrak,
                     onUnequip: handleUnequip,
                     onUnlockContainer: handleUnlockCase,
+                    onSellMarketplace: handleSellMarketplace,
                     ownApplicablePatches,
                     ownApplicableStickers
                   })}
@@ -356,6 +372,9 @@ export function Inventory() {
       )}
       {isInspectingItem(inspectItem) && (
         <InspectItem {...inspectItem} onClose={closeInspectItem} />
+      )}
+      {isSelling(sellItem) && (
+        <SellItemMarketplace {...sellItem} onClose={closeSellMarketplace} />
       )}
     </>
   );

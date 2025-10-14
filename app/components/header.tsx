@@ -13,6 +13,7 @@ import {
   faRightFromBracket,
   faShoppingCart,
   faExchangeAlt,
+  faStore,
   faServer,
   faXmark
 } from "@fortawesome/free-solid-svg-icons";
@@ -103,6 +104,12 @@ export function Header({
                 to="/trades"
                 icon={faExchangeAlt}
                 label="Trades"
+                onClick={closeMenu}
+              />
+              <HeaderLink
+                to="/marketplace"
+                icon={faStore}
+                label="Marketplace"
                 onClick={closeMenu}
               />
               {isOwner && (

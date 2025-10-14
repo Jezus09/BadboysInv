@@ -27,6 +27,7 @@ model User {
   caseOpenings         CaseOpening[]
   sentTrades           Trade[]               @relation("SentTrades")
   receivedTrades       Trade[]               @relation("ReceivedTrades")
+  marketplaceListings  MarketplaceListing[]
 }
 
 model UserCache {
@@ -196,4 +197,33 @@ enum TradeStatus {
   COMPLETED   // Trade successfully completed
   CANCELLED   // Cancelled by sender
   EXPIRED     // Trade expired
+}
+
+model MarketplaceListing {
+  id              String                @id @default(uuid())
+  userId          String                // Seller's user ID
+  itemUid         Int                   // Item UID from inventory
+  itemData        String                // JSON serialized item data
+  price           Decimal               @db.Decimal(10, 2) // Listing price
+  status          MarketplaceStatus     @default(ACTIVE)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  soldAt          DateTime?             // When item was sold
+  buyerId         String?               // User who purchased the item
+  expiresAt       DateTime              // Listing expiration time
+
+  // Relations
+  seller          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([price])
+}
+
+enum MarketplaceStatus {
+  ACTIVE      // Listed and available for purchase
+  SOLD        // Successfully sold
+  CANCELLED   // Cancelled by seller
+  EXPIRED     // Listing expired
 }

@@ -51,6 +51,7 @@ export function InventoryItem({
   onRenameStorageUnit,
   onRetrieveFromStorageUnit,
   onScrapeSticker,
+  onSellMarketplace,
   onSwapItemsStatTrak,
   onUnequip,
   onUnlockContainer,
@@ -74,6 +75,7 @@ export function InventoryItem({
   onRenameStorageUnit?: (uid: number) => void;
   onRetrieveFromStorageUnit?: (uid: number) => void;
   onScrapeSticker?: (uid: number) => void;
+  onSellMarketplace?: (uid: number) => void;
   onSwapItemsStatTrak?: (uid: number) => void;
   onUnequip?: (uid: number, team?: CS2TeamValues) => void;
   onUnlockContainer?: (uid: number) => void;
@@ -383,6 +385,11 @@ export function InventoryItem({
                     clickLabel: translate("InventoryItemShareCopied"),
                     onClick: () =>
                       copyToClipboard(getInventoryItemShareUrl(item, user?.id))
+                  },
+                  {
+                    condition: !isFreeInventoryItem && item.isPaintable(),
+                    label: "Eladás a piactéren",
+                    onClick: close(() => onSellMarketplace?.(uid))
                   },
                   {
                     condition: true,

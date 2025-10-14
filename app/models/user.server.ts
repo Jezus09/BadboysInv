@@ -177,3 +177,36 @@ export async function getUserBasicData(userId: string) {
     })) || undefined
   );
 }
+
+/**
+ * Notify CS2 plugin about inventory changes via webhook
+ */
+export async function notifyPluginInventoryChange(steamId: string) {
+  const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log("[InventorySync] CS2_PLUGIN_WEBHOOK_URL not configured, skipping webhook");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${webhookUrl}/api/plugin/refresh-inventory`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          SteamId: steamId
+        })
+      }
+    );
+
+    if (response.ok) {
+      console.log(`[InventorySync] Successfully notified plugin for SteamId ${steamId}`);
+    } else {
+      console.error(`[InventorySync] Plugin webhook returned status ${response.status}`);
+    }
+  } catch (error) {
+    console.error("[InventorySync] Failed to notify plugin:", error);
+  }
+}
