@@ -147,22 +147,42 @@ model ShopItem {
 }
 
 model CaseOpening {
-  id              String   @id @default(uuid())
+  id              String              @id @default(uuid())
   userId          String
-  userName        String   // Cache user name for display
-  userAvatar      String   // Cache user avatar for display
-  caseItemId      Int      // CS2 economy item ID of the case
-  caseName        String   // Cache case name for display
-  keyItemId       Int?     // CS2 economy item ID of the key used
-  keyName         String?  // Cache key name for display
-  unlockedItemId  Int      // CS2 economy item ID of the unlocked item
-  unlockedName    String   // Cache unlocked item name for display
-  unlockedRarity  String?  // Cache unlocked item rarity for display
-  createdAt       DateTime @default(now())
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName        String              // Cache user name for display
+  userAvatar      String              // Cache user avatar for display
+  caseItemId      Int                 // CS2 economy item ID of the case
+  caseName        String              // Cache case name for display
+  keyItemId       Int?                // CS2 economy item ID of the key used
+  keyName         String?             // Cache key name for display
+  unlockedItemId  Int                 // CS2 economy item ID of the unlocked item
+  unlockedName    String              // Cache unlocked item name for display
+  unlockedRarity  String?             // Cache unlocked item rarity for display
+  createdAt       DateTime            @default(now())
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages        CaseOpeningMessage[]
 
   @@index([createdAt])
   @@index([userId])
+}
+
+model CaseOpeningMessage {
+  id            String       @id @default(uuid())
+  caseOpeningId String
+  userId        String
+  userName      String       // Cache user name for display
+  userAvatar    String       // Cache user avatar for display
+  message       String
+  replyToId     String?      // ID of message being replied to
+  createdAt     DateTime     @default(now())
+
+  caseOpening   CaseOpening  @relation(fields: [caseOpeningId], references: [id], onDelete: Cascade)
+  replyTo       CaseOpeningMessage? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies       CaseOpeningMessage[] @relation("MessageReplies")
+
+  @@index([caseOpeningId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Trade {

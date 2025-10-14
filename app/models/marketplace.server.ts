@@ -39,6 +39,15 @@ export async function getUserListings(userId: string) {
         in: ["ACTIVE", "SOLD"]
       }
     },
+    include: {
+      seller: {
+        select: {
+          id: true,
+          name: true,
+          avatar: true
+        }
+      }
+    },
     orderBy: {
       createdAt: "desc"
     }

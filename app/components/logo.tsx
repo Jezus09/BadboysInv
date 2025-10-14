@@ -32,7 +32,17 @@ export function Logo(props: { className?: string; style?: CSSProperties }) {
       />
     );
   }
+
+  // Badboys Inv custom logo
   return (
+    <div className={`font-display flex items-center gap-2 ${props.className || ""}`} style={props.style}>
+      <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-2xl font-black text-transparent drop-shadow-lg">
+        BADBOYS
+      </span>
+      <span className="text-xl font-bold text-white">INV</span>
+    </div>
+  );
+}
     <svg
       suppressHydrationWarning
       viewBox="0 0 521 83"

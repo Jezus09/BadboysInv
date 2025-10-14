@@ -29,6 +29,20 @@ export async function loader({ request }: { request: Request }) {
             name: true,
             avatar: true
           }
+        },
+        messages: {
+          orderBy: {
+            createdAt: "asc"
+          },
+          include: {
+            replyTo: {
+              select: {
+                id: true,
+                userName: true,
+                message: true
+              }
+            }
+          }
         }
       }
     });
