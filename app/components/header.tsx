@@ -145,12 +145,6 @@ export function Header({
                 </>
               ) : (
                 <>
-                  <HeaderLink
-                    icon={faRightFromBracket}
-                    label={translate("HeaderSignOutLabel")}
-                    onClick={closeMenu}
-                    to="/sign-out"
-                  />
                   <div className="gap-4 lg:flex lg:flex-1 lg:justify-end">
                     <div className="flex items-center gap-2 px-2 py-1">
                       <CurrencyDisplay amount={(user as any).coins} />

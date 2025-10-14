@@ -13,10 +13,11 @@ export function useRootLayout(): {
 } {
   const location = useLocation();
 
-  // Hide inventory on shop and trades pages to give more space
+  // Hide inventory on shop, trades and marketplace pages to give more space
   const hideInventoryOnShop = location.pathname === "/shop";
   const hideInventoryOnTrades =
     location.pathname === "/trades" || location.pathname.startsWith("/trades/");
+  const hideInventoryOnMarketplace = location.pathname === "/marketplace";
 
   // Show case opening activity on main pages (not on auth pages, etc.)
   const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(
@@ -26,7 +27,7 @@ export function useRootLayout(): {
   return {
     footer: true,
     header: true,
-    inventory: !hideInventoryOnShop && !hideInventoryOnTrades,
+    inventory: !hideInventoryOnShop && !hideInventoryOnTrades && !hideInventoryOnMarketplace,
     caseOpeningActivity: showCaseOpeningActivity
   };
 }
