@@ -40,6 +40,7 @@ import {
   SOURCE_COMMIT
 } from "./env.server";
 import { middleware } from "./http.server";
+import { getUserActiveListingUids } from "./models/marketplace.server";
 import { getClientRules } from "./models/rule";
 import { steamCallbackUrl } from "./models/rule.server";
 import { getBackground } from "./preferences/background.server";
@@ -103,6 +104,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       }
     : user;
 
+  // Get marketplace listing UIDs for the user
+  const marketplaceUids = user ? await getUserActiveListingUids(user.id) : [];
+
   return data({
     rules: {
       ...(await getClientRules(user?.id)),
@@ -116,7 +120,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       ...(await getLanguage(session, ipCountry)),
       ...(await getToggleable(session))
     },
-    user: serializedUser
+    user: serializedUser,
+    marketplaceUids
   });
 }
 

@@ -210,3 +210,21 @@ export async function getListing(listingId: string) {
     }
   });
 }
+
+/**
+ * Get active marketplace listing UIDs for a user
+ * Returns an array of item UIDs that are currently listed on marketplace
+ */
+export async function getUserActiveListingUids(userId: string): Promise<number[]> {
+  const listings = await prisma.marketplaceListing.findMany({
+    where: {
+      userId,
+      status: "ACTIVE"
+    },
+    select: {
+      itemUid: true
+    }
+  });
+
+  return listings.map(listing => listing.itemUid);
+}

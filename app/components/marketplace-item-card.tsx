@@ -4,8 +4,15 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CS2Economy } from "@ianlucas/cs2-lib";
+import { FloatingFocusManager } from "@floating-ui/react";
+import { createPortal } from "react-dom";
+import { ClientOnly } from "remix-utils/client-only";
 import { ItemImage } from "~/components/item-image";
 import { CurrencyDisplay } from "~/components/currency-display";
+import { TradeItemTooltip } from "~/components/trade-item-tooltip";
+import { useInventoryItemFloating } from "~/components/hooks/use-inventory-item-floating";
+import { createFakeInventoryItem } from "~/utils/inventory";
+import { wearToString } from "~/utils/economy";
 
 interface MarketplaceListing {
   id: string;
@@ -34,11 +41,34 @@ export function MarketplaceItemCard({
   const item = JSON.parse(listing.itemData);
   const economyItem = CS2Economy.get(item.id);
 
+  const {
+    getHoverFloatingProps,
+    getHoverReferenceProps,
+    hoverContext,
+    hoverRefs,
+    hoverStyles,
+    isHoverOpen,
+    ref
+  } = useInventoryItemFloating();
+
+  // Create a proper inventory item for the tooltip
+  const inventoryItem = createFakeInventoryItem(economyItem, {
+    wear: item.wear,
+    seed: item.seed,
+    statTrak: item.statTrak,
+    nameTag: item.nameTag,
+    stickers: item.stickers || {},
+    patches: item.patches || {}
+  });
+
   return (
-    <div
-      onClick={onClick}
-      className="group relative cursor-pointer transition-all hover:drop-shadow-[0_0_5px_rgba(0,0,0,1)]"
-    >
+    <>
+      <div
+        onClick={onClick}
+        ref={ref}
+        {...getHoverReferenceProps()}
+        className="group relative cursor-pointer transition-all hover:drop-shadow-[0_0_5px_rgba(0,0,0,1)]"
+      >
       <div className="relative w-full overflow-hidden rounded-sm border border-neutral-700 bg-gradient-to-b from-neutral-800 to-neutral-900 transition-all group-hover:border-purple-500/50">
         {/* Item Image */}
         <div className="relative aspect-[4/3] p-4">
@@ -50,7 +80,7 @@ export function MarketplaceItemCard({
           {/* Wear/Rarity badge */}
           {item.wear !== undefined && (
             <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-1 text-xs text-white">
-              {economyItem.getWearName(item.wear)}
+              {wearToString(item.wear)}
             </div>
           )}
 
@@ -93,6 +123,26 @@ export function MarketplaceItemCard({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* Tooltip using Portal */}
+      {inventoryItem && isHoverOpen && (
+        <ClientOnly
+          children={() =>
+            createPortal(
+              <FloatingFocusManager context={hoverContext} modal={false}>
+                <TradeItemTooltip
+                  forwardRef={hoverRefs.setFloating}
+                  style={hoverStyles}
+                  {...getHoverFloatingProps()}
+                  item={inventoryItem}
+                />
+              </FloatingFocusManager>,
+              document.body
+            )
+          }
+        />
+      )}
+    </>
   );
 }

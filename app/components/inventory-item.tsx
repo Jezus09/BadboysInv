@@ -37,6 +37,7 @@ export function InventoryItem({
   disableHover,
   equipped,
   item,
+  isInMarketplace,
   onApplyPatch,
   onApplySticker,
   onClick,
@@ -127,16 +128,18 @@ export function InventoryItem({
   const isEquippable =
     (item.model === undefined ||
       !inventoryItemEquipHideModel.includes(item.model)) &&
-    !inventoryItemEquipHideType.includes(item.type);
+    !inventoryItemEquipHideType.includes(item.type) &&
+    !isInMarketplace;
   const canEquip =
     isEquippable &&
     item.teams === undefined &&
     !item.equipped &&
-    CS2_INVENTORY_EQUIPPABLE_ITEMS.includes(item.type);
+    CS2_INVENTORY_EQUIPPABLE_ITEMS.includes(item.type) &&
+    !isInMarketplace;
   const canEquipT =
-    isEquippable && item.teams?.includes(CS2Team.T) && !item.equippedT;
+    isEquippable && item.teams?.includes(CS2Team.T) && !item.equippedT && !isInMarketplace;
   const canEquipCT =
-    isEquippable && item.teams?.includes(CS2Team.CT) && !item.equippedCT;
+    isEquippable && item.teams?.includes(CS2Team.CT) && !item.equippedCT && !isInMarketplace;
   const canUnequip = isEquippable && item.equipped === true;
   const canUnequipT = isEquippable && item.equippedT === true;
   const canUnequipCT = isEquippable && item.equippedCT === true;
@@ -201,6 +204,7 @@ export function InventoryItem({
         <InventoryItemTile
           equipped={equipped}
           item={item}
+          isInMarketplace={isInMarketplace}
           onClick={
             onClick !== undefined ? close(() => onClick(uid)) : undefined
           }

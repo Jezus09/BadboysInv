@@ -20,11 +20,13 @@ import { ItemImage } from "./item-image";
 export function InventoryItemTile({
   equipped,
   item,
-  onClick
+  onClick,
+  isInMarketplace = false
 }: {
   equipped?: (string | false | undefined)[];
   item: CS2EconomyItem | CS2InventoryItem;
   onClick?: () => void;
+  isInMarketplace?: boolean;
 }) {
   const translate = useTranslate();
   const nameItem = useNameItem();
@@ -42,9 +44,14 @@ export function InventoryItemTile({
         <div className="bg-linear-to-b from-neutral-500 to-neutral-300 px-1">
           <ItemImage className="w-[144px]" item={item} />
         </div>
-        {isNew && (
+        {isNew && !isInMarketplace && (
           <div className="absolute top-[1px] left-[1px] bg-sky-600 px-1 py-1 text-[10px] font-bold text-sky-200 shadow-lg transition-all group-hover:text-white">
             {translate("InventoryItemNew")}
+          </div>
+        )}
+        {isInMarketplace && (
+          <div className="absolute top-[1px] left-[1px] bg-purple-600 px-1 py-1 text-[10px] font-bold text-purple-200 shadow-lg transition-all group-hover:text-white">
+            IN MARKETPLACE
           </div>
         )}
         {inventoryItem?.stickers !== undefined && (

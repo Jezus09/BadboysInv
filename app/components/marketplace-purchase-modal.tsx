@@ -9,6 +9,7 @@ import { useUser } from "~/components/app-context";
 import { ItemImage } from "~/components/item-image";
 import { CurrencyDisplay } from "~/components/currency-display";
 import { ModalButton } from "~/components/modal-button";
+import { wearToString } from "~/utils/economy";
 
 interface MarketplaceListing {
   id: string;
@@ -136,7 +137,7 @@ export function MarketplacePurchaseModal({
 
           {item.wear !== undefined && (
             <p className="text-center text-sm text-neutral-400">
-              {economyItem.getWearName(item.wear)}
+              {wearToString(item.wear)}
             </p>
           )}
         </div>
