@@ -196,7 +196,7 @@ export async function notifyPluginInventoryChange(steamId: string) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          SteamId: steamId
+          steamId: steamId
         })
       }
     );
