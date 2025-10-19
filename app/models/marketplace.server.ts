@@ -5,6 +5,7 @@
 
 import { prisma } from "~/db.server";
 import { Decimal } from "@prisma/client/runtime/library";
+import { parseInventory } from "~/utils/inventory";
 
 export async function getActiveMarketplaceListings() {
   const listings = await prisma.marketplaceListing.findMany({
@@ -67,6 +68,19 @@ export async function createListing({
   price: number;
   expiresInDays?: number;
 }) {
+  // Check if user already has an active listing for this item
+  const existingListing = await prisma.marketplaceListing.findFirst({
+    where: {
+      userId,
+      itemUid,
+      status: "ACTIVE"
+    }
+  });
+
+  if (existingListing) {
+    throw new Error("Item already listed on marketplace");
+  }
+
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
@@ -104,13 +118,18 @@ export async function cancelListing(listingId: string, userId: string) {
 }
 
 export async function purchaseListing(listingId: string, buyerId: string) {
+  console.log("=== MARKETPLACE PURCHASE START ===");
+  console.log("Listing ID:", listingId);
+  console.log("Buyer ID:", buyerId);
+
   const listing = await prisma.marketplaceListing.findUnique({
     where: { id: listingId },
     include: {
       seller: {
         select: {
           id: true,
-          coins: true
+          coins: true,
+          inventory: true
         }
       }
     }
@@ -132,10 +151,10 @@ export async function purchaseListing(listingId: string, buyerId: string) {
     throw new Error("Listing has expired");
   }
 
-  // Get buyer's current balance
+  // Get buyer's current balance and inventory
   const buyer = await prisma.user.findUnique({
     where: { id: buyerId },
-    select: { coins: true }
+    select: { coins: true, inventory: true }
   });
 
   if (!buyer) {
@@ -147,6 +166,64 @@ export async function purchaseListing(listingId: string, buyerId: string) {
     throw new Error("Insufficient funds");
   }
 
+  console.log("Seller:", listing.userId);
+  console.log("Buyer:", buyerId);
+  console.log("Item UID:", listing.itemUid);
+  console.log("Price:", listing.price.toString());
+
+  // Parse inventories
+  const sellerInventoryData = parseInventory(listing.seller.inventory);
+  const buyerInventoryData = parseInventory(buyer.inventory);
+
+  if (!sellerInventoryData?.items || !buyerInventoryData?.items) {
+    throw new Error("Could not parse inventories");
+  }
+
+  console.log("Original seller inventory UIDs:", Object.keys(sellerInventoryData.items));
+  console.log("Original buyer inventory UIDs:", Object.keys(buyerInventoryData.items));
+
+  // Check if item still exists in seller's inventory
+  const itemInInventory = sellerInventoryData.items[listing.itemUid];
+  if (!itemInInventory) {
+    throw new Error("Item no longer exists in seller's inventory");
+  }
+
+  // Parse the item data from listing
+  const itemData = JSON.parse(listing.itemData);
+  console.log("Item to transfer:", itemData);
+
+  // Create new inventory objects
+  const newSellerInventory = { ...sellerInventoryData };
+  const newBuyerInventory = { ...buyerInventoryData };
+
+  // Copy items objects
+  newSellerInventory.items = { ...sellerInventoryData.items };
+  newBuyerInventory.items = { ...buyerInventoryData.items };
+
+  // Remove item from seller inventory
+  console.log(`Removing item UID ${listing.itemUid} from seller inventory`);
+  delete newSellerInventory.items[listing.itemUid];
+
+  // Find next available UID for buyer
+  const getNextUID = (inventory: any) => {
+    const existingUIDs = Object.keys(inventory.items)
+      .map((k) => parseInt(k))
+      .filter((n) => !isNaN(n));
+    let nextUID = Math.max(0, ...existingUIDs) + 1;
+    while (inventory.items[nextUID]) {
+      nextUID++;
+    }
+    return nextUID;
+  };
+
+  // Add item to buyer inventory with new UID
+  const newUID = getNextUID(newBuyerInventory);
+  newBuyerInventory.items[newUID] = itemData;
+  console.log(`Added item to buyer inventory with new UID ${newUID}`);
+
+  console.log("New seller inventory UIDs:", Object.keys(newSellerInventory.items));
+  console.log("New buyer inventory UIDs:", Object.keys(newBuyerInventory.items));
+
   // Execute transaction
   return await prisma.$transaction(async (tx) => {
     // Update listing status
@@ -157,6 +234,22 @@ export async function purchaseListing(listingId: string, buyerId: string) {
         buyerId,
         soldAt: new Date(),
         updatedAt: new Date()
+      }
+    });
+
+    // Update seller inventory
+    await tx.user.update({
+      where: { id: listing.userId },
+      data: {
+        inventory: JSON.stringify(newSellerInventory)
+      }
+    });
+
+    // Update buyer inventory
+    await tx.user.update({
+      where: { id: buyerId },
+      data: {
+        inventory: JSON.stringify(newBuyerInventory)
       }
     });
 
@@ -201,6 +294,7 @@ export async function purchaseListing(listingId: string, buyerId: string) {
       }
     });
 
+    console.log("=== MARKETPLACE PURCHASE COMPLETED SUCCESSFULLY ===");
     return listing;
   });
 }

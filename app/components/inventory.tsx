@@ -169,26 +169,6 @@ export function Inventory() {
     sellItem
   } = useSellMarketplace();
 
-  // Helper to trigger plugin inventory sync
-  async function triggerPluginInventorySync(steamId: string) {
-    try {
-      // Helyes plugin endpoint és payload
-      const response = await fetch(
-        "http://cs2badboys.ggwp.cc:5005/api/plugin/refresh-inventory",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            SteamId: steamId
-          })
-        }
-      );
-      console.log("Refresh response:", response.status);
-    } catch (e) {
-      console.error("Failed to refresh inventory:", e);
-    }
-  }
-
   function handleEquip(uid: number, team?: CS2TeamValues) {
     playSound(
       inventory.get(uid).type === CS2ItemType.MusicKit
@@ -197,22 +177,14 @@ export function Inventory() {
     );
     setInventory(inventory.equip(uid, team));
     sync({ type: SyncAction.Equip, uid: uid, team });
-
-    // Send refresh request to plugin if user is logged in
-    if (user?.id) {
-      triggerPluginInventorySync(user.id);
-    }
+    // Webhook notification handled automatically by backend (api.action.sync)
   }
 
   function handleUnequip(uid: number, team?: CS2TeamValues) {
     playSound("inventory_item_close");
     setInventory(inventory.unequip(uid, team));
     sync({ type: SyncAction.Unequip, uid: uid, team });
-
-    // Send refresh request to plugin if user is logged in
-    if (user?.id) {
-      triggerPluginInventorySync(user.id);
-    }
+    // Webhook notification handled automatically by backend (api.action.sync)
   }
 
   function handleRemove(uid: number) {

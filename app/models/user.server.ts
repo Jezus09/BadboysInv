@@ -109,13 +109,15 @@ export async function existsUser(userId: string) {
 
 export async function updateUserInventory(userId: string, inventory: string) {
   const syncedAt = new Date();
+  const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
   return await prisma.user.update({
     select: {
       syncedAt: true
     },
     data: {
       inventory,
-      syncedAt
+      syncedAt,
+      inventoryLastUpdateTime
     },
     where: {
       id: userId
@@ -196,7 +198,7 @@ export async function notifyPluginInventoryChange(steamId: string) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          steamId: steamId
+          SteamId: steamId  // Plugin expects capital S
         })
       }
     );
