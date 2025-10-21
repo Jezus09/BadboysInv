@@ -66,6 +66,7 @@ export function CaseOpeningActivity({
   const [sendingMessage, setSendingMessage] = useState<Set<string>>(new Set());
   const { width } = useWindowSize();
 
+
   // Start collapsed on mobile (mobile-first approach)
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [initializedCollapse, setInitializedCollapse] = useState(false);

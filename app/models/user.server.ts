@@ -212,3 +212,47 @@ export async function notifyPluginInventoryChange(steamId: string) {
     console.error("[InventorySync] Failed to notify plugin:", error);
   }
 }
+
+/**
+ * Notify CS2 plugin about case opening via webhook
+ */
+export async function notifyCaseOpeningBroadcast(data: {
+  playerName: string;
+  itemName: string;
+  rarity: string;
+  statTrak: boolean;
+}) {
+  const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log(
+      "[CaseOpening] CS2_PLUGIN_WEBHOOK_URL not configured, skipping webhook"
+    );
+    return;
+  }
+
+  try {
+    const response = await fetch(`${webhookUrl}/api/plugin/case-opened`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        PlayerName: data.playerName,
+        ItemName: data.itemName,
+        Rarity: data.rarity,
+        StatTrak: data.statTrak
+      })
+    });
+
+    if (response.ok) {
+      console.log(
+        `[CaseOpening] Successfully notified plugin - ${data.playerName} opened ${data.itemName}`
+      );
+    } else {
+      console.error(
+        `[CaseOpening] Plugin webhook returned status ${response.status}`
+      );
+    }
+  } catch (error) {
+    console.error("[CaseOpening] Failed to notify plugin:", error);
+  }
+}

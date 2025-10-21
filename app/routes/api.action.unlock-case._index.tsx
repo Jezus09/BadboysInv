@@ -14,7 +14,10 @@ import {
   inventoryMaxItems,
   inventoryStorageUnitMaxItems
 } from "~/models/rule.server";
-import { updateUserInventory } from "~/models/user.server";
+import {
+  updateUserInventory,
+  notifyCaseOpeningBroadcast
+} from "~/models/user.server";
 import { conflict, methodNotAllowed } from "~/responses.server";
 import { parseInventory } from "~/utils/inventory";
 import { nonNegativeInt, positiveInt } from "~/utils/shapes";
@@ -26,6 +29,26 @@ export type ApiActionUnlockCaseActionData = {
   syncedAt: number;
   unlockedItem: CS2UnlockedItem;
 };
+
+/**
+ * Convert CS2Economy rarity to plugin-expected format
+ */
+function formatRarityForPlugin(rarity: string): string {
+  const rarityMap: Record<string, string> = {
+    contraband: "Contraband",
+    covert: "Covert",
+    classified: "Classified",
+    restricted: "Restricted",
+    "mil-spec": "Mil-Spec",
+    "mil-spec grade": "Mil-Spec",
+    "industrial grade": "Industrial",
+    industrial: "Industrial",
+    "consumer grade": "Consumer",
+    consumer: "Consumer"
+  };
+
+  return rarityMap[rarity.toLowerCase()] || "Consumer";
+}
 
 export const action = api(async ({ request }: Route.ActionArgs) => {
   await middleware(request);
@@ -67,13 +90,24 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     inventory.stringify()
   );
 
+  // Get item data for webhook and activity feed
+  const unlockedItemData = CS2Economy.getById(unlockedItem.id);
+  const caseItemData = CS2Economy.getById(caseItem.id);
+  const keyItemData = keyItem ? CS2Economy.getById(keyItem.id) : undefined;
+
+  // Notify CS2 plugin about case opening immediately (fire and forget)
+  notifyCaseOpeningBroadcast({
+    playerName: user.name,
+    itemName: unlockedItemData.name,
+    rarity: formatRarityForPlugin(unlockedItemData.rarity),
+    statTrak: unlockedItem.statTrak !== undefined
+  }).catch((error) => {
+    console.error("[CaseOpening] Background webhook notification failed:", error);
+  });
+
   // Save case opening to activity feed with delay to match animation timing
   setTimeout(async () => {
     try {
-      const unlockedItemData = CS2Economy.getById(unlockedItem.id);
-      const caseItemData = CS2Economy.getById(caseItem.id);
-      const keyItemData = keyItem ? CS2Economy.getById(keyItem.id) : undefined;
-
       await prisma.caseOpening.create({
         data: {
           userId: user.id,
