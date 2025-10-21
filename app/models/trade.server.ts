@@ -355,17 +355,17 @@ export async function acceptTrade(tradeId: string) {
     // Add receiver items to sender inventory with new UIDs
     for (const item of receiverItems) {
       const newUID = getNextUID(newSenderInventory);
-      const { uid, ...itemWithoutUid } = item;
-      newSenderInventory.items[newUID] = itemWithoutUid;
-      console.log(`Added item ${item.id} to sender with new UID ${newUID}`);
+      const { uid, equippedCT, equippedT, ...itemWithoutUidAndEquipped } = item as any;
+      newSenderInventory.items[newUID] = itemWithoutUidAndEquipped;
+      console.log(`Added item ${item.id} to sender with new UID ${newUID} (unequipped)`);
     }
 
     // Add sender items to receiver inventory with new UIDs
     for (const item of senderItems) {
       const newUID = getNextUID(newReceiverInventory);
-      const { uid, ...itemWithoutUid } = item;
-      newReceiverInventory.items[newUID] = itemWithoutUid;
-      console.log(`Added item ${item.id} to receiver with new UID ${newUID}`);
+      const { uid, equippedCT, equippedT, ...itemWithoutUidAndEquipped } = item as any;
+      newReceiverInventory.items[newUID] = itemWithoutUidAndEquipped;
+      console.log(`Added item ${item.id} to receiver with new UID ${newUID} (unequipped)`);
     }
 
     console.log(
