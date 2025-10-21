@@ -77,12 +77,12 @@ export function MarketplaceItemCard({
           )}
 
           {/* Stickers display */}
-          {inventoryItem.stickers !== undefined && (
+          {item.stickers && Object.keys(item.stickers).length > 0 && (
             <div className="absolute bottom-0 left-0 flex items-center p-1">
-              {inventoryItem.someStickers().map(([slot, { id }]) => (
+              {Object.entries(item.stickers).map(([slot, sticker]: [string, any]) => (
                 <ItemImage
                   className="h-5"
-                  item={CS2Economy.getById(id)}
+                  item={CS2Economy.getById(sticker.id)}
                   key={slot}
                 />
               ))}
@@ -90,12 +90,12 @@ export function MarketplaceItemCard({
           )}
 
           {/* Patches display */}
-          {inventoryItem.patches !== undefined && (
+          {item.patches && Object.keys(item.patches).length > 0 && (
             <div className="absolute bottom-0 left-0 flex items-center p-1">
-              {inventoryItem.somePatches().map(([slot, id]) => (
+              {Object.entries(item.patches).map(([slot, patchId]: [string, any]) => (
                 <ItemImage
                   className="h-5"
-                  item={CS2Economy.getById(id)}
+                  item={CS2Economy.getById(patchId)}
                   key={slot}
                 />
               ))}
