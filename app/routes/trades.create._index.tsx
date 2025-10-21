@@ -425,7 +425,7 @@ export default function CreateTradePage() {
 
         {/* Action Buttons */}
         {selectedReceiver && (
-          <div className="relative z-20 mb-20 flex justify-center space-x-4">
+          <div className="mb-8 flex justify-center">
             <button
               onClick={handleSubmit}
               disabled={
@@ -436,57 +436,9 @@ export default function CreateTradePage() {
                   receiverCoins === 0) ||
                 fetcher.state !== "idle"
               }
-              className="group font-display relative overflow-hidden rounded-2xl border border-emerald-400/30 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 px-10 py-5 text-xl font-bold text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:from-emerald-400 hover:via-green-400 hover:to-teal-400 hover:shadow-emerald-500/25 disabled:cursor-not-allowed disabled:from-gray-600 disabled:to-gray-800 disabled:opacity-50"
+              className="font-display inline-flex items-center gap-2 rounded border border-green-500/30 bg-green-600/20 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {/* Animated background glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-green-400/20 to-teal-400/20 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-100"></div>
-
-              {/* Button content */}
-              <div className="relative z-10">
-                {fetcher.state !== "idle" ? (
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className="h-6 w-6 animate-spin rounded-full border-3 border-white/30 border-t-white"></div>
-                    <span className="font-bold tracking-wide">
-                      Kereskedés küldése...
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center space-x-3">
-                    <svg
-                      className="h-6 w-6 transition-transform duration-300 group-hover:rotate-12"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2.5}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M7 11l5-5m0 0l5 5m-5-5v12"
-                      />
-                    </svg>
-                    <span className="font-bold tracking-wide">
-                      KERESKEDÉS KÜLDÉSE
-                    </span>
-                    <svg
-                      className="h-6 w-6 transition-transform duration-300 group-hover:-rotate-12"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2.5}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M17 13l-5 5m0 0l-5-5m5 5V6"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-
-              {/* Shine effect */}
-              <div className="absolute top-0 left-[-100%] h-full w-full skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-700 group-hover:left-[100%]"></div>
+              {fetcher.state !== "idle" ? "Kereskedés küldése..." : "✓ Kereskedés küldése"}
             </button>
           </div>
         )}

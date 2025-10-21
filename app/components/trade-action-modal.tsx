@@ -140,22 +140,22 @@ export function TradeActionModal({
   const getActionColor = () => {
     switch (action) {
       case "accept":
-        return "bg-green-600 hover:bg-green-700";
+        return "border-green-500/30 bg-green-600/20";
       case "decline":
-        return "bg-red-600 hover:bg-red-700";
+        return "border-red-500/30 bg-red-600/20";
       case "cancel":
-        return "bg-gray-600 hover:bg-gray-700";
+        return "border-gray-500/30 bg-gray-600/20";
     }
   };
 
   const getActionText = () => {
     switch (action) {
       case "accept":
-        return "Accept Trade";
+        return "Elfogadás";
       case "decline":
-        return "Decline Trade";
+        return "Elutasítás";
       case "cancel":
-        return "Cancel Trade";
+        return "Visszavonás";
     }
   };
 
@@ -270,21 +270,21 @@ export function TradeActionModal({
         )}
 
         {/* Action Buttons */}
-        <div className="flex space-x-4">
+        <div className="flex justify-center space-x-4">
           <button
             onClick={handleAction}
             disabled={isProcessing}
-            className={`flex-1 rounded-lg px-6 py-3 font-medium text-white transition-colors ${getActionColor()} disabled:cursor-not-allowed disabled:opacity-50`}
+            className={`font-display inline-flex items-center gap-2 rounded border px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 disabled:cursor-not-allowed disabled:opacity-50 ${getActionColor()}`}
           >
-            {isProcessing ? "Processing..." : getActionText()}
+            {isProcessing ? "Feldolgozás..." : getActionText()}
           </button>
 
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="flex-1 rounded-lg bg-gray-600 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="font-display inline-flex items-center gap-2 rounded border border-gray-500/30 bg-gray-600/20 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Cancel
+            Mégse
           </button>
         </div>
       </div>
