@@ -3,13 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { data, useLoaderData, useRevalidator } from "react-router";
+import { CS2Economy } from "@ianlucas/cs2-lib";
 import { requireUser } from "~/auth.server";
 import { useUser } from "~/components/app-context";
 import { CurrencyDisplay } from "~/components/currency-display";
 import { MarketplaceItemCard } from "~/components/marketplace-item-card";
 import { MarketplacePurchaseModal } from "~/components/marketplace-purchase-modal";
+import { ECONOMY_ITEM_FILTERS } from "~/utils/economy-filters";
 import type { Route } from "./+types/marketplace._index";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -40,6 +42,7 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
   const [selectedTab, setSelectedTab] = useState<"all" | "my">("all");
+  const [selectedFilter, setSelectedFilter] = useState<string>("all");
 
   // Fetch marketplace listings
   useEffect(() => {
@@ -74,6 +77,40 @@ export default function MarketplacePage() {
 
     fetchListings();
   }, [selectedTab]);
+
+  // Filter listings based on selected weapon type
+  const filteredListings = useMemo(() => {
+    if (selectedFilter === "all") {
+      return listings;
+    }
+
+    const filter = ECONOMY_ITEM_FILTERS.find(f => f.label === selectedFilter);
+    if (!filter) {
+      return listings;
+    }
+
+    return listings.filter(listing => {
+      try {
+        const itemData = JSON.parse(listing.itemData);
+        const economyItem = CS2Economy.getById(itemData.id);
+
+        // Check if item type matches filter type
+        if (economyItem.type !== filter.type) {
+          return false;
+        }
+
+        // For weapons, also check category if specified
+        if (filter.category && economyItem.category !== filter.category) {
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Failed to parse item data:", error);
+        return false;
+      }
+    });
+  }, [listings, selectedFilter]);
 
   const handleRefresh = () => {
     revalidator.revalidate();
@@ -141,6 +178,29 @@ export default function MarketplacePage() {
             </div>
           </div>
 
+          {/* Weapon Filter */}
+          <div className="mb-6">
+            <div className="flex justify-center">
+              <div className="flex items-center gap-3">
+                <label className="font-display text-sm text-neutral-300">
+                  Szűrés:
+                </label>
+                <select
+                  value={selectedFilter}
+                  onChange={(e) => setSelectedFilter(e.target.value)}
+                  className="font-display rounded border border-neutral-600 bg-neutral-800 px-3 py-1.5 text-sm text-white transition-colors hover:border-purple-500 focus:border-purple-500 focus:outline-none"
+                >
+                  <option value="all">Összes típus</option>
+                  {ECONOMY_ITEM_FILTERS.map((filter) => (
+                    <option key={filter.label} value={filter.label}>
+                      {filter.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
           {/* Listings Grid */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -148,7 +208,7 @@ export default function MarketplacePage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {listings.map((listing) => (
+              {filteredListings.map((listing) => (
                 <MarketplaceItemCard
                   key={listing.id}
                   listing={listing}
@@ -159,15 +219,19 @@ export default function MarketplacePage() {
             </div>
           )}
 
-          {listings.length === 0 && !loading && (
+          {filteredListings.length === 0 && !loading && (
             <div className="py-12 text-center">
               <h3 className="mb-2 text-xl text-neutral-400">
-                {selectedTab === "all"
+                {selectedFilter !== "all"
+                  ? "Nincs ilyen típusú hirdetés"
+                  : selectedTab === "all"
                   ? "Nincsenek elérhető hirdetések"
                   : "Még nincs aktív hirdetésed"}
               </h3>
               <p className="text-neutral-500">
-                {selectedTab === "all"
+                {selectedFilter !== "all"
+                  ? "Próbálj meg más szűrőt választani"
+                  : selectedTab === "all"
                   ? "Legyél te az első aki elad valamit!"
                   : "Kezdd el az eladást az inventory-dból!"}
               </p>
