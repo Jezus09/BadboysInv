@@ -59,7 +59,10 @@ export function ShopPurchaseModal({
       try {
         return CS2Economy.getById(item.itemId);
       } catch (error) {
-        console.warn(`Failed to get economy item for ID ${item.itemId}:`, error);
+        console.warn(
+          `Failed to get economy item for ID ${item.itemId}:`,
+          error
+        );
         return null;
       }
     }
@@ -69,27 +72,35 @@ export function ShopPurchaseModal({
   const economyItem = getEconomyItem();
 
   const handlePurchase = async () => {
-    console.log("Purchase started", { item: item.name, quantity, itemId: item.itemId });
-    
+    console.log("Purchase started", {
+      item: item.name,
+      quantity,
+      itemId: item.itemId
+    });
+
     if (!canAfford || disabled || !item.itemId) {
-      console.log("Purchase aborted", { canAfford, disabled, itemId: item.itemId });
+      console.log("Purchase aborted", {
+        canAfford,
+        disabled,
+        itemId: item.itemId
+      });
       setError("Nem vásárolható meg ez az item.");
       return;
     }
-    
+
     setIsProcessing(true);
     setError(null);
-    
+
     try {
       // First check if we can get the economy item
       const economyItem = CS2Economy.getById(item.itemId);
-      
+
       if (!economyItem) {
         console.error("Economy item not found for ID:", item.itemId);
         setError("Az item nem található a rendszerben.");
         return;
       }
-      
+
       console.log("Economy item found:", economyItem.name);
 
       // First deduct coins via API (before adding items)
@@ -102,10 +113,10 @@ export function ShopPurchaseModal({
           quantity: quantity.toString()
         })
       });
-      
+
       const result = await response.json();
       console.log("Purchase result:", result);
-      
+
       if (!result.success) {
         console.error("Purchase failed:", result.message);
         setError(result.message || "A vásárlás sikertelen volt.");
@@ -114,7 +125,7 @@ export function ShopPurchaseModal({
 
       // Only if payment was successful, add items to inventory
       console.log("Payment successful, adding items to inventory");
-      
+
       // Play success sound
       playSound("inventory_new_item_accept");
 
@@ -129,7 +140,7 @@ export function ShopPurchaseModal({
       for (let i = 0; i < quantity; i++) {
         // Add to local inventory
         setInventory(inventory.add(inventoryItem));
-        
+
         // Sync to server using AddFromShop (no owner check)
         sync({
           type: SyncAction.AddFromShop,
@@ -138,13 +149,12 @@ export function ShopPurchaseModal({
       }
 
       console.log("Purchase completed successfully");
-      
+
       // Wait a moment then close
       setTimeout(() => {
         onClose();
         navigate("/");
       }, 1000);
-      
     } catch (error) {
       console.error("Purchase failed:", error);
       setError("Hiba történt a vásárlás során. Próbáld újra.");
@@ -157,11 +167,8 @@ export function ShopPurchaseModal({
 
   return (
     <Modal className="w-[400px]" fixed>
-      <ModalHeader 
-        title="Vásárlás"
-        onClose={onClose}
-      />
-      
+      <ModalHeader title="Vásárlás" onClose={onClose} />
+
       <div className="space-y-4 p-4">
         {/* Item info with image */}
         <div className="text-center">
@@ -170,48 +177,44 @@ export function ShopPurchaseModal({
             <div className="mb-4">
               <ItemImage
                 item={economyItem}
-                className="w-32 h-24 mx-auto object-contain"
+                className="mx-auto h-24 w-32 object-contain"
                 lazy
               />
             </div>
           )}
-          
-          <h3 className="text-lg font-bold text-white mb-2">
-            {item.name}
-          </h3>
+
+          <h3 className="mb-2 text-lg font-bold text-white">{item.name}</h3>
           {item.description && (
-            <p className="text-neutral-400 text-sm mb-4">
-              {item.description}
-            </p>
+            <p className="mb-4 text-sm text-neutral-400">{item.description}</p>
           )}
         </div>
-        
+
         {/* Quantity selector */}
         <div className="flex items-center justify-center gap-4">
           <label className="text-neutral-300">Mennyiség:</label>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="bg-neutral-600 hover:bg-neutral-500 text-white w-8 h-8 rounded flex items-center justify-center"
+              className="flex h-8 w-8 items-center justify-center rounded bg-neutral-600 text-white hover:bg-neutral-500"
               disabled={quantity <= 1}
             >
               -
             </button>
-            <span className="text-white font-bold w-8 text-center">
+            <span className="w-8 text-center font-bold text-white">
               {quantity}
             </span>
             <button
               onClick={() => setQuantity(quantity + 1)}
-              className="bg-neutral-600 hover:bg-neutral-500 text-white w-8 h-8 rounded flex items-center justify-center"
+              className="flex h-8 w-8 items-center justify-center rounded bg-neutral-600 text-white hover:bg-neutral-500"
               disabled={quantity >= 10} // Max 10
             >
               +
             </button>
           </div>
         </div>
-        
+
         {/* Price info */}
-        <div className="bg-neutral-800 rounded p-3 space-y-2">
+        <div className="space-y-2 rounded bg-neutral-800 p-3">
           <div className="flex justify-between text-sm">
             <span className="text-neutral-400">Egységár:</span>
             <CurrencyDisplay amount={item.price} />
@@ -227,34 +230,32 @@ export function ShopPurchaseModal({
             </div>
           </div>
         </div>
-        
+
         {/* Balance info */}
-        <div className="bg-neutral-700 rounded p-3">
-          <div className="flex justify-between items-center">
+        <div className="rounded bg-neutral-700 p-3">
+          <div className="flex items-center justify-between">
             <span className="text-neutral-300">Jelenlegi egyenleg:</span>
             <CurrencyDisplay amount={userBalance.toFixed(2)} />
           </div>
           {!canAfford && (
-            <div className="text-red-400 text-sm mt-2">
+            <div className="mt-2 text-sm text-red-400">
               Nincs elegendő pénzed ehhez a vásárláshoz!
             </div>
           )}
         </div>
-        
+
         {/* Error message */}
         {error && (
-          <div className="bg-red-800 text-red-200 p-3 rounded">
-            {error}
-          </div>
+          <div className="rounded bg-red-800 p-3 text-red-200">{error}</div>
         )}
-        
+
         {/* Success message */}
         {isProcessing && (
-          <div className="bg-blue-800 text-blue-200 p-3 rounded">
+          <div className="rounded bg-blue-800 p-3 text-blue-200">
             Vásárlás folyamatban...
           </div>
         )}
-        
+
         {/* Buttons */}
         <div className="flex gap-2 pt-2">
           <ModalButton onClick={onClose} variant="secondary">
@@ -275,14 +276,16 @@ export function ShopPurchaseModal({
             )}
           </ModalButton>
         </div>
-        
+
         {/* Purchase result */}
         {fetcher.data && (
-          <div className={`p-3 rounded ${
-            fetcher.data.success 
-              ? "bg-green-800 text-green-200" 
-              : "bg-red-800 text-red-200"
-          }`}>
+          <div
+            className={`rounded p-3 ${
+              fetcher.data.success
+                ? "bg-green-800 text-green-200"
+                : "bg-red-800 text-red-200"
+            }`}
+          >
             {fetcher.data.message}
           </div>
         )}

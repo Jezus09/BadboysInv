@@ -49,7 +49,7 @@ import {
   inventoryItemAllowRemovePatch,
   inventoryItemAllowScrapeSticker
 } from "~/models/rule.server";
-import { manipulateUserInventory } from "~/models/user.server";
+import { manipulateUserInventory, notifyPluginInventoryChange } from "~/models/user.server";
 import { methodNotAllowed } from "~/responses.server";
 import { nonNegativeInt, teamShape } from "~/utils/shapes";
 import {
@@ -469,6 +469,18 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       }
     }
   });
+
+  // Notify plugin about inventory changes for equip/unequip actions
+  // This runs asynchronously in the background after the response
+  for (const action of actions) {
+    if (action.type === SyncAction.Equip || action.type === SyncAction.Unequip) {
+      // Fire and forget - don't await to avoid slowing down the response
+      notifyPluginInventoryChange(userId).catch((error) => {
+        console.error("[InventorySync] Background webhook notification failed:", error);
+      });
+      break; // Only notify once per batch
+    }
+  }
 
   return Response.json({
     syncedAt: responseSyncedAt.getTime()

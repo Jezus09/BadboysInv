@@ -54,14 +54,14 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     maxItems: await inventoryMaxItems.for(userId).get(),
     storageUnitMaxItems: await inventoryStorageUnitMaxItems.for(userId).get()
   });
-  
+
   // Get case and key info before unlocking
   const caseItem = inventory.get(caseUid);
   const keyItem = keyUid !== undefined ? inventory.get(keyUid) : undefined;
-  
+
   const unlockedItem = caseItem.unlockContainer();
   inventory.unlockContainer(unlockedItem, caseUid, keyUid);
-  
+
   const { syncedAt: responseSyncedAt } = await updateUserInventory(
     userId,
     inventory.stringify()
@@ -73,7 +73,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       const unlockedItemData = CS2Economy.getById(unlockedItem.id);
       const caseItemData = CS2Economy.getById(caseItem.id);
       const keyItemData = keyItem ? CS2Economy.getById(keyItem.id) : undefined;
-      
+
       await prisma.caseOpening.create({
         data: {
           userId: user.id,
@@ -85,8 +85,8 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           keyName: keyItemData?.name || null,
           unlockedItemId: unlockedItem.id,
           unlockedName: unlockedItemData.name,
-          unlockedRarity: unlockedItemData.rarity,
-        },
+          unlockedRarity: unlockedItemData.rarity
+        }
       });
     } catch (error) {
       console.error("Error saving case opening:", error);

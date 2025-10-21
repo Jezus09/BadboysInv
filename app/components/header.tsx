@@ -13,6 +13,7 @@ import {
   faRightFromBracket,
   faShoppingCart,
   faExchangeAlt,
+  faStore,
   faServer,
   faXmark
 } from "@fortawesome/free-solid-svg-icons";
@@ -105,6 +106,12 @@ export function Header({
                 label="Trades"
                 onClick={closeMenu}
               />
+              <HeaderLink
+                to="/marketplace"
+                icon={faStore}
+                label="Marketplace"
+                onClick={closeMenu}
+              />
               {isOwner && (
                 <HeaderLink
                   disabled={isCraftDisabled}
@@ -138,12 +145,6 @@ export function Header({
                 </>
               ) : (
                 <>
-                  <HeaderLink
-                    icon={faRightFromBracket}
-                    label={translate("HeaderSignOutLabel")}
-                    onClick={closeMenu}
-                    to="/sign-out"
-                  />
                   <div className="gap-4 lg:flex lg:flex-1 lg:justify-end">
                     <div className="flex items-center gap-2 px-2 py-1">
                       <CurrencyDisplay amount={(user as any).coins} />

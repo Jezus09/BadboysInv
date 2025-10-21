@@ -38,11 +38,11 @@ export const meta = getMetaTitle("HeaderCraftLabel");
 
 export async function loader({ request }: Route.LoaderArgs) {
   await middleware(request);
-  
+
   // Check if user is owner
   const userId = await getRequestUserId(request);
   const isOwner = await isUserOwner(userId);
-  
+
   if (!isOwner) {
     throw redirect("/?error=AccessDenied");
   }

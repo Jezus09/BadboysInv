@@ -43,13 +43,14 @@ export default function ShopPage() {
     const fetchItems = async () => {
       setLoading(true);
       try {
-        const url = selectedCategory === "all" 
-          ? "/api/shop" 
-          : `/api/shop?category=${selectedCategory}`;
-        
+        const url =
+          selectedCategory === "all"
+            ? "/api/shop"
+            : `/api/shop?category=${selectedCategory}`;
+
         const response = await fetch(url);
         const data = await response.json();
-        
+
         if (data.success) {
           setItems(data.items);
         }
@@ -83,28 +84,30 @@ export default function ShopPage() {
           <div className="mb-8 text-center">
             {/* Shop Title */}
             <div className="relative mb-6">
-              <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 drop-shadow-2xl">
+              <h1 className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-6xl font-black text-transparent drop-shadow-2xl">
                 SHOP
               </h1>
               <div className="absolute inset-0 text-6xl font-black text-yellow-400/20 blur-sm">
                 SHOP
               </div>
             </div>
-            
+
             {/* Description - Centered */}
-            <div className="text-center mb-4">
-              <p className="font-display text-lg text-neutral-300 font-medium">
+            <div className="mb-4 text-center">
+              <p className="font-display text-lg font-medium text-neutral-300">
                 Vásárolj kulcsokat és ládákat a pénzedből
               </p>
             </div>
-            
+
             {/* Balance - Right aligned */}
-            <div className="flex justify-center md:justify-end mb-6">
+            <div className="mb-6 flex justify-center md:justify-end">
               {user && (
-                <div className="flex items-center gap-3 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border border-green-500/30 rounded-lg px-4 py-2">
-                  <span className="text-green-400 font-semibold">Egyenleg:</span>
-                  <CurrencyDisplay 
-                    amount={(user as any).coins} 
+                <div className="flex items-center gap-3 rounded-lg border border-green-500/30 bg-gradient-to-r from-green-600/20 to-emerald-600/20 px-4 py-2">
+                  <span className="font-semibold text-green-400">
+                    Egyenleg:
+                  </span>
+                  <CurrencyDisplay
+                    amount={(user as any).coins}
                     className="text-xl font-bold text-green-300"
                   />
                 </div>
@@ -114,15 +117,13 @@ export default function ShopPage() {
 
           {/* Category Filter */}
           <div className="mb-8">
-            <div className="flex gap-4 flex-wrap justify-center">
+            <div className="flex flex-wrap justify-center gap-4">
               {categories.map((category) => (
                 <button
                   key={category.value}
                   onClick={() => setSelectedCategory(category.value)}
                   className={`font-display flex items-center gap-2 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 ${
-                    selectedCategory === category.value
-                      ? "bg-black/30"
-                      : ""
+                    selectedCategory === category.value ? "bg-black/30" : ""
                   }`}
                 >
                   {category.label}
@@ -133,7 +134,7 @@ export default function ShopPage() {
 
           {/* Items Grid */}
           {loading ? (
-            <div className="flex justify-center items-center py-12">
+            <div className="flex items-center justify-center py-12">
               <div className="text-neutral-400">Betöltés...</div>
             </div>
           ) : (
@@ -150,9 +151,13 @@ export default function ShopPage() {
           )}
 
           {items.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <h3 className="text-xl text-neutral-400 mb-2">Nincsenek elérhető termékek</h3>
-              <p className="text-neutral-500">Próbáld meg később vagy válassz másik kategóriát.</p>
+            <div className="py-12 text-center">
+              <h3 className="mb-2 text-xl text-neutral-400">
+                Nincsenek elérhető termékek
+              </h3>
+              <p className="text-neutral-500">
+                Próbáld meg később vagy válassz másik kategóriát.
+              </p>
             </div>
           )}
         </div>

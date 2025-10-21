@@ -30,7 +30,7 @@ export function TradeItemCard({
 }: TradeItemCardProps) {
   const nameItem = useNameItem();
   const translate = useTranslate();
-  
+
   const {
     getHoverFloatingProps,
     getHoverReferenceProps,
@@ -53,7 +53,7 @@ export function TradeItemCard({
     economyItem = CS2Economy.getById(item.id);
     [model, name] = nameItem(economyItem, "inventory-name");
     rarityColor = economyItem.rarity;
-    
+
     // Create a proper inventory item for the tooltip
     inventoryItem = createFakeInventoryItem(economyItem, {
       wear: item.wear,
@@ -72,37 +72,39 @@ export function TradeItemCard({
       <div className="w-full max-w-[140px]">
         <div
           className={clsx(
-            "group relative bg-gradient-to-b from-neutral-700 to-neutral-500 p-[2px] rounded-lg cursor-pointer transition-all duration-300 hover:scale-105",
-            selected && "ring-3 ring-blue-400 ring-opacity-75 scale-105",
-            disabled && "opacity-50 cursor-not-allowed"
+            "group relative cursor-pointer rounded-lg bg-gradient-to-b from-neutral-700 to-neutral-500 p-[2px] transition-all duration-300 hover:scale-105",
+            selected && "ring-opacity-75 scale-105 ring-3 ring-blue-400",
+            disabled && "cursor-not-allowed opacity-50"
           )}
           onClick={!disabled ? onClick : undefined}
           ref={ref}
           {...getHoverReferenceProps()}
         >
-          <div className="bg-gradient-to-b from-neutral-800 to-neutral-600 p-3 rounded-lg min-h-[150px] flex flex-col">
-            <div className="relative flex-1 flex items-center justify-center mb-3">
+          <div className="flex min-h-[150px] flex-col rounded-lg bg-gradient-to-b from-neutral-800 to-neutral-600 p-3">
+            <div className="relative mb-3 flex flex-1 items-center justify-center">
               {economyItem ? (
-                <ItemImage 
-                  className="w-[100px] h-[75px] object-contain" 
+                <ItemImage
+                  className="h-[75px] w-[100px] object-contain"
                   item={economyItem}
                   wear={item.wear}
                 />
               ) : (
-                <div className="w-[100px] h-[75px] bg-gray-700 rounded flex items-center justify-center">
-                  <span className="text-gray-400 text-xs">Unknown</span>
+                <div className="flex h-[75px] w-[100px] items-center justify-center rounded bg-gray-700">
+                  <span className="text-xs text-gray-400">Unknown</span>
                 </div>
               )}
             </div>
-            
-            <div className="text-center bg-black/20 rounded p-2">
-              <div className="text-xs text-white leading-tight">
+
+            <div className="rounded bg-black/20 p-2 text-center">
+              <div className="text-xs leading-tight text-white">
                 {has(model) && (
-                  <div className="font-bold truncate mb-1 text-sm">
-                    {model}
+                  <div className="mb-1 truncate text-sm font-bold">{model}</div>
+                )}
+                {has(name) && (
+                  <div className="truncate text-xs text-neutral-300">
+                    {name}
                   </div>
                 )}
-                {has(name) && <div className="truncate text-neutral-300 text-xs">{name}</div>}
               </div>
             </div>
           </div>

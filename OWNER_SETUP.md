@@ -22,9 +22,9 @@ You have two options to set the owner Steam ID:
 2. Connect to the database and run this SQL command:
 
 ```sql
-INSERT INTO "Rule" (name, type, value) 
+INSERT INTO "Rule" (name, type, value)
 VALUES ('ownerSteamId', 'string', 'YOUR_STEAM_ID64_HERE')
-ON CONFLICT (name) 
+ON CONFLICT (name)
 DO UPDATE SET value = 'YOUR_STEAM_ID64_HERE';
 ```
 

@@ -96,11 +96,13 @@ export function TradeItemTooltip({
           unlockedItem={!isContainer ? item : undefined}
         />
       )}
-      
+
       {/* ALWAYS show seed and wear for trade items - critical for CS2 skins */}
       {(hasWear || hasSeed) && (
-        <div className="mt-4 p-3 bg-orange-900/20 border border-orange-500/30 rounded">
-          <div className="text-orange-400 font-bold mb-2 text-sm">Trade Details</div>
+        <div className="mt-4 rounded border border-orange-500/30 bg-orange-900/20 p-3">
+          <div className="mb-2 text-sm font-bold text-orange-400">
+            Trade Details
+          </div>
           <div className="space-y-2">
             {hasWear && <InventoryItemTooltipWear wear={wear} />}
             {hasSeed && <InventoryItemTooltipSeed seed={item.seed} />}

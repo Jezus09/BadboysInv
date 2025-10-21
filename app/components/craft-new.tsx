@@ -6,7 +6,12 @@
 import { CS2EconomyItem, CS2ItemType } from "@ianlucas/cs2-lib";
 import { useState } from "react";
 import { toArrayIf } from "~/utils/misc";
-import { useInventory, useRules, useTranslate, useIsOwner } from "./app-context";
+import {
+  useInventory,
+  useRules,
+  useTranslate,
+  useIsOwner
+} from "./app-context";
 import { ItemEditor, ItemEditorAttributes } from "./item-editor";
 import { ModalButton } from "./modal-button";
 
@@ -86,7 +91,7 @@ export function CraftNew({
   if (!isOwner) {
     return (
       <div className="px-4 py-6 text-center">
-        <p className="text-neutral-400 mb-4">
+        <p className="mb-4 text-neutral-400">
           Access Denied: Only the owner can use the craft system.
         </p>
         <div className="flex justify-center">

@@ -3,14 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
+import { faRightFromBracket, faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import { useNavigate, useSubmit } from "react-router";
 import {
   useInventory,
   usePreferences,
-  useTranslate
+  useTranslate,
+  useUser
 } from "~/components/app-context";
 import { EditorRange } from "~/components/editor-range";
 import { EditorToggle } from "~/components/editor-toggle";
@@ -50,6 +51,7 @@ export default function Settings() {
   const [inventory, setInventory] = useInventory();
   const translate = useTranslate();
   const sync = useSync();
+  const user = useUser();
 
   const [background, setBackground] = useState(selectedBackground ?? "");
   const [hideFilters, setHideFilters] = useCheckbox(selectedHideFilters);
@@ -151,6 +153,15 @@ export default function Settings() {
             onChange={setHideNewItemLabel}
           />
         </SettingsLabel>
+        {user && (
+          <button
+            className="font-display flex h-12 w-full cursor-default items-center gap-3 rounded-sm border border-neutral-500/20 bg-neutral-800/50 px-3 py-1 text-yellow-500 transition-all hover:ring-2 hover:ring-yellow-500"
+            onClick={() => navigate("/sign-out")}
+          >
+            <FontAwesomeIcon icon={faRightFromBracket} className="h-4" />
+            {translate("HeaderSignOutLabel")}
+          </button>
+        )}
         {inventory.size() > 0 && (
           <button
             className="font-display flex h-12 w-full cursor-default items-center gap-3 rounded-sm border border-neutral-500/20 bg-neutral-800/50 px-3 py-1 text-red-500 transition-all hover:ring-2 hover:ring-red-500"

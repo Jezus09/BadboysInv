@@ -24,14 +24,14 @@ export async function upsertUser(user: {
     avatar: user.avatar.medium,
     name: user.nickname
   };
-  
+
   // Create an empty inventory for new users
   const emptyInventory = new CS2Inventory({
     data: { items: [], version: 1 },
     maxItems: 256, // Default max items
     storageUnitMaxItems: 256
   }).stringify();
-  
+
   return (
     await prisma.user.upsert({
       select: {
@@ -54,7 +54,9 @@ export async function upsertUser(user: {
 }
 
 // Add timestamp functions
-export async function getUserInventoryLastUpdateTime(userId: string): Promise<bigint> {
+export async function getUserInventoryLastUpdateTime(
+  userId: string
+): Promise<bigint> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { inventoryLastUpdateTime: true }
@@ -63,10 +65,12 @@ export async function getUserInventoryLastUpdateTime(userId: string): Promise<bi
   return user?.inventoryLastUpdateTime || BigInt(Math.floor(Date.now() / 1000));
 }
 
-export async function updateUserInventoryTimestamp(userId: string): Promise<void> {
+export async function updateUserInventoryTimestamp(
+  userId: string
+): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
-    data: { 
+    data: {
       inventoryLastUpdateTime: BigInt(Math.floor(Date.now() / 1000))
     }
   });
@@ -105,13 +109,15 @@ export async function existsUser(userId: string) {
 
 export async function updateUserInventory(userId: string, inventory: string) {
   const syncedAt = new Date();
+  const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
   return await prisma.user.update({
     select: {
       syncedAt: true
     },
     data: {
       inventory,
-      syncedAt
+      syncedAt,
+      inventoryLastUpdateTime
     },
     where: {
       id: userId
@@ -172,4 +178,37 @@ export async function getUserBasicData(userId: string) {
       }
     })) || undefined
   );
+}
+
+/**
+ * Notify CS2 plugin about inventory changes via webhook
+ */
+export async function notifyPluginInventoryChange(steamId: string) {
+  const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log("[InventorySync] CS2_PLUGIN_WEBHOOK_URL not configured, skipping webhook");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${webhookUrl}/api/plugin/refresh-inventory`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          SteamId: steamId  // Plugin expects capital S
+        })
+      }
+    );
+
+    if (response.ok) {
+      console.log(`[InventorySync] Successfully notified plugin for SteamId ${steamId}`);
+    } else {
+      console.error(`[InventorySync] Plugin webhook returned status ${response.status}`);
+    }
+  } catch (error) {
+    console.error("[InventorySync] Failed to notify plugin:", error);
+  }
 }

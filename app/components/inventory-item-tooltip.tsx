@@ -99,18 +99,20 @@ export function InventoryItemTooltip({
           unlockedItem={!isContainer ? item : undefined}
         />
       )}
-      
+
       {/* Always show seed and wear for inventory items - critical for CS2 skins */}
       {hasAttributes && (
-        <div className="mt-4 p-3 bg-blue-900/20 border border-blue-500/30 rounded">
-          <div className="text-blue-400 font-bold mb-2 text-sm">Item Details</div>
+        <div className="mt-4 rounded border border-blue-500/30 bg-blue-900/20 p-3">
+          <div className="mb-2 text-sm font-bold text-blue-400">
+            Item Details
+          </div>
           <div className="space-y-2">
             {hasWear && <InventoryItemTooltipWear wear={wear} />}
             {hasSeed && <InventoryItemTooltipSeed seed={item.seed} />}
           </div>
         </div>
       )}
-      
+
       {/* Additional stats for nerds preference */}
       {statsForNerds && hasAttributes && (
         <div className="mt-2 text-xs text-neutral-400">

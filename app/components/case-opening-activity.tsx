@@ -7,6 +7,20 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { CS2Economy } from "@ianlucas/cs2-lib";
 import { useWindowSize } from "@uidotdev/usehooks";
 
+interface CaseOpeningMessage {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  message: string;
+  createdAt: string;
+  replyTo?: {
+    id: string;
+    userName: string;
+    message: string;
+  } | null;
+}
+
 interface CaseOpening {
   id: string;
   userId: string;
@@ -25,6 +39,7 @@ interface CaseOpening {
     name: string;
     avatar: string | null;
   };
+  messages?: CaseOpeningMessage[];
 }
 
 interface CaseOpeningActivityProps {
@@ -46,8 +61,12 @@ export function CaseOpeningActivity({
   const [caseOpenings, setCaseOpenings] = useState<CaseOpening[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
+  const [messageInputs, setMessageInputs] = useState<Record<string, string>>({});
+  const [sendingMessage, setSendingMessage] = useState<Set<string>>(new Set());
   const { width } = useWindowSize();
-  
+
+
   // Start collapsed on mobile (mobile-first approach)
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [initializedCollapse, setInitializedCollapse] = useState(false);
@@ -202,27 +221,105 @@ export function CaseOpeningActivity({
     }
   };
 
+  const toggleMessages = (openingId: string) => {
+    setExpandedMessages((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(openingId)) {
+        newSet.delete(openingId);
+      } else {
+        newSet.add(openingId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleMessageInputChange = (openingId: string, value: string) => {
+    setMessageInputs((prev) => ({
+      ...prev,
+      [openingId]: value
+    }));
+  };
+
+  const sendMessage = async (openingId: string) => {
+    const message = messageInputs[openingId]?.trim();
+    if (!message || sendingMessage.has(openingId)) {
+      return;
+    }
+
+    setSendingMessage((prev) => new Set(prev).add(openingId));
+
+    try {
+      const response = await fetch("/api/case-openings/message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          caseOpeningId: openingId,
+          message
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Clear input
+        setMessageInputs((prev) => ({
+          ...prev,
+          [openingId]: ""
+        }));
+
+        // Refresh case openings to get new message
+        fetchCaseOpenings();
+      } else {
+        console.error("Failed to send message:", result.message);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setSendingMessage((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(openingId);
+        return newSet;
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div
-        className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-          isCollapsed ? "p-2" : "p-4"
-        } flex flex-col ${className}`}
+        className={`flex flex-col rounded-lg border border-neutral-700 transition-all duration-300 ${
+          isCollapsed
+            ? "w-auto bg-neutral-800/30 p-2"
+            : "max-h-[calc(100vh-1rem)] w-72 bg-neutral-800/50 p-4 md:max-h-[calc(100vh-2rem)] md:w-80 lg:w-80"
+        } ${className}`}
       >
-        <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+        <div
+          className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}
+        >
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              isCollapsed
+                ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl"
+                : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
+            }`}
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
           >
             <i
-              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
+              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm transition-all duration-200 ${
+                isCollapsed ? "drop-shadow-sm" : ""
+              }`}
             ></i>
           </button>
-          <i className="fas fa-history"></i>
-          {!isCollapsed && "Ládanyitási előzmények"}
+          {!isCollapsed && (
+            <>
+              <i className="fas fa-history"></i>
+              <span>Ládanyitási előzmények</span>
+            </>
+          )}
         </div>
         {!isCollapsed && (
           <div className="flex flex-1 items-center justify-center py-8 text-center text-gray-400">
@@ -239,24 +336,38 @@ export function CaseOpeningActivity({
   if (caseOpenings.length === 0) {
     return (
       <div
-        className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-          isCollapsed ? "p-2" : "p-4"
-        } flex flex-col ${className}`}
+        className={`flex flex-col rounded-lg border border-neutral-700 transition-all duration-300 ${
+          isCollapsed
+            ? "w-auto bg-neutral-800/30 p-2"
+            : "max-h-[calc(100vh-1rem)] w-72 bg-neutral-800/50 p-4 md:max-h-[calc(100vh-2rem)] md:w-80 lg:w-80"
+        } ${className}`}
       >
-        <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+        <div
+          className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}
+        >
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+              isCollapsed
+                ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl"
+                : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
+            }`}
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
           >
             <i
-              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
+              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm transition-all duration-200 ${
+                isCollapsed ? "drop-shadow-sm" : ""
+              }`}
             ></i>
           </button>
-          <i className="fas fa-history"></i>
-          {!isCollapsed && "Ládanyitási előzmények"}
+          {!isCollapsed && (
+            <>
+              <i className="fas fa-history"></i>
+              <span>Ládanyitási előzmények</span>
+            </>
+          )}
         </div>
         {!isCollapsed && (
           <div className="flex flex-1 items-center justify-center py-8 text-center text-gray-400">
@@ -272,24 +383,38 @@ export function CaseOpeningActivity({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-        isCollapsed ? "p-2" : "p-4"
-      } flex flex-col ${className}`}
+      className={`flex flex-col rounded-lg border border-neutral-700 transition-all duration-300 ${
+        isCollapsed
+          ? "w-auto bg-neutral-800/30 p-2"
+          : "max-h-[calc(100vh-1rem)] w-72 bg-neutral-800/50 p-4 md:max-h-[calc(100vh-2rem)] md:w-80 lg:w-80"
+      } ${className}`}
     >
-      <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+      <div
+        className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? "mb-0" : "mb-4"}`}
+      >
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+          className={`flex h-8 w-8 items-center justify-center rounded-md transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            isCollapsed
+              ? "bg-blue-600/80 text-white shadow-lg hover:bg-blue-500 hover:shadow-xl"
+              : "bg-neutral-700/50 text-gray-300 hover:bg-neutral-600 hover:text-white"
+          }`}
           aria-label={
             isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
           }
         >
           <i
-            className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
+            className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm transition-all duration-200 ${
+              isCollapsed ? "drop-shadow-sm" : ""
+            }`}
           ></i>
         </button>
-        <i className="fas fa-history"></i>
-        {!isCollapsed && "Ládanyitási előzmények"}
+        {!isCollapsed && (
+          <>
+            <i className="fas fa-history"></i>
+            <span>Ládanyitási előzmények</span>
+          </>
+        )}
       </div>
 
       {!isCollapsed && (
@@ -366,6 +491,96 @@ export function CaseOpeningActivity({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Messages section */}
+              <div className="mt-3 border-t border-neutral-700 pt-2">
+                <button
+                  onClick={() => toggleMessages(opening.id)}
+                  className="flex w-full items-center justify-between text-xs text-gray-400 transition-colors hover:text-gray-300"
+                >
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-comment"></i>
+                    <span>
+                      {opening.messages?.length || 0}{" "}
+                      {opening.messages?.length === 1 ? "üzenet" : "üzenet"}
+                    </span>
+                  </span>
+                  <i
+                    className={`fas fa-chevron-${expandedMessages.has(opening.id) ? "up" : "down"} transition-transform`}
+                  ></i>
+                </button>
+
+                {expandedMessages.has(opening.id) && (
+                  <div className="mt-2 space-y-2">
+                    {/* Messages list */}
+                    {opening.messages && opening.messages.length > 0 && (
+                      <div className="max-h-40 space-y-2 overflow-y-auto">
+                        {opening.messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className="rounded bg-neutral-800/50 p-2 text-xs"
+                          >
+                            <div className="mb-1 flex items-center gap-2">
+                              {msg.userAvatar ? (
+                                <img
+                                  src={msg.userAvatar}
+                                  alt={msg.userName}
+                                  className="h-4 w-4 rounded-full"
+                                />
+                              ) : (
+                                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-600">
+                                  <i className="fas fa-user text-[8px] text-gray-400"></i>
+                                </div>
+                              )}
+                              <span className="font-medium text-white">
+                                {msg.userName}
+                              </span>
+                              <span className="ml-auto text-gray-500">
+                                {formatTimeAgo(msg.createdAt)}
+                              </span>
+                            </div>
+                            <p className="text-gray-300">{msg.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Message input */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={messageInputs[opening.id] || ""}
+                        onChange={(e) =>
+                          handleMessageInputChange(opening.id, e.target.value)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            sendMessage(opening.id);
+                          }
+                        }}
+                        placeholder="Írj üzenetet..."
+                        className="flex-1 rounded bg-neutral-800 px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        disabled={sendingMessage.has(opening.id)}
+                      />
+                      <button
+                        onClick={() => sendMessage(opening.id)}
+                        disabled={
+                          !messageInputs[opening.id]?.trim() ||
+                          sendingMessage.has(opening.id)
+                        }
+                        className="rounded bg-blue-600 px-3 py-1 text-xs text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {sendingMessage.has(opening.id) ? (
+                          <i className="fas fa-spinner fa-spin"></i>
+                        ) : (
+                          <i className="fas fa-paper-plane"></i>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}
