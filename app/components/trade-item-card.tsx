@@ -69,45 +69,69 @@ export function TradeItemCard({
 
   return (
     <>
-      <div className="w-full max-w-[140px]">
-        <div
-          className={clsx(
-            "group relative cursor-pointer rounded-lg bg-gradient-to-b from-neutral-700 to-neutral-500 p-[2px] transition-all duration-300 hover:scale-105",
-            selected && "ring-opacity-75 scale-105 ring-3 ring-blue-400",
-            disabled && "cursor-not-allowed opacity-50"
-          )}
-          onClick={!disabled ? onClick : undefined}
-          ref={ref}
-          {...getHoverReferenceProps()}
-        >
-          <div className="flex min-h-[150px] flex-col rounded-lg bg-gradient-to-b from-neutral-800 to-neutral-600 p-3">
-            <div className="relative mb-3 flex flex-1 items-center justify-center">
-              {economyItem ? (
-                <ItemImage
-                  className="h-[75px] w-[100px] object-contain"
-                  item={economyItem}
-                  wear={item.wear}
-                />
-              ) : (
-                <div className="flex h-[75px] w-[100px] items-center justify-center rounded bg-gray-700">
-                  <span className="text-xs text-gray-400">Unknown</span>
-                </div>
-              )}
-            </div>
-
-            <div className="rounded bg-black/20 p-2 text-center">
-              <div className="text-xs leading-tight text-white">
-                {has(model) && (
-                  <div className="mb-1 truncate text-sm font-bold">{model}</div>
-                )}
-                {has(name) && (
-                  <div className="truncate text-xs text-neutral-300">
-                    {name}
-                  </div>
-                )}
+      <div className="w-[154px]">
+        <div className="group relative bg-linear-to-b from-neutral-600 to-neutral-400 p-[1px]">
+          <div className="bg-linear-to-b from-neutral-500 to-neutral-300 px-1">
+            {economyItem ? (
+              <ItemImage className="w-[144px]" item={economyItem} wear={item.wear} />
+            ) : (
+              <div className="flex h-[100px] w-[144px] items-center justify-center bg-gray-700">
+                <span className="text-xs text-gray-400">Unknown</span>
               </div>
-            </div>
+            )}
           </div>
+          {/* Stickers display */}
+          {inventoryItem?.stickers !== undefined && (
+            <div className="absolute bottom-0 left-0 flex items-center p-1">
+              {inventoryItem.someStickers().map(([slot, { id }]) => (
+                <ItemImage
+                  className="h-5"
+                  item={CS2Economy.getById(id)}
+                  key={slot}
+                />
+              ))}
+            </div>
+          )}
+          {/* Patches display */}
+          {inventoryItem?.patches !== undefined && (
+            <div className="absolute bottom-0 left-0 flex items-center p-1">
+              {inventoryItem.somePatches().map(([slot, id]) => (
+                <ItemImage
+                  className="h-5"
+                  item={CS2Economy.getById(id)}
+                  key={slot}
+                />
+              ))}
+            </div>
+          )}
+          {/* Selected indicator */}
+          {selected && (
+            <div className="absolute top-0 right-0 p-2">
+              <div className="h-3 w-3 rounded-full bg-blue-500 ring-2 ring-white"></div>
+            </div>
+          )}
+          {onClick !== undefined && (
+            <button
+              className={clsx(
+                "absolute top-0 left-0 h-full w-full border-4 border-transparent transition-all hover:border-white",
+                selected && "border-blue-400",
+                disabled && "cursor-not-allowed opacity-50"
+              )}
+              onClick={!disabled ? onClick : undefined}
+              ref={ref}
+              {...getHoverReferenceProps()}
+            />
+          )}
+        </div>
+        {/* Rarity line */}
+        <div
+          className="h-1 shadow-sm shadow-black/50"
+          style={{ backgroundColor: rarityColor }}
+        />
+        {/* Item name */}
+        <div className="font-display mt-1 text-[12px] leading-3 break-words text-white drop-shadow-[0_0_1px_rgba(0,0,0,1)]">
+          {has(model) && <div className="font-bold">{model}</div>}
+          {has(name) && <div>{name}</div>}
         </div>
       </div>
 

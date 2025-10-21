@@ -63,66 +63,73 @@ export function MarketplaceItemCard({
 
   return (
     <>
-      <div
-        onClick={onClick}
-        ref={ref}
-        {...getHoverReferenceProps()}
-        className="group relative cursor-pointer transition-all hover:drop-shadow-[0_0_5px_rgba(0,0,0,1)]"
-      >
-      <div className="relative w-full overflow-hidden rounded-sm border border-neutral-700 bg-gradient-to-b from-neutral-800 to-neutral-900 transition-all group-hover:border-purple-500/50">
-        {/* Item Image */}
-        <div className="relative aspect-[4/3] p-4">
-          <ItemImage
-            className="h-full w-full object-contain"
-            item={economyItem}
-          />
-
-          {/* Wear/Rarity badge */}
-          {item.wear !== undefined && (
-            <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-1 text-xs text-white">
-              {wearToString(item.wear)}
-            </div>
-          )}
+      <div className="w-[154px]">
+        <div className="group relative bg-linear-to-b from-neutral-600 to-neutral-400 p-[1px]">
+          <div className="bg-linear-to-b from-neutral-500 to-neutral-300 px-1">
+            <ItemImage className="w-[144px]" item={economyItem} />
+          </div>
 
           {/* Own listing badge */}
           {isOwn && (
-            <div className="absolute top-2 right-2 rounded bg-green-600/80 px-2 py-1 text-xs font-bold text-white">
+            <div className="absolute top-[1px] left-[1px] bg-green-600 px-1 py-1 text-[10px] font-bold text-green-200 shadow-lg transition-all group-hover:text-white">
               SAJÁT
             </div>
           )}
+
+          {/* Stickers display */}
+          {inventoryItem.stickers !== undefined && (
+            <div className="absolute bottom-0 left-0 flex items-center p-1">
+              {inventoryItem.someStickers().map(([slot, { id }]) => (
+                <ItemImage
+                  className="h-5"
+                  item={CS2Economy.getById(id)}
+                  key={slot}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Patches display */}
+          {inventoryItem.patches !== undefined && (
+            <div className="absolute bottom-0 left-0 flex items-center p-1">
+              {inventoryItem.somePatches().map(([slot, id]) => (
+                <ItemImage
+                  className="h-5"
+                  item={CS2Economy.getById(id)}
+                  key={slot}
+                />
+              ))}
+            </div>
+          )}
+
+          <button
+            className="absolute top-0 left-0 h-full w-full border-4 border-transparent transition-all hover:border-white"
+            onClick={onClick}
+            ref={ref}
+            {...getHoverReferenceProps()}
+          />
         </div>
 
-        {/* Item Info */}
-        <div className="border-t border-neutral-700 bg-black/30 p-3">
-          {/* Item Name */}
-          <div className="mb-2 min-h-[2.5rem]">
-            <h3 className="font-display line-clamp-2 text-sm font-medium text-white">
-              {economyItem.name}
-            </h3>
-          </div>
+        {/* Rarity line */}
+        <div
+          className="h-1 shadow-sm shadow-black/50"
+          style={{ backgroundColor: economyItem.rarity }}
+        />
 
-          {/* Price */}
-          <div className="flex items-center justify-between">
+        {/* Item name and price */}
+        <div className="font-display mt-1 text-[12px] leading-3 break-words text-white drop-shadow-[0_0_1px_rgba(0,0,0,1)]">
+          <div className="font-bold">{economyItem.name}</div>
+          {item.wear !== undefined && (
+            <div className="text-neutral-400">{wearToString(item.wear)}</div>
+          )}
+          <div className="mt-1 flex items-center gap-1">
             <CurrencyDisplay
               amount={listing.price}
-              className="text-base font-bold text-yellow-400"
+              className="text-sm font-bold text-yellow-400"
               showIcon={true}
             />
           </div>
-
-          {/* Seller Info */}
-          <div className="mt-2 flex items-center gap-2 border-t border-neutral-700/50 pt-2">
-            <img
-              src={listing.seller.avatar}
-              alt={listing.seller.name}
-              className="h-5 w-5 rounded-full"
-            />
-            <span className="truncate text-xs text-neutral-400">
-              {listing.seller.name}
-            </span>
-          </div>
         </div>
-      </div>
       </div>
 
       {/* Tooltip using Portal */}
