@@ -41,7 +41,7 @@ export default function MarketplacePage() {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
-  const [selectedTab, setSelectedTab] = useState<"all" | "my">("all");
+  const [selectedTab, setSelectedTab] = useState<"all" | "my" | "sold">("all");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
 
   // Fetch marketplace listings
@@ -56,7 +56,7 @@ export default function MarketplacePage() {
           if (data.listings) {
             setListings(data.listings);
           }
-        } else {
+        } else if (selectedTab === "my" || selectedTab === "sold") {
           const response = await fetch("/api/marketplace", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -65,7 +65,12 @@ export default function MarketplacePage() {
           const data = await response.json();
 
           if (data.success && data.listings) {
-            setListings(data.listings);
+            // Filter based on tab
+            if (selectedTab === "my") {
+              setListings(data.listings.filter((l: any) => l.status === "ACTIVE"));
+            } else {
+              setListings(data.listings.filter((l: any) => l.status === "SOLD"));
+            }
           }
         }
       } catch (error) {
@@ -174,6 +179,14 @@ export default function MarketplacePage() {
                 }`}
               >
                 Saját hirdetéseim
+              </button>
+              <button
+                onClick={() => setSelectedTab("sold")}
+                className={`font-display flex items-center gap-2 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 ${
+                  selectedTab === "sold" ? "bg-black/30" : ""
+                }`}
+              >
+                Eladott tárgyak
               </button>
             </div>
           </div>

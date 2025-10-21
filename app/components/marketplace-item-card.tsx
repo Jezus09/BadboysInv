@@ -70,9 +70,16 @@ export function MarketplaceItemCard({
           </div>
 
           {/* Own listing badge */}
-          {isOwn && (
+          {isOwn && listing.status !== "SOLD" && (
             <div className="absolute top-[1px] left-[1px] bg-green-600 px-1 py-1 text-[10px] font-bold text-green-200 shadow-lg transition-all group-hover:text-white">
               SAJÁT
+            </div>
+          )}
+
+          {/* Sold badge */}
+          {listing.status === "SOLD" && (
+            <div className="absolute top-[1px] right-[1px] bg-red-600 px-1 py-1 text-[10px] font-bold text-red-200 shadow-lg transition-all group-hover:text-white">
+              ELADVA
             </div>
           )}
 
