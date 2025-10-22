@@ -145,8 +145,8 @@ export default function TradeUpPage() {
   const resultRarity = selectedRarity ? getNextRarity(selectedRarity) : null;
 
   // Show error/success messages
-  const errorMessage = fetcher.data && !fetcher.data.success ? fetcher.data.error : null;
-  const successMessage = fetcher.data?.success ? `Sikerült! Új item: ${fetcher.data.resultItem?.name}` : null;
+  const errorMessage = fetcher.data && !(fetcher.data as any).success ? (fetcher.data as any).error : null;
+  const successMessage = (fetcher.data as any)?.success ? `Sikerült! Új item: ${(fetcher.data as any).resultItem?.name}` : null;
 
   return (
     <div className="m-auto w-full px-4 lg:w-[1024px] lg:px-0">
