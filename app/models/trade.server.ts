@@ -6,7 +6,7 @@
 import { CS2BaseInventoryItem } from "@ianlucas/cs2-lib";
 import { prisma } from "~/db.server";
 import { parseInventory } from "~/utils/inventory";
-import { manipulateUserInventory } from "./user.server";
+import { manipulateUserInventory, notifyPluginInventoryChange } from "./user.server";
 import { ApiActionSyncUrl, SyncAction } from "~/data/sync";
 import { getUserCoins, addCoins, subtractCoins } from "./currency.server";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -205,12 +205,41 @@ export async function acceptTrade(tradeId: string) {
   );
 
   try {
-    // Manual JSON manipulation approach
-    console.log("=== MANUAL INVENTORY MANIPULATION ===");
+    // Use transaction with row-level locking to prevent race conditions
+    return await prisma.$transaction(async (tx) => {
+      console.log("=== ACQUIRING LOCKS FOR BOTH USERS ===");
 
-    // Parse both inventories
-    const senderInventoryData = parseInventory(trade.senderUser.inventory);
-    const receiverInventoryData = parseInventory(trade.receiverUser.inventory);
+      // Lock both user rows with FOR UPDATE to prevent concurrent modifications
+      // Lock in consistent order (by userId) to prevent deadlocks
+      const userIdsToLock = [trade.senderUserId, trade.receiverUserId].sort();
+
+      const lockedUsers = await tx.$queryRaw<Array<{ id: string; inventory: string; coins: any }>>`
+        SELECT id, inventory, coins
+        FROM "User"
+        WHERE id IN (${userIdsToLock[0]}, ${userIdsToLock[1]})
+        FOR UPDATE
+      `;
+
+      if (!lockedUsers || lockedUsers.length !== 2) {
+        throw new Error("Could not lock both users");
+      }
+
+      console.log("=== LOCKS ACQUIRED FOR BOTH USERS ===");
+
+      // Get locked data
+      const lockedSender = lockedUsers.find(u => u.id === trade.senderUserId);
+      const lockedReceiver = lockedUsers.find(u => u.id === trade.receiverUserId);
+
+      if (!lockedSender || !lockedReceiver) {
+        throw new Error("Could not find locked user data");
+      }
+
+      // Manual JSON manipulation approach
+      console.log("=== MANUAL INVENTORY MANIPULATION ===");
+
+      // Parse both inventories from locked data
+      const senderInventoryData = parseInventory(lockedSender.inventory);
+      const receiverInventoryData = parseInventory(lockedReceiver.inventory);
 
     if (!senderInventoryData?.items || !receiverInventoryData?.items) {
       throw new Error("Could not parse inventories");
@@ -377,125 +406,128 @@ export async function acceptTrade(tradeId: string) {
       Object.keys(newReceiverInventory.items)
     );
 
-    // Handle coins transfer if any
-    const senderCoins = new Decimal(trade.senderCoins || 0);
-    const receiverCoins = new Decimal(trade.receiverCoins || 0);
+      // Handle coins transfer if any
+      const senderCoins = new Decimal(trade.senderCoins || 0);
+      const receiverCoins = new Decimal(trade.receiverCoins || 0);
 
-    console.log(`=== HANDLING COINS TRANSFER ===`);
-    console.log(`Sender offers: ${senderCoins} coins`);
-    console.log(`Receiver offers: ${receiverCoins} coins`);
+      console.log(`=== HANDLING COINS TRANSFER ===`);
+      console.log(`Sender offers: ${senderCoins} coins`);
+      console.log(`Receiver offers: ${receiverCoins} coins`);
 
-    // Validate coin balances before proceeding
-    if (senderCoins.gt(0)) {
-      const senderBalance = await getUserCoins(trade.senderUserId);
-      if (senderBalance.lt(senderCoins)) {
+      // Validate coin balances from locked data
+      const senderBalance = new Decimal(lockedSender.coins || 0);
+      const receiverBalance = new Decimal(lockedReceiver.coins || 0);
+
+      if (senderCoins.gt(0) && senderBalance.lt(senderCoins)) {
         throw new Error(
           `Trade failed: Sender has insufficient coins. Required: ${senderCoins}, Available: ${senderBalance}`
         );
       }
-    }
 
-    if (receiverCoins.gt(0)) {
-      const receiverBalance = await getUserCoins(trade.receiverUserId);
-      if (receiverBalance.lt(receiverCoins)) {
+      if (receiverCoins.gt(0) && receiverBalance.lt(receiverCoins)) {
         throw new Error(
           `Trade failed: Receiver has insufficient coins. Required: ${receiverCoins}, Available: ${receiverBalance}`
         );
       }
-    }
 
-    // Transfer coins if any
-    if (senderCoins.gt(0)) {
-      console.log(`Transferring ${senderCoins} coins from sender to receiver`);
-      const subtractResult = await subtractCoins(
-        trade.senderUserId,
-        senderCoins,
-        "trade_out",
-        `Trade ${tradeId} - coins sent`
-      );
-      if (!subtractResult.success) {
-        throw new Error(`Coin transfer failed: ${subtractResult.error}`);
-      }
-      await addCoins(
-        trade.receiverUserId,
-        senderCoins,
-        "trade_in",
-        `Trade ${tradeId} - coins received`
-      );
-    }
+      // Calculate new coin balances
+      const newSenderCoins = senderBalance.minus(senderCoins).plus(receiverCoins);
+      const newReceiverCoins = receiverBalance.minus(receiverCoins).plus(senderCoins);
 
-    if (receiverCoins.gt(0)) {
-      console.log(
-        `Transferring ${receiverCoins} coins from receiver to sender`
-      );
-      const subtractResult = await subtractCoins(
-        trade.receiverUserId,
-        receiverCoins,
-        "trade_out",
-        `Trade ${tradeId} - coins sent`
-      );
-      if (!subtractResult.success) {
-        throw new Error(`Coin transfer failed: ${subtractResult.error}`);
-      }
-      await addCoins(
-        trade.senderUserId,
-        receiverCoins,
-        "trade_in",
-        `Trade ${tradeId} - coins received`
-      );
-    }
+      console.log(`New sender balance: ${newSenderCoins}`);
+      console.log(`New receiver balance: ${newReceiverCoins}`);
 
-    console.log("Coin transfers completed successfully");
-
-    // Update inventories in database
-    const promises = [
-      prisma.user.update({
+      // Update inventories and coins in database (within transaction)
+      await tx.user.update({
         where: { id: trade.senderUserId },
-        data: { inventory: JSON.stringify(newSenderInventory) }
-      }),
-      prisma.user.update({
+        data: {
+          inventory: JSON.stringify(newSenderInventory),
+          coins: newSenderCoins
+        }
+      });
+
+      await tx.user.update({
         where: { id: trade.receiverUserId },
-        data: { inventory: JSON.stringify(newReceiverInventory) }
-      }),
-      updateTradeStatus(tradeId, "COMPLETED")
-    ];
+        data: {
+          inventory: JSON.stringify(newReceiverInventory),
+          coins: newReceiverCoins
+        }
+      });
 
-    await Promise.all(promises);
+      // Update trade status
+      await tx.trade.update({
+        where: { id: tradeId },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
 
+      // Create currency transaction records if coins were transferred
+      if (senderCoins.gt(0)) {
+        await tx.currencyTransaction.create({
+          data: {
+            userId: trade.senderUserId,
+            amount: senderCoins.neg(),
+            type: "trade_out",
+            description: `Trade ${tradeId} - coins sent`,
+            relatedUserId: trade.receiverUserId
+          }
+        });
+
+        await tx.currencyTransaction.create({
+          data: {
+            userId: trade.receiverUserId,
+            amount: senderCoins,
+            type: "trade_in",
+            description: `Trade ${tradeId} - coins received`,
+            relatedUserId: trade.senderUserId
+          }
+        });
+      }
+
+      if (receiverCoins.gt(0)) {
+        await tx.currencyTransaction.create({
+          data: {
+            userId: trade.receiverUserId,
+            amount: receiverCoins.neg(),
+            type: "trade_out",
+            description: `Trade ${tradeId} - coins sent`,
+            relatedUserId: trade.senderUserId
+          }
+        });
+
+        await tx.currencyTransaction.create({
+          data: {
+            userId: trade.senderUserId,
+            amount: receiverCoins,
+            type: "trade_in",
+            description: `Trade ${tradeId} - coins received`,
+            relatedUserId: trade.receiverUserId
+          }
+        });
+      }
+
+      console.log("=== TRADE COMPLETED SUCCESSFULLY (LOCKS RELEASED) ===");
+
+      return trade;
+    }, {
+      // Set transaction timeout to 15 seconds for trade operations
+      timeout: 15000,
+      // Use serializable isolation level for maximum safety
+      isolationLevel: 'Serializable'
+    });
+
+    // After successful transaction, notify plugin about inventory changes (outside transaction)
+    // Don't await these - let them run in background
     console.log("=== TRIGGERING INVENTORY SYNC FOR BOTH USERS ===");
-
-    // Trigger sync for both users to refresh their inventory in the frontend
-    try {
-      await Promise.all([
-        // Sync sender inventory
-        manipulateUserInventory({
-          rawInventory: JSON.stringify(newSenderInventory),
-          userId: trade.senderUserId,
-          async manipulate(inventory) {
-            // Just sync, no changes needed - the inventory was already updated in DB
-            console.log(`Synced sender inventory - ${inventory.size()} items`);
-          }
-        }),
-        // Sync receiver inventory
-        manipulateUserInventory({
-          rawInventory: JSON.stringify(newReceiverInventory),
-          userId: trade.receiverUserId,
-          async manipulate(inventory) {
-            // Just sync, no changes needed - the inventory was already updated in DB
-            console.log(
-              `Synced receiver inventory - ${inventory.size()} items`
-            );
-          }
-        })
-      ]);
-      console.log("Both inventories synced successfully");
-    } catch (syncError) {
-      console.error("Error syncing inventories:", syncError);
-      // Don't fail the trade if sync fails
-    }
-
-    console.log("=== TRADE COMPLETED SUCCESSFULLY ===");
-    return true;
+    notifyPluginInventoryChange(trade.senderUserId).catch(err =>
+      console.error("Failed to notify plugin for sender:", err)
+    );
+    notifyPluginInventoryChange(trade.receiverUserId).catch(err =>
+      console.error("Failed to notify plugin for receiver:", err)
+    );
   } catch (error) {
     console.error("=== ACCEPT TRADE ERROR ===");
     console.error("Error accepting trade:", error);

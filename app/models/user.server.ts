@@ -147,23 +147,76 @@ export async function manipulateUserInventory({
   syncedAt?: number;
   userId: string;
 }) {
-  const inventory = new CS2Inventory({
-    data: parseInventory(rawInventory),
-    maxItems: await inventoryMaxItems.for(userId).get(),
-    storageUnitMaxItems: await inventoryStorageUnitMaxItems.for(userId).get()
-  });
-  try {
-    await manipulate(inventory);
-  } catch {
-    throw badRequest;
-  }
-  if (syncedAt !== undefined) {
-    const currentSyncedAt = await getUserSyncedAt(userId);
-    if (syncedAt !== currentSyncedAt.getTime()) {
-      throw conflict;
+  // Use transaction with row-level locking to prevent race conditions and item duplication
+  return await prisma.$transaction(async (tx) => {
+    console.log(`[InventoryLock] Acquiring lock for user ${userId}`);
+
+    // Lock the user row with FOR UPDATE to prevent concurrent modifications
+    // This ensures no two operations can modify the same user's inventory simultaneously
+    const lockedUser = await tx.$queryRaw<Array<{ inventory: string; syncedAt: Date }>>`
+      SELECT inventory, "syncedAt"
+      FROM "User"
+      WHERE id = ${userId}
+      FOR UPDATE
+    `;
+
+    if (!lockedUser || lockedUser.length === 0) {
+      throw new Error("User not found");
     }
-  }
-  return await updateUserInventory(userId, inventory.stringify());
+
+    const currentInventory = lockedUser[0].inventory;
+    const currentSyncedAt = lockedUser[0].syncedAt;
+
+    console.log(`[InventoryLock] Lock acquired for user ${userId}`);
+
+    // Check syncedAt if provided (optimistic locking on top of pessimistic)
+    if (syncedAt !== undefined) {
+      if (syncedAt !== currentSyncedAt.getTime()) {
+        console.log(`[InventoryLock] Sync conflict for user ${userId}`);
+        throw conflict;
+      }
+    }
+
+    // Create inventory instance with locked data
+    const inventory = new CS2Inventory({
+      data: parseInventory(currentInventory),
+      maxItems: await inventoryMaxItems.for(userId).get(),
+      storageUnitMaxItems: await inventoryStorageUnitMaxItems.for(userId).get()
+    });
+
+    // Apply the manipulation
+    try {
+      await manipulate(inventory);
+    } catch (error) {
+      console.error(`[InventoryLock] Manipulation failed for user ${userId}:`, error);
+      throw badRequest;
+    }
+
+    // Update the inventory and timestamp in the same transaction
+    const newSyncedAt = new Date();
+    const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
+    const stringifiedInventory = inventory.stringify();
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        inventory: stringifiedInventory,
+        syncedAt: newSyncedAt,
+        inventoryLastUpdateTime
+      }
+    });
+
+    console.log(`[InventoryLock] Inventory updated and lock released for user ${userId}`);
+
+    return {
+      syncedAt: newSyncedAt
+    };
+  }, {
+    // Set transaction timeout to 10 seconds
+    timeout: 10000,
+    // Use serializable isolation level for maximum safety
+    isolationLevel: 'Serializable'
+  });
 }
 
 export async function getUserBasicData(userId: string) {
