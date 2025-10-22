@@ -15,7 +15,8 @@ import {
   faExchangeAlt,
   faStore,
   faServer,
-  faXmark
+  faXmark,
+  faArrowTrendUp
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useToggle } from "@uidotdev/usehooks";
@@ -110,6 +111,12 @@ export function Header({
                 to="/marketplace"
                 icon={faStore}
                 label="Marketplace"
+                onClick={closeMenu}
+              />
+              <HeaderLink
+                to="/trade-up"
+                icon={faArrowTrendUp}
+                label="Trade Up"
                 onClick={closeMenu}
               />
               {isOwner && (
