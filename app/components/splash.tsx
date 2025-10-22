@@ -32,13 +32,14 @@ export function Splash() {
         style={{
           border: "1px solid transparent",
           borderRadius: "4px",
-          minWidth: "216.859px",
-          minHeight: "44px"
+          minWidth: "300px",
+          minHeight: "44px",
+          textAlign: "center"
         }}
       >
         <div
           suppressHydrationWarning
-          style={{ padding: "0.25em 0.5em 0 0.5em" }}
+          style={{ padding: "0.25em 0.5em 0 0.5em", display: "flex", justifyContent: "center" }}
         >
           <Logo
             className="m-auto h-8"
