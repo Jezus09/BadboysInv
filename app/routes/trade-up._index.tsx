@@ -71,13 +71,16 @@ export default function TradeUpPage() {
   const navigate = useNavigate();
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
 
-  // Refresh page when trade up is successful
+  // Refresh page when trade up is successful (with delay to show message)
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.success) {
-      // Clear selection and refresh
+      // Clear selection
       setSelectedItems([]);
-      // Navigate to same page to refresh data
-      navigate("/trade-up", { replace: true });
+      // Wait 3 seconds to show success message, then refresh
+      const timer = setTimeout(() => {
+        navigate("/trade-up", { replace: true });
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [fetcher.state, fetcher.data, navigate]);
 
@@ -141,9 +144,25 @@ export default function TradeUpPage() {
     : null;
   const resultRarity = selectedRarity ? getNextRarity(selectedRarity) : null;
 
+  // Show error/success messages
+  const errorMessage = fetcher.data && !fetcher.data.success ? fetcher.data.error : null;
+  const successMessage = fetcher.data?.success ? `Sikerült! Új item: ${fetcher.data.resultItem?.name}` : null;
+
   return (
     <div className="m-auto w-full px-4 lg:w-[1024px] lg:px-0">
       <div className="my-8">
+        {/* Error/Success Messages */}
+        {errorMessage && (
+          <div className="mb-4 rounded-lg border-2 border-red-500 bg-red-500/20 p-4 text-center">
+            <p className="font-display text-lg font-bold text-red-400">❌ Hiba: {errorMessage}</p>
+          </div>
+        )}
+        {successMessage && (
+          <div className="mb-4 rounded-lg border-2 border-green-500 bg-green-500/20 p-4 text-center">
+            <p className="font-display text-lg font-bold text-green-400">✅ {successMessage}</p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="relative mb-6">
