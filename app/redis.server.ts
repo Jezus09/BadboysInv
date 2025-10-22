@@ -7,34 +7,54 @@ import Redis from "ioredis";
 
 // Redis singleton instance
 let redis: Redis | null = null;
+let redisConnectionFailed = false;
 
-export function getRedis(): Redis {
+export function getRedis(): Redis | null {
+  // If connection previously failed, return null immediately to avoid blocking
+  if (redisConnectionFailed) {
+    return null;
+  }
+
   if (redis) {
     return redis;
   }
 
-  const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+  const redisUrl = process.env.REDIS_URL;
+
+  // If no REDIS_URL configured, disable Redis caching
+  if (!redisUrl) {
+    console.log("[Redis] REDIS_URL not configured, caching disabled");
+    redisConnectionFailed = true;
+    return null;
+  }
 
   console.log("[Redis] Connecting to Redis...");
 
   redis = new Redis(redisUrl, {
-    maxRetriesPerRequest: 3,
+    connectTimeout: 1000, // 1 second connection timeout
+    commandTimeout: 500,  // 500ms command timeout
+    maxRetriesPerRequest: 1, // Only retry once
     retryStrategy(times) {
-      const delay = Math.min(times * 50, 2000);
-      return delay;
+      if (times > 2) {
+        redisConnectionFailed = true;
+        return null; // Stop retrying
+      }
+      return 100; // Retry after 100ms
     },
     reconnectOnError(err) {
       console.error("[Redis] Connection error:", err.message);
-      return true;
+      return false; // Don't auto-reconnect on error
     },
   });
 
   redis.on("connect", () => {
     console.log("[Redis] Connected successfully");
+    redisConnectionFailed = false;
   });
 
   redis.on("error", (err) => {
-    console.error("[Redis] Error:", err);
+    console.error("[Redis] Error:", err.message);
+    redisConnectionFailed = true;
   });
 
   return redis;
@@ -44,6 +64,10 @@ export function getRedis(): Redis {
 export async function getCachedInventory(userId: string): Promise<string | null> {
   try {
     const redis = getRedis();
+    if (!redis) {
+      return null; // Redis not available, skip cache
+    }
+
     const cached = await redis.get(`inventory:${userId}`);
 
     if (cached) {
@@ -66,6 +90,9 @@ export async function setCachedInventory(
 ): Promise<void> {
   try {
     const redis = getRedis();
+    if (!redis) {
+      return; // Redis not available, skip cache
+    }
     await redis.setex(`inventory:${userId}`, ttlSeconds, inventory);
     console.log(`[Redis] Cached inventory for user ${userId} (TTL: ${ttlSeconds}s)`);
   } catch (error) {
@@ -77,6 +104,9 @@ export async function setCachedInventory(
 export async function invalidateCachedInventory(userId: string): Promise<void> {
   try {
     const redis = getRedis();
+    if (!redis) {
+      return; // Redis not available, skip
+    }
     await redis.del(`inventory:${userId}`);
     console.log(`[Redis] Invalidated cache for user ${userId}`);
   } catch (error) {
@@ -92,6 +122,10 @@ export async function cacheQuery<T>(
 ): Promise<T> {
   try {
     const redis = getRedis();
+    if (!redis) {
+      return queryFn(); // Redis not available, execute query directly
+    }
+
     const cached = await redis.get(key);
 
     if (cached) {
