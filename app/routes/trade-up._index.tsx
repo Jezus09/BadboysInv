@@ -110,17 +110,22 @@ export default function TradeUpPage() {
     setSelectedItems(selectedItems.filter((_, i) => i !== index));
   };
 
-  const handleTradeUp = () => {
+  const handleTradeUp = async () => {
     if (selectedItems.length !== 10) {
+      console.log("[TradeUp] Not enough items:", selectedItems.length);
       return;
     }
 
     const itemUids = selectedItems.map(item => item.uid);
+    console.log("[TradeUp] Submitting trade up with UIDs:", itemUids);
 
-    fetcher.submit(
-      { itemUids: JSON.stringify(itemUids) },
-      { method: "POST", action: "/api/trade-up" }
-    );
+    const formData = new FormData();
+    formData.append("itemUids", JSON.stringify(itemUids));
+
+    fetcher.submit(formData, {
+      method: "POST",
+      action: "/api/trade-up"
+    });
   };
 
   const canTradeUp = selectedItems.length === 10;

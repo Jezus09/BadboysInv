@@ -83,12 +83,13 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           });
         }
 
-        // Create listing
+        // Create listing (this will handle removing item from inventory)
         const listing = await createListing({
           userId,
           itemUid: params.itemUid,
           itemData: JSON.stringify(item),
-          price: params.price
+          price: params.price,
+          currentInventory: userInventory
         });
 
         return data({
