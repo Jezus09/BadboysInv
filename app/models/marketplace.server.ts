@@ -60,13 +60,15 @@ export async function createListing({
   itemUid,
   itemData,
   price,
-  expiresInDays = 7
+  expiresInDays = 7,
+  currentInventory
 }: {
   userId: string;
   itemUid: number;
   itemData: string;
   price: number;
   expiresInDays?: number;
+  currentInventory: string;
 }) {
   // Check if user already has an active listing for this item
   const existingListing = await prisma.marketplaceListing.findFirst({
@@ -84,20 +86,52 @@ export async function createListing({
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
-  return await prisma.marketplaceListing.create({
-    data: {
-      userId,
-      itemUid,
-      itemData,
-      price: new Decimal(price),
-      expiresAt
-    }
+  // Parse inventory and remove the item
+  const inventoryData = parseInventory(currentInventory);
+  if (!inventoryData?.items) {
+    throw new Error("Could not parse inventory");
+  }
+
+  // Remove item from inventory
+  const newInventory = { ...inventoryData };
+  newInventory.items = { ...inventoryData.items };
+  delete newInventory.items[itemUid];
+
+  console.log(`[Marketplace] Removing item UID ${itemUid} from inventory when creating listing`);
+
+  // Create listing and update inventory in transaction
+  return await prisma.$transaction(async (tx) => {
+    // Update user inventory to remove the listed item
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        inventory: JSON.stringify(newInventory)
+      }
+    });
+
+    // Create the listing
+    return await tx.marketplaceListing.create({
+      data: {
+        userId,
+        itemUid,
+        itemData,
+        price: new Decimal(price),
+        expiresAt
+      }
+    });
   });
 }
 
 export async function cancelListing(listingId: string, userId: string) {
   const listing = await prisma.marketplaceListing.findUnique({
-    where: { id: listingId }
+    where: { id: listingId },
+    include: {
+      seller: {
+        select: {
+          inventory: true
+        }
+      }
+    }
   });
 
   if (!listing || listing.userId !== userId) {
@@ -108,12 +142,53 @@ export async function cancelListing(listingId: string, userId: string) {
     throw new Error("Listing is not active");
   }
 
-  return await prisma.marketplaceListing.update({
-    where: { id: listingId },
-    data: {
-      status: "CANCELLED",
-      updatedAt: new Date()
+  // Parse the item data from listing
+  const itemData = JSON.parse(listing.itemData);
+
+  // Parse seller's current inventory
+  const inventoryData = parseInventory(listing.seller.inventory);
+  if (!inventoryData?.items) {
+    throw new Error("Could not parse inventory");
+  }
+
+  // Find next available UID
+  const getNextUID = (inventory: any) => {
+    const existingUIDs = Object.keys(inventory.items)
+      .map((k) => parseInt(k))
+      .filter((n) => !isNaN(n));
+    let nextUID = Math.max(0, ...existingUIDs) + 1;
+    while (inventory.items[nextUID]) {
+      nextUID++;
     }
+    return nextUID;
+  };
+
+  // Add item back to inventory with new UID
+  const newInventory = { ...inventoryData };
+  newInventory.items = { ...inventoryData.items };
+  const newUID = getNextUID(newInventory);
+  newInventory.items[newUID] = itemData;
+
+  console.log(`[Marketplace] Restoring item to inventory with new UID ${newUID} (was ${listing.itemUid})`);
+
+  // Update listing status and restore item in transaction
+  return await prisma.$transaction(async (tx) => {
+    // Update user inventory to restore the item
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        inventory: JSON.stringify(newInventory)
+      }
+    });
+
+    // Mark listing as cancelled
+    return await tx.marketplaceListing.update({
+      where: { id: listingId },
+      data: {
+        status: "CANCELLED",
+        updatedAt: new Date()
+      }
+    });
   });
 }
 
@@ -128,8 +203,7 @@ export async function purchaseListing(listingId: string, buyerId: string) {
       seller: {
         select: {
           id: true,
-          coins: true,
-          inventory: true
+          coins: true
         }
       }
     }
@@ -168,41 +242,25 @@ export async function purchaseListing(listingId: string, buyerId: string) {
 
   console.log("Seller:", listing.userId);
   console.log("Buyer:", buyerId);
-  console.log("Item UID:", listing.itemUid);
+  console.log("Item UID (original):", listing.itemUid);
   console.log("Price:", listing.price.toString());
 
-  // Parse inventories
-  const sellerInventoryData = parseInventory(listing.seller.inventory);
+  // Parse buyer's inventory (item already removed from seller when listing was created)
   const buyerInventoryData = parseInventory(buyer.inventory);
 
-  if (!sellerInventoryData?.items || !buyerInventoryData?.items) {
-    throw new Error("Could not parse inventories");
+  if (!buyerInventoryData?.items) {
+    throw new Error("Could not parse buyer inventory");
   }
 
-  console.log("Original seller inventory UIDs:", Object.keys(sellerInventoryData.items));
   console.log("Original buyer inventory UIDs:", Object.keys(buyerInventoryData.items));
-
-  // Check if item still exists in seller's inventory
-  const itemInInventory = sellerInventoryData.items[listing.itemUid];
-  if (!itemInInventory) {
-    throw new Error("Item no longer exists in seller's inventory");
-  }
 
   // Parse the item data from listing
   const itemData = JSON.parse(listing.itemData);
   console.log("Item to transfer:", itemData);
 
-  // Create new inventory objects
-  const newSellerInventory = { ...sellerInventoryData };
+  // Create new buyer inventory object
   const newBuyerInventory = { ...buyerInventoryData };
-
-  // Copy items objects
-  newSellerInventory.items = { ...sellerInventoryData.items };
   newBuyerInventory.items = { ...buyerInventoryData.items };
-
-  // Remove item from seller inventory
-  console.log(`Removing item UID ${listing.itemUid} from seller inventory`);
-  delete newSellerInventory.items[listing.itemUid];
 
   // Find next available UID for buyer
   const getNextUID = (inventory: any) => {
@@ -221,7 +279,6 @@ export async function purchaseListing(listingId: string, buyerId: string) {
   newBuyerInventory.items[newUID] = itemData;
   console.log(`Added item to buyer inventory with new UID ${newUID}`);
 
-  console.log("New seller inventory UIDs:", Object.keys(newSellerInventory.items));
   console.log("New buyer inventory UIDs:", Object.keys(newBuyerInventory.items));
 
   // Execute transaction
@@ -237,15 +294,7 @@ export async function purchaseListing(listingId: string, buyerId: string) {
       }
     });
 
-    // Update seller inventory
-    await tx.user.update({
-      where: { id: listing.userId },
-      data: {
-        inventory: JSON.stringify(newSellerInventory)
-      }
-    });
-
-    // Update buyer inventory
+    // Update buyer inventory (seller inventory already updated when listing was created)
     await tx.user.update({
       where: { id: buyerId },
       data: {
