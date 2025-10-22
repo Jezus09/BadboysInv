@@ -46,17 +46,23 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
   const user = await requireUser(request);
   const formData = await request.formData();
 
-  const { itemUids } = z
+  const { items } = z
     .object({
-      itemUids: z.string()
+      items: z.string()
     })
     .parse({
-      itemUids: formData.get("itemUids")
+      items: formData.get("items")
     });
 
-  const uids = JSON.parse(itemUids) as number[];
+  const itemProperties = JSON.parse(items) as Array<{
+    id: number;
+    wear?: number;
+    seed?: number;
+    stickers?: any;
+    nameTag?: string;
+  }>;
 
-  if (uids.length !== 10) {
+  if (itemProperties.length !== 10) {
     return Response.json({
       success: false,
       error: "Exactly 10 items required"
@@ -72,22 +78,50 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       rawInventory,
       userId: user.id,
       manipulate(inventory) {
-        // Get all items
-        const items = uids.map(uid => {
-          const item = inventory.get(uid);
-          return {
-            uid,
-            ...item
-          };
-        });
+        console.log(`[TradeUp] Looking for ${itemProperties.length} items in inventory`);
 
-        // Check all items exist
-        if (items.some(item => !item)) {
-          throw new Error("One or more items not found");
+        // Find and remove items by properties (not UID, since UID changes)
+        const itemsToRemove: number[] = [];
+
+        for (const targetItem of itemProperties) {
+          let found = false;
+
+          // Search through inventory for matching item
+          for (const [uid, invItem] of Object.entries(inventory.items)) {
+            const numericUid = parseInt(uid);
+
+            // Skip if already marked for removal
+            if (itemsToRemove.includes(numericUid)) {
+              continue;
+            }
+
+            // Match by item properties (same logic as trade system)
+            const match =
+              invItem.id === targetItem.id &&
+              Math.abs((invItem.wear || 0) - (targetItem.wear || 0)) < 0.0001 &&
+              (invItem.nameTag || "") === (targetItem.nameTag || "");
+
+            if (match) {
+              console.log(`[TradeUp] Found matching item at UID ${numericUid}: ID=${invItem.id}, wear=${invItem.wear}`);
+              itemsToRemove.push(numericUid);
+              found = true;
+              break;
+            }
+          }
+
+          if (!found) {
+            throw new Error(`Item not found in inventory: ID=${targetItem.id}, wear=${targetItem.wear}`);
+          }
+        }
+
+        // Verify we found all 10 items
+        if (itemsToRemove.length !== 10) {
+          throw new Error(`Expected to find 10 items, found ${itemsToRemove.length}`);
         }
 
         // Check all items have same rarity
-        const rarities = items.map(item => {
+        const rarities = itemsToRemove.map(uid => {
+          const item = inventory.get(uid);
           const economyItem = CS2Economy.getById(item.id);
           return economyItem.rarity.toLowerCase();
         });
@@ -121,7 +155,8 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         console.log(`[TradeUp] Selected reward: ${randomItem.name} (ID: ${randomItem.id})`);
 
         // Remove all 10 items
-        uids.forEach(uid => {
+        itemsToRemove.forEach(uid => {
+          console.log(`[TradeUp] Removing item UID ${uid}`);
           inventory.removeItem(uid);
         });
 
@@ -129,6 +164,8 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         inventory.add({
           id: resultItemId
         });
+
+        console.log(`[TradeUp] Trade up complete!`);
       }
     });
 

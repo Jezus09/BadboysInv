@@ -116,11 +116,18 @@ export default function TradeUpPage() {
       return;
     }
 
-    const itemUids = selectedItems.map(item => item.uid);
-    console.log("[TradeUp] Submitting trade up with UIDs:", itemUids);
+    // Send item properties instead of UIDs (UIDs change frequently)
+    const itemProperties = selectedItems.map(item => ({
+      id: item.id,
+      wear: item.wear,
+      seed: item.seed,
+      stickers: item.stickers,
+      nameTag: item.nameTag
+    }));
+    console.log("[TradeUp] Submitting trade up with items:", itemProperties);
 
     const formData = new FormData();
-    formData.append("itemUids", JSON.stringify(itemUids));
+    formData.append("items", JSON.stringify(itemProperties));
 
     fetcher.submit(formData, {
       method: "POST",
@@ -247,8 +254,13 @@ export default function TradeUpPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {eligibleItems.map((item: any) => {
-                const isSelected = selectedItems.some(s => s.uid === item.uid);
+              {eligibleItems.map((item: any, index: number) => {
+                // Check if selected by comparing item properties (not UID)
+                const isSelected = selectedItems.some(s =>
+                  s.id === item.id &&
+                  Math.abs((s.wear || 0) - (item.wear || 0)) < 0.0001 &&
+                  (s.nameTag || "") === (item.nameTag || "")
+                );
                 const economyItem = CS2Economy.getById(item.id);
                 const fakeItem = createFakeInventoryItem(economyItem, item);
 
@@ -260,7 +272,7 @@ export default function TradeUpPage() {
 
                 return (
                   <div
-                    key={item.uid}
+                    key={`${item.id}-${item.wear}-${index}`}
                     className={isDisabled ? "opacity-30 pointer-events-none" : "cursor-pointer hover:opacity-80 transition-opacity"}
                   >
                     <InventoryItemTile
