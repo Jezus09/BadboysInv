@@ -28,6 +28,9 @@ model User {
   sentTrades           Trade[]               @relation("SentTrades")
   receivedTrades       Trade[]               @relation("ReceivedTrades")
   marketplaceListings  MarketplaceListing[]
+
+  @@index([syncedAt])
+  @@index([inventoryLastUpdateTime])
 }
 
 model UserCache {
@@ -39,6 +42,8 @@ model UserCache {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([url, userId])
+  @@index([timestamp])
+  @@index([userId])
 }
 
 model UserPreference {
@@ -68,6 +73,9 @@ model ApiAuthToken {
   userId     String
   credential ApiCredential @relation(fields: [apiKey], references: [apiKey], onDelete: Cascade)
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([apiKey])
 }
 
 model Rule {

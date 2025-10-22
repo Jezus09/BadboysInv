@@ -8,11 +8,24 @@ import { prisma, Prisma } from "~/db.server";
 import { badRequest, conflict } from "~/responses.server";
 import { parseInventory } from "~/utils/inventory";
 import { inventoryMaxItems, inventoryStorageUnitMaxItems } from "./rule.server";
+import { getCachedInventory, setCachedInventory, invalidateCachedInventory } from "~/redis.server";
 
 export async function getUserInventory(userId: string) {
-  return (
-    (await prisma.user.findFirst({ where: { id: userId } }))?.inventory ?? null
-  );
+  // Try cache first
+  const cached = await getCachedInventory(userId);
+  if (cached) {
+    return cached;
+  }
+
+  // Cache miss - get from DB
+  const inventory = (await prisma.user.findFirst({ where: { id: userId } }))?.inventory ?? null;
+
+  // Cache the result for 5 minutes
+  if (inventory) {
+    await setCachedInventory(userId, inventory, 300);
+  }
+
+  return inventory;
 }
 
 export async function upsertUser(user: {
@@ -110,6 +123,10 @@ export async function existsUser(userId: string) {
 export async function updateUserInventory(userId: string, inventory: string) {
   const syncedAt = new Date();
   const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
+
+  // Invalidate cache before update
+  await invalidateCachedInventory(userId);
+
   return await prisma.user.update({
     select: {
       syncedAt: true
@@ -148,7 +165,7 @@ export async function manipulateUserInventory({
   userId: string;
 }) {
   // Use transaction with row-level locking to prevent race conditions and item duplication
-  return await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     console.log(`[InventoryLock] Acquiring lock for user ${userId}`);
 
     // Lock the user row with FOR UPDATE to prevent concurrent modifications
@@ -217,6 +234,11 @@ export async function manipulateUserInventory({
     // Use serializable isolation level for maximum safety against race conditions
     isolationLevel: Prisma.TransactionIsolationLevel.Serializable
   });
+
+  // Invalidate cache after successful transaction
+  await invalidateCachedInventory(userId);
+
+  return result;
 }
 
 export async function getUserBasicData(userId: string) {
