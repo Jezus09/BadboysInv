@@ -40,7 +40,7 @@ export async function upsertUser(user: {
       create: {
         id: user.steamID,
         inventory: emptyInventory,
-        coins: 0,
+        coins: 10,
         ...data
       },
       update: {
