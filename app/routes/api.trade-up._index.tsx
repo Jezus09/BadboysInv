@@ -37,14 +37,20 @@ function getNextRarity(rarity: string): string | null {
 }
 
 export const action = api(async ({ request }: Route.ActionArgs) => {
+  console.log("[TradeUp API] Request received");
+
   await middleware(request);
+  console.log("[TradeUp API] Middleware passed");
 
   if (request.method !== "POST") {
     throw methodNotAllowed;
   }
 
   const user = await requireUser(request);
+  console.log("[TradeUp API] User authenticated:", user.id);
+
   const formData = await request.formData();
+  console.log("[TradeUp API] FormData received");
 
   const { items } = z
     .object({
@@ -62,7 +68,10 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     nameTag?: string;
   }>;
 
+  console.log("[TradeUp API] Parsed items:", itemProperties.length);
+
   if (itemProperties.length !== 10) {
+    console.log("[TradeUp API] ERROR: Wrong number of items");
     return Response.json({
       success: false,
       error: "Exactly 10 items required"
