@@ -10,7 +10,7 @@ import { requireUser } from "~/auth.server";
 import { getUserInventory } from "~/models/user.server";
 import { useUser } from "~/components/app-context";
 import { CS2Economy } from "@ianlucas/cs2-lib";
-import { parseInventory } from "~/utils/inventory";
+import { parseInventory, createFakeInventoryItem } from "~/utils/inventory";
 import { InventoryItemTile } from "~/components/inventory-item-tile";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -180,17 +180,21 @@ export default function TradeUpPage() {
           </div>
 
           <div className="grid grid-cols-5 gap-4 min-h-[200px]">
-            {selectedItems.map((item, index) => (
-              <div key={index} className="relative">
-                <InventoryItemTile
-                  inventoryItem={item}
-                  onClick={() => handleRemoveItem(index)}
-                />
-                <div className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
-                  ✕
+            {selectedItems.map((item, index) => {
+              const economyItem = CS2Economy.getById(item.id);
+              const fakeItem = createFakeInventoryItem(economyItem, item);
+              return (
+                <div key={index} className="relative">
+                  <InventoryItemTile
+                    item={fakeItem}
+                    onClick={() => handleRemoveItem(index)}
+                  />
+                  <div className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
+                    ✕
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {Array.from({ length: 10 - selectedItems.length }).map((_, i) => (
               <div
                 key={`empty-${i}`}
@@ -229,13 +233,15 @@ export default function TradeUpPage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {eligibleItems.map((item: any) => {
                 const isSelected = selectedItems.some(s => s.uid === item.uid);
+                const economyItem = CS2Economy.getById(item.id);
+                const fakeItem = createFakeInventoryItem(economyItem, item);
                 return (
                   <div
                     key={item.uid}
                     className={isSelected ? "opacity-50 pointer-events-none" : "cursor-pointer"}
                   >
                     <InventoryItemTile
-                      inventoryItem={item}
+                      item={fakeItem}
                       onClick={() => handleItemClick(item)}
                     />
                   </div>
