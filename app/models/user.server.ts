@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CS2Inventory } from "@ianlucas/cs2-lib";
-import { prisma } from "~/db.server";
+import { prisma, Prisma } from "~/db.server";
 import { badRequest, conflict } from "~/responses.server";
 import { parseInventory } from "~/utils/inventory";
 import { inventoryMaxItems, inventoryStorageUnitMaxItems } from "./rule.server";
@@ -214,8 +214,8 @@ export async function manipulateUserInventory({
   }, {
     // Set transaction timeout to 10 seconds
     timeout: 10000,
-    // Use serializable isolation level for maximum safety
-    isolationLevel: 'Serializable'
+    // Use serializable isolation level for maximum safety against race conditions
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable
   });
 }
 

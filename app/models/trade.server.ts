@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CS2BaseInventoryItem } from "@ianlucas/cs2-lib";
-import { prisma } from "~/db.server";
+import { prisma, Prisma } from "~/db.server";
 import { parseInventory } from "~/utils/inventory";
 import { manipulateUserInventory, notifyPluginInventoryChange } from "./user.server";
 import { ApiActionSyncUrl, SyncAction } from "~/data/sync";
@@ -515,8 +515,8 @@ export async function acceptTrade(tradeId: string) {
     }, {
       // Set transaction timeout to 15 seconds for trade operations
       timeout: 15000,
-      // Use serializable isolation level for maximum safety
-      isolationLevel: 'Serializable'
+      // Use serializable isolation level for maximum safety against race conditions
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable
     });
 
     // After successful transaction, notify plugin about inventory changes (outside transaction)
