@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { useState } from "react";
-import { data, useLoaderData, useFetcher, Link } from "react-router";
+import { useState, useEffect } from "react";
+import { data, useLoaderData, useFetcher, Link, useNavigate } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
 import { requireUser } from "~/auth.server";
 import { getUserInventory } from "~/models/user.server";
@@ -68,7 +68,18 @@ export default function TradeUpPage() {
   const { inventory } = useLoaderData<typeof loader>();
   const user = useUser();
   const fetcher = useFetcher();
+  const navigate = useNavigate();
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
+
+  // Refresh page when trade up is successful
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.success) {
+      // Clear selection and refresh
+      setSelectedItems([]);
+      // Navigate to same page to refresh data
+      navigate("/trade-up", { replace: true });
+    }
+  }, [fetcher.state, fetcher.data, navigate]);
 
   // Filter inventory to only show skins (not cases, stickers, etc)
   const eligibleItems = inventory.filter((item: any) => {
@@ -235,10 +246,17 @@ export default function TradeUpPage() {
                 const isSelected = selectedItems.some(s => s.uid === item.uid);
                 const economyItem = CS2Economy.getById(item.id);
                 const fakeItem = createFakeInventoryItem(economyItem, item);
+
+                // Check if this item can be selected based on current selection
+                const canSelect = selectedItems.length === 0 ||
+                  economyItem.rarity.toLowerCase() === CS2Economy.getById(selectedItems[0].id).rarity.toLowerCase();
+
+                const isDisabled = isSelected || !canSelect;
+
                 return (
                   <div
                     key={item.uid}
-                    className={isSelected ? "opacity-50 pointer-events-none" : "cursor-pointer"}
+                    className={isDisabled ? "opacity-30 pointer-events-none" : "cursor-pointer hover:opacity-80 transition-opacity"}
                   >
                     <InventoryItemTile
                       item={fakeItem}
