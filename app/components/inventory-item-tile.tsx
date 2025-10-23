@@ -54,7 +54,7 @@ export function InventoryItemTile({
             IN MARKETPLACE
           </div>
         )}
-        {inventoryItem?.stickers !== undefined && (
+        {inventoryItem?.stickers !== undefined && inventoryItem.allStickers().length > 0 && (
           <div className="absolute bottom-0 left-0 flex items-center p-1">
             {inventoryItem.someStickers().map(([slot, { id }]) => (
               <ItemImage
@@ -65,7 +65,7 @@ export function InventoryItemTile({
             ))}
           </div>
         )}
-        {inventoryItem?.patches !== undefined && (
+        {inventoryItem?.patches !== undefined && inventoryItem.allPatches().length > 0 && (
           <div className="absolute bottom-0 left-0 flex items-center p-1">
             {inventoryItem.somePatches().map(([slot, id]) => (
               <ItemImage
