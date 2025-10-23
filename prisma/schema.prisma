@@ -255,3 +255,47 @@ enum MarketplaceStatus {
   CANCELLED   // Cancelled by seller
   EXPIRED     // Listing expired
 }
+
+model ItemHistory {
+  id           String         @id @default(uuid())
+  itemUuid     String         @unique // Global UUID for the item
+  itemId       Int            // CS2 economy item ID
+  wear         Float?         // Item wear value
+  seed         Int?           // Item seed
+  nameTag      String?        // Custom name tag
+  stickers     String?        // JSON serialized stickers data
+  createdAt    DateTime       @default(now())
+  createdBy    String         // User ID who created/received the item
+  source       String         // "DROP", "CASE", "SHOP", "TRADE", "MARKETPLACE", "CRAFT", "TRADEUP"
+  currentOwner String?        // Current owner user ID (null if deleted/consumed)
+  deletedAt    DateTime?      // When item was deleted/consumed
+
+  // Relations
+  transfers    ItemTransfer[]
+
+  @@index([itemUuid])
+  @@index([currentOwner])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+model ItemTransfer {
+  id           String      @id @default(uuid())
+  itemUuid     String      // UUID of the item being transferred
+  fromUser     String?     // Source user ID (null for new items)
+  toUser       String      // Destination user ID
+  transferType String      // "TRADE", "MARKETPLACE_SELL", "MARKETPLACE_BUY", "INITIAL_CREATE", "TRADEUP_CONSUME", "TRADEUP_REWARD"
+  tradeId      String?     // Reference to Trade if applicable
+  listingId    String?     // Reference to MarketplaceListing if applicable
+  timestamp    DateTime    @default(now())
+  metadata     String?     // Additional JSON metadata about the transfer
+
+  // Relations
+  itemHistory  ItemHistory @relation(fields: [itemUuid], references: [itemUuid], onDelete: Cascade)
+
+  @@index([itemUuid])
+  @@index([fromUser])
+  @@index([toUser])
+  @@index([timestamp])
+  @@index([transferType])
+}
