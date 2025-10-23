@@ -10,6 +10,7 @@ import { middleware } from "~/http.server";
 import { findUniqueUser, manipulateUserInventory } from "~/models/user.server";
 import { badRequest, methodNotAllowed } from "~/responses.server";
 import { CS2Economy } from "@ianlucas/cs2-lib";
+import { parseInventory } from "~/utils/inventory";
 import type { Route } from "./+types/api.trade-up._index";
 
 const RARITY_ORDER = [
@@ -79,7 +80,8 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
   }
 
   try {
-    const { inventory: rawInventory } = await findUniqueUser(user.id);
+    const userData = await findUniqueUser(user.id);
+    const rawInventory = userData.inventory;
 
     let resultItemId: number | null = null;
 
@@ -89,18 +91,24 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       manipulate(inventory) {
         console.log(`[TradeUp] Looking for ${itemProperties.length} items in inventory`);
 
-        // Find and remove items by properties (not UID, since UID changes)
-        const itemsToRemove: number[] = [];
+        // Get inventory data (working directly with JSON like trade.server.ts)
+        const inventoryData = parseInventory(rawInventory);
+        if (!inventoryData?.items) {
+          throw new Error("Could not parse inventory");
+        }
+
+        console.log(`[TradeUp] Current inventory UIDs:`, Object.keys(inventoryData.items));
+
+        // Find items to remove by properties (not UID)
+        const itemsToRemove: string[] = [];
 
         for (const targetItem of itemProperties) {
           let found = false;
 
           // Search through inventory for matching item
-          for (const [uid, invItem] of Object.entries(inventory.items)) {
-            const numericUid = parseInt(uid);
-
+          for (const [uid, invItem] of Object.entries(inventoryData.items)) {
             // Skip if already marked for removal
-            if (itemsToRemove.includes(numericUid)) {
+            if (itemsToRemove.includes(uid)) {
               continue;
             }
 
@@ -111,8 +119,8 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
               (invItem.nameTag || "") === (targetItem.nameTag || "");
 
             if (match) {
-              console.log(`[TradeUp] Found matching item at UID ${numericUid}: ID=${invItem.id}, wear=${invItem.wear}`);
-              itemsToRemove.push(numericUid);
+              console.log(`[TradeUp] Found matching item at UID ${uid}: ID=${invItem.id}, wear=${invItem.wear}`);
+              itemsToRemove.push(uid);
               found = true;
               break;
             }
@@ -130,7 +138,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
 
         // Check all items have same rarity
         const rarities = itemsToRemove.map(uid => {
-          const item = inventory.items[uid];
+          const item = inventoryData.items[uid];
           const economyItem = CS2Economy.getById(item.id);
           return economyItem.rarity.toLowerCase();
         });
@@ -163,13 +171,13 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
 
         console.log(`[TradeUp] Selected reward: ${randomItem.name} (ID: ${randomItem.id})`);
 
-        // Remove all 10 items
+        // Remove all 10 items using CS2Inventory methods
         itemsToRemove.forEach(uid => {
           console.log(`[TradeUp] Removing item UID ${uid}`);
-          inventory.removeItem(uid);
+          inventory.removeItem(parseInt(uid));
         });
 
-        // Add new higher rarity item
+        // Add new higher rarity item using CS2Inventory method
         inventory.add({
           id: resultItemId
         });
