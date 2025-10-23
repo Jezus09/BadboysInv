@@ -10,6 +10,7 @@ import { middleware } from "~/http.server";
 import { findUniqueUser, manipulateUserInventory } from "~/models/user.server";
 import { badRequest, methodNotAllowed } from "~/responses.server";
 import { CS2Economy } from "@ianlucas/cs2-lib";
+import { isUserOwner } from "~/models/rule";
 import type { Route } from "./+types/api.trade-up._index";
 
 const RARITY_ORDER = [
@@ -48,6 +49,16 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
 
   const user = await requireUser(request);
   console.log("[TradeUp API] User authenticated:", user.id);
+
+  // Only owner can use Trade Up (it's in development)
+  const ownerCheck = await isUserOwner(user.id);
+  if (!ownerCheck) {
+    console.log("[TradeUp API] Access denied: User is not owner");
+    return {
+      success: false,
+      error: "Trade Up jelenleg fejlesztés alatt áll"
+    };
+  }
 
   const formData = await request.formData();
   console.log("[TradeUp API] FormData received");

@@ -8,7 +8,7 @@ import { data, useLoaderData, useFetcher, Link, useNavigate } from "react-router
 import type { LoaderFunctionArgs } from "react-router";
 import { requireUser } from "~/auth.server";
 import { getUserInventory } from "~/models/user.server";
-import { useUser } from "~/components/app-context";
+import { useUser, useIsOwner } from "~/components/app-context";
 import { CS2Economy } from "@ianlucas/cs2-lib";
 import { parseInventory, createFakeInventoryItem } from "~/utils/inventory";
 import { InventoryItemTile } from "~/components/inventory-item-tile";
@@ -67,9 +67,51 @@ function getNextRarity(rarity: string): string | null {
 export default function TradeUpPage() {
   const { inventory } = useLoaderData<typeof loader>();
   const user = useUser();
+  const isOwner = useIsOwner();
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
+
+  // If not owner, show disabled message
+  if (!isOwner) {
+    return (
+      <div className="m-auto w-full px-4 lg:w-[1024px] lg:px-0">
+        <div className="my-8">
+          <div className="mb-8 text-center">
+            <div className="relative mb-6">
+              <h1 className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-6xl font-black text-transparent drop-shadow-2xl">
+                TRADE UP CONTRACT
+              </h1>
+              <div className="absolute inset-0 text-6xl font-black text-yellow-400/20 blur-sm">
+                TRADE UP CONTRACT
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border-2 border-orange-500/30 bg-orange-500/10 p-8 text-center backdrop-blur-sm">
+            <div className="mb-4 text-6xl">🚧</div>
+            <h2 className="font-display mb-4 text-3xl font-bold text-orange-400">
+              Folyamatban
+            </h2>
+            <p className="font-display text-lg text-neutral-300">
+              A Trade Up Contract jelenleg fejlesztés alatt áll.
+            </p>
+            <p className="font-display mt-2 text-base text-neutral-400">
+              Hamarosan elérhető lesz minden felhasználó számára!
+            </p>
+            <div className="mt-6">
+              <Link
+                to="/"
+                className="font-display inline-flex items-center gap-2 rounded border border-gray-500/30 bg-gray-600/20 px-4 py-2 text-base transition-all hover:bg-black/30 active:bg-black/70"
+              >
+                ← Vissza az inventoryhoz
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Refresh page when trade up is successful (with delay to show message)
   useEffect(() => {
