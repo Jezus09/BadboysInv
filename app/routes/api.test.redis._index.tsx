@@ -58,5 +58,3 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     }
   });
 });
-
-export { action } from "./api.$";
