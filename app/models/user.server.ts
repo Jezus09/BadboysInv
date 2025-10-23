@@ -121,7 +121,11 @@ export async function existsUser(userId: string) {
   );
 }
 
-export async function updateUserInventory(userId: string, inventory: string) {
+export async function updateUserInventory(
+  userId: string,
+  inventory: string,
+  source: "DROP" | "CASE" | "SHOP" | "TRADE" | "MARKETPLACE" | "CRAFT" | "TRADEUP" = "DROP"
+) {
   const syncedAt = new Date();
   const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
 
@@ -129,7 +133,7 @@ export async function updateUserInventory(userId: string, inventory: string) {
   const inventoryWithUuids = await ensureItemUuids({
     inventoryJson: inventory,
     userId,
-    source: "DROP"
+    source
   });
 
   // Invalidate cache before update
@@ -163,7 +167,8 @@ export async function manipulateUserInventory({
   manipulate,
   rawInventory,
   syncedAt,
-  userId
+  userId,
+  source = "DROP"
 }: {
   manipulate:
     | ((inventory: CS2Inventory) => void)
@@ -171,6 +176,7 @@ export async function manipulateUserInventory({
   rawInventory: string | null;
   syncedAt?: number;
   userId: string;
+  source?: "DROP" | "CASE" | "SHOP" | "TRADE" | "MARKETPLACE" | "CRAFT" | "TRADEUP";
 }) {
   // Use transaction with row-level locking to prevent race conditions and item duplication
   const result = await prisma.$transaction(async (tx) => {
@@ -222,12 +228,11 @@ export async function manipulateUserInventory({
     const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
     const stringifiedInventory = inventory.stringify();
 
-    // Add UUIDs to new items (determines source based on context)
-    // Default to "DROP" as it's the most common source for sync operations
+    // Add UUIDs to new items with the specified source
     const inventoryWithUuids = await ensureItemUuids({
       inventoryJson: stringifiedInventory,
       userId,
-      source: "DROP"
+      source
     });
 
     await tx.user.update({

@@ -30,6 +30,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   return data({});
 }
 
+interface UserInfo {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
 interface ItemHistoryData {
   itemUuid: string;
   itemId: number;
@@ -39,13 +45,17 @@ interface ItemHistoryData {
   stickers?: any;
   createdAt: string;
   createdBy: string;
+  createdByUser?: UserInfo;
   source: string;
   currentOwner: string | null;
+  currentOwnerUser?: UserInfo | null;
   deletedAt?: string;
   transferCount: number;
   recentTransfers: Array<{
     fromUser: string | null;
+    fromUserInfo?: UserInfo | null;
     toUser: string;
+    toUserInfo?: UserInfo;
     transferType: string;
     timestamp: string;
     metadata?: any;
@@ -226,9 +236,18 @@ export default function AdminItemHistory() {
                         <td className="px-3 py-2 text-xs">
                           {new Date(item.createdAt).toLocaleString()}
                         </td>
-                        <td className="px-3 py-2 font-mono text-xs">
-                          {item.currentOwner ? (
-                            item.currentOwner.substring(0, 12) + "..."
+                        <td className="px-3 py-2">
+                          {item.currentOwner && item.currentOwnerUser ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={item.currentOwnerUser.avatar}
+                                alt={item.currentOwnerUser.name}
+                                className="w-6 h-6 rounded"
+                              />
+                              <span className="text-sm">{item.currentOwnerUser.name}</span>
+                            </div>
+                          ) : item.currentOwner ? (
+                            <span className="font-mono text-xs">{item.currentOwner.substring(0, 12)}...</span>
                           ) : (
                             <span className="text-red-400">Deleted</span>
                           )}
@@ -268,9 +287,26 @@ export default function AdminItemHistory() {
                                 <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
                                   <div>Item ID: {item.itemId}</div>
                                   {item.seed && <div>Seed: {item.seed}</div>}
-                                  <div>Created By: {item.createdBy}</div>
+                                  <div className="col-span-2">
+                                    <span className="text-white/60">Created By: </span>
+                                    {item.createdByUser ? (
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <img
+                                          src={item.createdByUser.avatar}
+                                          alt={item.createdByUser.name}
+                                          className="w-5 h-5 rounded"
+                                        />
+                                        <span>{item.createdByUser.name}</span>
+                                        <span className="text-white/40 font-mono text-xs">
+                                          ({item.createdBy})
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="font-mono">{item.createdBy}</span>
+                                    )}
+                                  </div>
                                   {item.deletedAt && (
-                                    <div className="text-red-400">
+                                    <div className="text-red-400 col-span-2">
                                       Deleted: {new Date(item.deletedAt).toLocaleString()}
                                     </div>
                                   )}
@@ -287,20 +323,38 @@ export default function AdminItemHistory() {
                                     {item.recentTransfers.map((transfer, idx) => (
                                       <div
                                         key={idx}
-                                        className="text-xs bg-black/40 p-2 rounded flex justify-between"
+                                        className="text-xs bg-black/40 p-2 rounded"
                                       >
-                                        <span>
-                                          <span className="text-orange-400">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-orange-400 font-medium">
                                             {transfer.transferType}
                                           </span>
-                                          {" → "}
-                                          <span className="font-mono">
-                                            {transfer.toUser.substring(0, 12)}...
+                                          <span className="text-white/60">
+                                            {new Date(transfer.timestamp).toLocaleString()}
                                           </span>
-                                        </span>
-                                        <span className="text-white/60">
-                                          {new Date(transfer.timestamp).toLocaleString()}
-                                        </span>
+                                        </div>
+                                        {transfer.fromUserInfo && (
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-white/60">From:</span>
+                                            <img
+                                              src={transfer.fromUserInfo.avatar}
+                                              alt={transfer.fromUserInfo.name}
+                                              className="w-4 h-4 rounded"
+                                            />
+                                            <span>{transfer.fromUserInfo.name}</span>
+                                          </div>
+                                        )}
+                                        {transfer.toUserInfo && (
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-white/60">To:</span>
+                                            <img
+                                              src={transfer.toUserInfo.avatar}
+                                              alt={transfer.toUserInfo.name}
+                                              className="w-4 h-4 rounded"
+                                            />
+                                            <span>{transfer.toUserInfo.name}</span>
+                                          </div>
+                                        )}
                                       </div>
                                     ))}
                                   </div>

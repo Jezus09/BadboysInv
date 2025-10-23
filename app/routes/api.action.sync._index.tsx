@@ -348,10 +348,26 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     })
     .parse(await request.json());
   let addedFromCache = false;
+
+  // Determine source based on action types
+  let source: "DROP" | "CASE" | "SHOP" | "TRADE" | "MARKETPLACE" | "CRAFT" | "TRADEUP" = "DROP";
+  for (const action of actions) {
+    if (action.type === SyncAction.Add || action.type === SyncAction.AddFromCache ||
+        action.type === SyncAction.AddWithNametag || action.type === SyncAction.AddWithSticker ||
+        action.type === SyncAction.Edit) {
+      source = "CRAFT";
+      break;
+    } else if (action.type === SyncAction.AddFromShop) {
+      source = "SHOP";
+      break;
+    }
+  }
+
   const { syncedAt: responseSyncedAt } = await manipulateUserInventory({
     rawInventory,
     syncedAt,
     userId,
+    source,
     async manipulate(inventory) {
       for (const action of actions) {
         switch (action.type) {
