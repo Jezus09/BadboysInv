@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { PrismaClient, Prisma } from "@prisma/client/index.js";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 import { singleton } from "./singleton.server";
 
