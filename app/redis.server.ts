@@ -31,20 +31,40 @@ export function getRedis(): Redis | null {
   console.log("[Redis] Connecting to Redis...");
 
   redis = new Redis(redisUrl, {
-    connectTimeout: 1000, // 1 second connection timeout
-    commandTimeout: 500,  // 500ms command timeout
+    lazyConnect: true, // Don't connect immediately
+    connectTimeout: 2000, // 2 second connection timeout
+    commandTimeout: 1000,  // 1 second command timeout
     maxRetriesPerRequest: 1, // Only retry once
+    enableOfflineQueue: false, // Don't queue commands when offline
     retryStrategy(times) {
       if (times > 2) {
+        console.log("[Redis] Max retries reached, disabling Redis");
         redisConnectionFailed = true;
         return null; // Stop retrying
       }
-      return 100; // Retry after 100ms
+      return 200; // Retry after 200ms
     },
     reconnectOnError(err) {
-      console.error("[Redis] Connection error:", err.message);
-      return false; // Don't auto-reconnect on error
+      const errorMessage = err.message || "";
+
+      // Don't reconnect on auth errors or connection refused
+      if (errorMessage.includes("NOAUTH") ||
+          errorMessage.includes("ECONNREFUSED") ||
+          errorMessage.includes("Authentication")) {
+        console.log("[Redis] Auth/Connection error, disabling Redis:", errorMessage);
+        redisConnectionFailed = true;
+        return false;
+      }
+
+      return false; // Don't auto-reconnect
     },
+  });
+
+  // Connect manually with error handling
+  redis.connect().catch((err) => {
+    console.error("[Redis] Failed to connect:", err.message);
+    redisConnectionFailed = true;
+    redis = null;
   });
 
   redis.on("connect", () => {
@@ -53,8 +73,18 @@ export function getRedis(): Redis | null {
   });
 
   redis.on("error", (err) => {
-    console.error("[Redis] Error:", err.message);
-    redisConnectionFailed = true;
+    const errorMessage = err.message || "";
+
+    // Only log once per error type
+    if (errorMessage.includes("NOAUTH")) {
+      if (!redisConnectionFailed) {
+        console.error("[Redis] Authentication required but no password provided - disabling Redis");
+        redisConnectionFailed = true;
+      }
+    } else if (!redisConnectionFailed) {
+      console.error("[Redis] Error:", errorMessage);
+      redisConnectionFailed = true;
+    }
   });
 
   return redis;
