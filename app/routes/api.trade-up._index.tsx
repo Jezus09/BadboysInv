@@ -89,6 +89,10 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       manipulate(inventory) {
         console.log(`[TradeUp] Looking for ${itemProperties.length} items in inventory`);
 
+        // Parse the inventory data to access items object
+        const inventoryData = JSON.parse(inventory.stringify());
+        const items = inventoryData.items || {};
+
         // Find and remove items by properties (not UID, since UID changes)
         const itemsToRemove: number[] = [];
 
@@ -96,7 +100,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           let found = false;
 
           // Search through inventory for matching item
-          for (const [uid, invItem] of Object.entries(inventory.items)) {
+          for (const [uid, invItem] of Object.entries(items) as [string, any][]) {
             const numericUid = parseInt(uid);
 
             // Skip if already marked for removal
