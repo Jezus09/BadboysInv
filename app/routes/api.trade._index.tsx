@@ -17,15 +17,19 @@ import {
   searchUsers,
   TradeItem
 } from "~/models/trade.server";
+import { acceptTradeWithUuid } from "~/models/trade-uuid.server";
 import { parseInventory } from "~/utils/inventory";
 
 const tradeItemSchema = z.object({
-  uid: z.number(),
+  uid: z.number().optional(), // Legacy UID support
+  uuid: z.string().optional(), // New UUID support
   id: z.number(),
   stickers: z.record(z.any()).optional(),
   wear: z.number().optional(),
   seed: z.number().optional(),
   nameTag: z.string().optional()
+}).refine(data => data.uid !== undefined || data.uuid !== undefined, {
+  message: "Either uid or uuid must be provided"
 });
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -116,10 +120,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
         if (parsedInventoryData && parsedInventoryData.items) {
           // Convert the official inventory format to array for trade UI
-          inventory = Object.values(parsedInventoryData.items).map(
-            (item: any, index: number) => ({
+          // Support both UUID (new) and UID (legacy) formats
+          inventory = Object.entries(parsedInventoryData.items).map(
+            ([key, item]: [string, any], index: number) => ({
               ...item,
-              uid: item.uid || index + 1000 // Ensure UID exists
+              // Prefer UUID from item, or use key if it's UUID format, or fallback to UID
+              uuid: item.uuid || (key.includes('-') ? key : undefined),
+              uid: item.uid || (key.includes('-') ? undefined : parseInt(key)) || index + 1000
             })
           );
           console.log(
@@ -249,8 +256,18 @@ export async function action({ request }: ActionFunctionArgs) {
           );
         }
 
-        // Use the new acceptTrade function which handles inventory swapping
-        await acceptTrade(tradeId);
+        // Detect if trade uses UUID or UID
+        const senderItems = JSON.parse(trade.senderItems);
+        const hasUuid = senderItems.length > 0 && senderItems[0].uuid !== undefined;
+
+        if (hasUuid) {
+          console.log("[Trade] Using UUID-based trade acceptance");
+          await acceptTradeWithUuid(tradeId);
+        } else {
+          console.log("[Trade] Using legacy UID-based trade acceptance");
+          await acceptTrade(tradeId);
+        }
+
         return data({ success: true, message: "Trade accepted successfully" });
       }
 
