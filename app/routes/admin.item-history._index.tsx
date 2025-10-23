@@ -122,8 +122,18 @@ export default function AdminItemHistory() {
       <ModalHeader title="Admin - Item History" linkTo="/" />
 
       <div className="mt-4 px-4 pb-4 overflow-y-auto max-h-[80vh]">
+        {/* CS2 Style Title */}
+        <div className="relative mb-4 text-center">
+          <h1 className="font-display bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-500 bg-clip-text text-3xl font-black text-transparent drop-shadow-2xl">
+            ITEM HISTORY
+          </h1>
+          <div className="absolute inset-0 text-3xl font-black text-blue-400/10 blur-sm">
+            ITEM HISTORY
+          </div>
+        </div>
+
         {/* Filters */}
-        <div className="mb-4 flex gap-4 items-end bg-black/20 p-4 rounded">
+        <div className="mb-4 flex gap-4 items-end rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1">Filter User ID</label>
             <input

@@ -31,9 +31,19 @@ export default function AdminSettings() {
     <Modal className="w-[95%] max-w-[1000px] max-h-[90vh]">
       <ModalHeader title="Admin - System Settings" linkTo="/admin" />
 
-      <div className="mt-4 px-4 pb-4 overflow-y-auto max-h-[80vh] space-y-6">
+      <div className="mt-4 px-4 pb-4 overflow-y-auto max-h-[80vh] space-y-4">
+        {/* CS2 Style Title */}
+        <div className="relative mb-4 text-center">
+          <h1 className="font-display bg-gradient-to-r from-purple-400 via-violet-500 to-indigo-500 bg-clip-text text-3xl font-black text-transparent drop-shadow-2xl">
+            SYSTEM SETTINGS
+          </h1>
+          <div className="absolute inset-0 text-3xl font-black text-purple-400/10 blur-sm">
+            SYSTEM SETTINGS
+          </div>
+        </div>
+
         {/* UUID System */}
-        <div className="rounded-lg bg-black/40 p-6">
+        <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
           <h2 className="text-xl font-bold mb-4">UUID Tracking System</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-white/10">
@@ -69,7 +79,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Database */}
-        <div className="rounded-lg bg-black/40 p-6">
+        <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
           <h2 className="text-xl font-bold mb-4">Database</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-white/10">
@@ -108,7 +118,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Game Integration */}
-        <div className="rounded-lg bg-black/40 p-6">
+        <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
           <h2 className="text-xl font-bold mb-4">Game Integration</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-white/10">
@@ -144,7 +154,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Economy */}
-        <div className="rounded-lg bg-black/40 p-6">
+        <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
           <h2 className="text-xl font-bold mb-4">Economy Settings</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-white/10">
@@ -180,7 +190,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Warning Box */}
-        <div className="rounded-lg bg-yellow-600/20 border border-yellow-500/50 p-4">
+        <div className="rounded-sm bg-yellow-600/10 border border-yellow-500/30 p-4">
           <div className="flex items-start gap-3">
             <div className="text-yellow-400 text-2xl">⚠️</div>
             <div>

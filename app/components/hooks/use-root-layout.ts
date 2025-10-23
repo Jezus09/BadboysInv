@@ -19,6 +19,7 @@ export function useRootLayout(): {
     location.pathname === "/trades" || location.pathname.startsWith("/trades/");
   const hideInventoryOnMarketplace = location.pathname === "/marketplace";
   const hideInventoryOnTradeUp = location.pathname === "/trade-up";
+  const hideInventoryOnAdmin = location.pathname.startsWith("/admin");
 
   // Show case opening activity on main pages (not on auth pages, etc.)
   const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(
@@ -28,7 +29,7 @@ export function useRootLayout(): {
   return {
     footer: true,
     header: true,
-    inventory: !hideInventoryOnShop && !hideInventoryOnTrades && !hideInventoryOnMarketplace && !hideInventoryOnTradeUp,
+    inventory: !hideInventoryOnShop && !hideInventoryOnTrades && !hideInventoryOnMarketplace && !hideInventoryOnTradeUp && !hideInventoryOnAdmin,
     caseOpeningActivity: showCaseOpeningActivity
   };
 }

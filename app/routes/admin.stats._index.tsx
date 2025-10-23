@@ -67,14 +67,24 @@ export default function AdminStats() {
     <Modal className="w-[95%] max-w-[1200px] max-h-[90vh]">
       <ModalHeader title="Admin - Statistics" linkTo="/admin" />
 
-      <div className="mt-4 px-4 pb-4 overflow-y-auto max-h-[80vh] space-y-6">
+      <div className="mt-4 px-4 pb-4 overflow-y-auto max-h-[80vh] space-y-4">
+        {/* CS2 Style Title */}
+        <div className="relative mb-4 text-center">
+          <h1 className="font-display bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 bg-clip-text text-3xl font-black text-transparent drop-shadow-2xl">
+            STATISTICS
+          </h1>
+          <div className="absolute inset-0 text-3xl font-black text-orange-400/10 blur-sm">
+            STATISTICS
+          </div>
+        </div>
+
         {/* Overview Stats */}
         <div>
-          <h2 className="text-xl font-bold mb-4">Overview</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-blue-500/30 p-6">
-              <div className="text-sm text-white/60 mb-1">Total Items</div>
-              <div className="text-3xl font-bold text-white">{stats.totalItems.toLocaleString()}</div>
+          <h2 className="text-base font-bold mb-3">Overview</h2>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-sm bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-neutral-500/20 p-4">
+              <div className="text-xs text-white/60 mb-1">Total Items</div>
+              <div className="text-2xl font-bold text-white">{stats.totalItems.toLocaleString()}</div>
               <div className="mt-2 text-xs">
                 <span className="text-green-400">{stats.activeItems.toLocaleString()} Active</span>
                 {" | "}
@@ -82,23 +92,23 @@ export default function AdminStats() {
               </div>
             </div>
 
-            <div className="rounded-lg bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-purple-500/30 p-6">
-              <div className="text-sm text-white/60 mb-1">Total Users</div>
-              <div className="text-3xl font-bold text-white">{stats.totalUsers.toLocaleString()}</div>
+            <div className="rounded-sm bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-neutral-500/20 p-4">
+              <div className="text-xs text-white/60 mb-1">Total Users</div>
+              <div className="text-2xl font-bold text-white">{stats.totalUsers.toLocaleString()}</div>
             </div>
 
-            <div className="rounded-lg bg-gradient-to-br from-green-600/20 to-green-800/20 border border-green-500/30 p-6">
-              <div className="text-sm text-white/60 mb-1">Total Transfers</div>
-              <div className="text-3xl font-bold text-white">{stats.totalTransfers.toLocaleString()}</div>
+            <div className="rounded-sm bg-gradient-to-br from-green-600/20 to-green-800/20 border border-neutral-500/20 p-4">
+              <div className="text-xs text-white/60 mb-1">Total Transfers</div>
+              <div className="text-2xl font-bold text-white">{stats.totalTransfers.toLocaleString()}</div>
             </div>
           </div>
         </div>
 
         {/* Items by Source */}
         <div>
-          <h2 className="text-xl font-bold mb-4">Items by Source</h2>
-          <div className="rounded-lg bg-black/40 p-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <h2 className="text-base font-bold mb-3">Items by Source</h2>
+          <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
               {stats.sourceCounts.map((source) => {
                 const colors: Record<string, string> = {
                   CASE: "from-yellow-600 to-orange-600",
@@ -113,10 +123,10 @@ export default function AdminStats() {
                 return (
                   <div
                     key={source.source}
-                    className={`rounded-lg bg-gradient-to-br ${colors[source.source] || "from-gray-600 to-gray-800"} p-4`}
+                    className={`rounded-sm bg-gradient-to-br ${colors[source.source] || "from-gray-600/20 to-gray-800/20"} border border-neutral-500/20 p-3`}
                   >
-                    <div className="text-sm font-medium text-white/80">{source.source}</div>
-                    <div className="text-2xl font-bold text-white">{source.count.toLocaleString()}</div>
+                    <div className="text-xs font-medium text-white/80">{source.source}</div>
+                    <div className="text-xl font-bold text-white">{source.count.toLocaleString()}</div>
                     <div className="mt-1 text-xs text-white/60">
                       {((source.count / stats.totalItems) * 100).toFixed(1)}%
                     </div>
@@ -129,8 +139,8 @@ export default function AdminStats() {
 
         {/* Visual Bar Chart */}
         <div>
-          <h2 className="text-xl font-bold mb-4">Source Distribution</h2>
-          <div className="rounded-lg bg-black/40 p-6">
+          <h2 className="text-base font-bold mb-3">Source Distribution</h2>
+          <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
             <div className="space-y-3">
               {stats.sourceCounts
                 .sort((a, b) => b.count - a.count)
