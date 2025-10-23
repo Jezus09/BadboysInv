@@ -38,6 +38,32 @@ export function InventoryItemTile({
     inventoryItem?.updatedAt !== undefined &&
     currDate - inventoryItem.updatedAt < 120;
 
+  // Safely get stickers/patches with error handling
+  let stickersToRender: Array<[number, { id: number }]> = [];
+  let patchesToRender: Array<[number, number]> = [];
+
+  try {
+    if (inventoryItem?.stickers !== undefined && typeof inventoryItem.allStickers === 'function') {
+      const allStickers = inventoryItem.allStickers();
+      if (allStickers.length > 0) {
+        stickersToRender = inventoryItem.someStickers();
+      }
+    }
+  } catch (e) {
+    // Silently fail - stickers rendering is not critical
+  }
+
+  try {
+    if (inventoryItem?.patches !== undefined && typeof inventoryItem.allPatches === 'function') {
+      const allPatches = inventoryItem.allPatches();
+      if (allPatches.length > 0) {
+        patchesToRender = inventoryItem.somePatches();
+      }
+    }
+  } catch (e) {
+    // Silently fail - patches rendering is not critical
+  }
+
   return (
     <div className="w-[154px]">
       <div className="group relative bg-linear-to-b from-neutral-600 to-neutral-400 p-[1px]">
@@ -54,9 +80,9 @@ export function InventoryItemTile({
             IN MARKETPLACE
           </div>
         )}
-        {inventoryItem?.stickers !== undefined && inventoryItem.allStickers().length > 0 && (
+        {stickersToRender.length > 0 && (
           <div className="absolute bottom-0 left-0 flex items-center p-1">
-            {inventoryItem.someStickers().map(([slot, { id }]) => (
+            {stickersToRender.map(([slot, { id }]) => (
               <ItemImage
                 className="h-5"
                 item={CS2Economy.getById(id)}
@@ -65,9 +91,9 @@ export function InventoryItemTile({
             ))}
           </div>
         )}
-        {inventoryItem?.patches !== undefined && inventoryItem.allPatches().length > 0 && (
+        {patchesToRender.length > 0 && (
           <div className="absolute bottom-0 left-0 flex items-center p-1">
-            {inventoryItem.somePatches().map(([slot, id]) => (
+            {patchesToRender.map(([slot, id]) => (
               <ItemImage
                 className="h-5"
                 item={CS2Economy.getById(id)}
