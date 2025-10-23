@@ -17,6 +17,11 @@ import {
   purchaseListing,
   getListing
 } from "~/models/marketplace.server";
+import {
+  createListingWithUuid,
+  cancelListingWithUuid,
+  purchaseListingWithUuid
+} from "~/models/marketplace-uuid.server";
 import { getUserInventory } from "~/models/user.server";
 import { parseInventory } from "~/utils/inventory";
 import type { Route } from "./+types/api.marketplace._index";
@@ -39,7 +44,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
   }
 
   const body = await request.json();
-  const { action: actionType, ...params } = z
+  const { action: actionType, ...params} = z
     .object({
       action: z.enum([
         "create_listing",
@@ -48,7 +53,8 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         "get_my_listings"
       ]),
       listingId: z.string().optional(),
-      itemUid: z.number().optional(),
+      itemUid: z.number().optional(), // Legacy UID support
+      itemUuid: z.string().optional(), // New UUID support
       price: z.number().optional()
     })
     .parse(body);
@@ -56,10 +62,14 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
   try {
     switch (actionType) {
       case "create_listing": {
-        if (params.itemUid === undefined || params.price === undefined) {
+        // Support both UUID (new) and UID (legacy)
+        const hasUuid = params.itemUuid !== undefined;
+        const hasUid = params.itemUid !== undefined;
+
+        if ((!hasUuid && !hasUid) || params.price === undefined) {
           return data({
             success: false,
-            message: "Missing required parameters"
+            message: "Missing required parameters (itemUuid or itemUid, and price)"
           });
         }
 
@@ -74,8 +84,10 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           });
         }
 
-        // Check if item exists in inventory
-        const item = inventory.items[params.itemUid];
+        // Find item by UUID or UID
+        const itemKey = hasUuid ? params.itemUuid! : params.itemUid!.toString();
+        const item = inventory.items[itemKey];
+
         if (!item) {
           return data({
             success: false,
@@ -83,14 +95,27 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           });
         }
 
-        // Create listing (this will handle removing item from inventory)
-        const listing = await createListing({
-          userId,
-          itemUid: params.itemUid,
-          itemData: JSON.stringify(item),
-          price: params.price,
-          currentInventory: userInventory
-        });
+        let listing;
+
+        if (hasUuid) {
+          console.log("[Marketplace] Creating UUID-based listing");
+          listing = await createListingWithUuid({
+            userId,
+            itemUuid: params.itemUuid!,
+            itemData: JSON.stringify(item),
+            price: params.price,
+            currentInventory: userInventory
+          });
+        } else {
+          console.log("[Marketplace] Creating legacy UID-based listing");
+          listing = await createListing({
+            userId,
+            itemUid: params.itemUid!,
+            itemData: JSON.stringify(item),
+            price: params.price,
+            currentInventory: userInventory
+          });
+        }
 
         return data({
           success: true,
@@ -107,7 +132,25 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           });
         }
 
-        await cancelListing(params.listingId, userId);
+        // Detect if listing uses UUID or UID
+        const listing = await getListing(params.listingId);
+        if (!listing) {
+          return data({
+            success: false,
+            message: "Listing not found"
+          });
+        }
+
+        const itemData = JSON.parse(listing.itemData);
+        const hasUuid = itemData.uuid !== undefined;
+
+        if (hasUuid) {
+          console.log("[Marketplace] Cancelling UUID-based listing");
+          await cancelListingWithUuid(params.listingId, userId);
+        } else {
+          console.log("[Marketplace] Cancelling legacy UID-based listing");
+          await cancelListing(params.listingId, userId);
+        }
 
         return data({
           success: true,
@@ -123,12 +166,32 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           });
         }
 
-        const listing = await purchaseListing(params.listingId, userId);
+        // Detect if listing uses UUID or UID
+        const listing = await getListing(params.listingId);
+        if (!listing) {
+          return data({
+            success: false,
+            message: "Listing not found"
+          });
+        }
+
+        const itemData = JSON.parse(listing.itemData);
+        const hasUuid = itemData.uuid !== undefined;
+
+        let purchasedListing;
+
+        if (hasUuid) {
+          console.log("[Marketplace] Purchasing UUID-based listing");
+          purchasedListing = await purchaseListingWithUuid(params.listingId, userId);
+        } else {
+          console.log("[Marketplace] Purchasing legacy UID-based listing");
+          purchasedListing = await purchaseListing(params.listingId, userId);
+        }
 
         return data({
           success: true,
           message: "Purchase successful",
-          listing
+          listing: purchasedListing
         });
       }
 
