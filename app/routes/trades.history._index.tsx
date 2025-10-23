@@ -18,15 +18,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const page = parseInt(url.searchParams.get("page") || "1");
   const limit = 10;
-  
+
   const { trades, totalCount } = await getTradeHistory(user.id, page, limit);
   const totalPages = Math.ceil(totalCount / limit);
-  
-  return data({ 
-    trades, 
-    currentPage: page, 
+
+  return data({
+    trades,
+    currentPage: page,
     totalPages,
-    totalCount 
+    totalCount
   });
 }
 
@@ -52,46 +52,56 @@ interface Trade {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "PENDING": return "text-yellow-400";
-    case "ACCEPTED": return "text-green-400";
-    case "COMPLETED": return "text-green-400";
-    case "DECLINED": return "text-red-400";
-    case "CANCELLED": return "text-gray-400";
-    case "EXPIRED": return "text-orange-400";
-    default: return "text-gray-400";
+    case "PENDING":
+      return "text-yellow-400";
+    case "ACCEPTED":
+      return "text-green-400";
+    case "COMPLETED":
+      return "text-green-400";
+    case "DECLINED":
+      return "text-red-400";
+    case "CANCELLED":
+      return "text-gray-400";
+    case "EXPIRED":
+      return "text-orange-400";
+    default:
+      return "text-gray-400";
   }
 };
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case "PENDING": return "Függőben";
-    case "ACCEPTED": return "Elfogadva";
-    case "COMPLETED": return "Befejezve";
-    case "DECLINED": return "Elutasítva";
-    case "CANCELLED": return "Megszakítva";
-    case "EXPIRED": return "Lejárt";
-    default: return status;
+    case "PENDING":
+      return "Függőben";
+    case "ACCEPTED":
+      return "Elfogadva";
+    case "COMPLETED":
+      return "Befejezve";
+    case "DECLINED":
+      return "Elutasítva";
+    case "CANCELLED":
+      return "Megszakítva";
+    case "EXPIRED":
+      return "Lejárt";
+    default:
+      return status;
   }
 };
 
 function TradeItemDisplay({ item }: { item: any }) {
-  return (
-    <TradeItemCard
-      item={item}
-      disabled={true}
-    />
-  );
+  return <TradeItemCard item={item} disabled={true} />;
 }
 
 export default function TradeHistoryPage() {
-  const { trades, currentPage, totalPages, totalCount } = useLoaderData<typeof loader>();
+  const { trades, currentPage, totalPages, totalCount } =
+    useLoaderData<typeof loader>();
   const user = useUser();
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   if (!user) return null;
 
-  const filteredTrades = trades.filter((trade: Trade) => 
-    filterStatus === "all" || trade.status === filterStatus
+  const filteredTrades = trades.filter(
+    (trade: Trade) => filterStatus === "all" || trade.status === filterStatus
   );
 
   return (
@@ -100,24 +110,24 @@ export default function TradeHistoryPage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="relative mb-6">
-            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 drop-shadow-2xl">
+            <h1 className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-6xl font-black text-transparent drop-shadow-2xl">
               KERESKEDÉSI ELŐZMÉNYEK
             </h1>
             <div className="absolute inset-0 text-6xl font-black text-blue-400/20 blur-sm">
               KERESKEDÉSI ELŐZMÉNYEK
             </div>
           </div>
-          
-          <div className="text-center mb-4">
-            <p className="font-display text-lg text-neutral-300 font-medium">
+
+          <div className="mb-4 text-center">
+            <p className="font-display text-lg font-medium text-neutral-300">
               Összes kereskedés: {totalCount}
             </p>
           </div>
-          
+
           <div className="mb-6">
             <Link
               to="/trades"
-              className="font-display inline-flex items-center gap-2 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 bg-gray-600/20 border border-gray-500/30 rounded"
+              className="font-display inline-flex items-center gap-2 rounded border border-gray-500/30 bg-gray-600/20 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70"
             >
               ← Vissza a kereskedésekhez
             </Link>
@@ -126,10 +136,10 @@ export default function TradeHistoryPage() {
 
         {/* Filter */}
         <div className="mb-6">
-          <div className="flex gap-2 flex-wrap justify-center">
+          <div className="flex flex-wrap justify-center gap-2">
             <button
               onClick={() => setFilterStatus("all")}
-              className={`font-display px-3 py-1 rounded transition-all hover:bg-black/30 active:bg-black/70 ${
+              className={`font-display rounded px-3 py-1 transition-all hover:bg-black/30 active:bg-black/70 ${
                 filterStatus === "all" ? "bg-black/30" : "bg-black/10"
               }`}
             >
@@ -137,7 +147,7 @@ export default function TradeHistoryPage() {
             </button>
             <button
               onClick={() => setFilterStatus("COMPLETED")}
-              className={`font-display px-3 py-1 rounded transition-all hover:bg-black/30 active:bg-black/70 ${
+              className={`font-display rounded px-3 py-1 transition-all hover:bg-black/30 active:bg-black/70 ${
                 filterStatus === "COMPLETED" ? "bg-black/30" : "bg-black/10"
               }`}
             >
@@ -145,7 +155,7 @@ export default function TradeHistoryPage() {
             </button>
             <button
               onClick={() => setFilterStatus("PENDING")}
-              className={`font-display px-3 py-1 rounded transition-all hover:bg-black/30 active:bg-black/70 ${
+              className={`font-display rounded px-3 py-1 transition-all hover:bg-black/30 active:bg-black/70 ${
                 filterStatus === "PENDING" ? "bg-black/30" : "bg-black/10"
               }`}
             >
@@ -153,7 +163,7 @@ export default function TradeHistoryPage() {
             </button>
             <button
               onClick={() => setFilterStatus("DECLINED")}
-              className={`font-display px-3 py-1 rounded transition-all hover:bg-black/30 active:bg-black/70 ${
+              className={`font-display rounded px-3 py-1 transition-all hover:bg-black/30 active:bg-black/70 ${
                 filterStatus === "DECLINED" ? "bg-black/30" : "bg-black/10"
               }`}
             >
@@ -168,49 +178,65 @@ export default function TradeHistoryPage() {
             const senderItems = JSON.parse(trade.senderItems);
             const receiverItems = JSON.parse(trade.receiverItems);
             const isUserSender = trade.senderUser.id === user.id;
-            const otherUser = isUserSender ? trade.receiverUser : trade.senderUser;
-            
+            const otherUser = isUserSender
+              ? trade.receiverUser
+              : trade.senderUser;
+
             return (
-              <div key={trade.id} className="bg-black/30 rounded-lg p-6 border border-neutral-700/50 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-4">
+              <div
+                key={trade.id}
+                className="rounded-lg border border-neutral-700/50 bg-black/30 p-6 backdrop-blur-sm"
+              >
+                <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <img 
-                      src={otherUser.avatar} 
+                    <img
+                      src={otherUser.avatar}
                       alt={otherUser.name}
-                      className="w-10 h-10 rounded-full border border-neutral-600"
+                      className="h-10 w-10 rounded-full border border-neutral-600"
                     />
                     <div>
-                      <h3 className="font-display text-white font-medium">{otherUser.name}</h3>
-                      <p className="text-neutral-400 text-sm">
-                        {isUserSender ? "Küldött kereskedés" : "Kapott kereskedés"}
+                      <h3 className="font-display font-medium text-white">
+                        {otherUser.name}
+                      </h3>
+                      <p className="text-sm text-neutral-400">
+                        {isUserSender
+                          ? "Küldött kereskedés"
+                          : "Kapott kereskedés"}
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="text-right">
-                    <span className={`font-display font-medium ${getStatusColor(trade.status)}`}>
+                    <span
+                      className={`font-display font-medium ${getStatusColor(trade.status)}`}
+                    >
                       {getStatusText(trade.status)}
                     </span>
-                    <p className="text-neutral-400 text-sm">
-                      {new Date(trade.createdAt).toLocaleDateString('hu-HU')}
+                    <p className="text-sm text-neutral-400">
+                      {new Date(trade.createdAt).toLocaleDateString("hu-HU")}
                     </p>
                     {trade.completedAt && (
-                      <p className="text-neutral-500 text-xs">
-                        Befejezve: {new Date(trade.completedAt).toLocaleDateString('hu-HU')}
+                      <p className="text-xs text-neutral-500">
+                        Befejezve:{" "}
+                        {new Date(trade.completedAt).toLocaleDateString(
+                          "hu-HU"
+                        )}
                       </p>
                     )}
                   </div>
                 </div>
 
                 {trade.message && (
-                  <div className="mb-4 p-3 bg-black/20 rounded-lg border border-neutral-700/30">
-                    <p className="text-neutral-300 text-sm italic">"{trade.message}"</p>
+                  <div className="mb-4 rounded-lg border border-neutral-700/30 bg-black/20 p-3">
+                    <p className="text-sm text-neutral-300 italic">
+                      "{trade.message}"
+                    </p>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <h4 className="font-display text-white font-medium mb-2">
+                    <h4 className="font-display mb-2 font-medium text-white">
                       {isUserSender ? "Te ajánlottad:" : "Ő ajánlotta:"}
                     </h4>
                     <div className="space-y-2">
@@ -219,13 +245,13 @@ export default function TradeHistoryPage() {
                           <TradeItemDisplay key={index} item={item} />
                         ))
                       ) : (
-                        <p className="text-neutral-500 text-sm">Nincs item</p>
+                        <p className="text-sm text-neutral-500">Nincs item</p>
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
-                    <h4 className="font-display text-white font-medium mb-2">
+                    <h4 className="font-display mb-2 font-medium text-white">
                       {isUserSender ? "Te kérted:" : "Ő kérte:"}
                     </h4>
                     <div className="space-y-2">
@@ -234,7 +260,7 @@ export default function TradeHistoryPage() {
                           <TradeItemDisplay key={index} item={item} />
                         ))
                       ) : (
-                        <p className="text-neutral-500 text-sm">Nincs item</p>
+                        <p className="text-sm text-neutral-500">Nincs item</p>
                       )}
                     </div>
                   </div>
@@ -242,10 +268,10 @@ export default function TradeHistoryPage() {
               </div>
             );
           })}
-          
+
           {filteredTrades.length === 0 && (
-            <div className="text-center py-8">
-              <p className="font-display text-neutral-400 text-lg">
+            <div className="py-8 text-center">
+              <p className="font-display text-lg text-neutral-400">
                 Nincsenek kereskedési előzmények
               </p>
             </div>
@@ -258,20 +284,20 @@ export default function TradeHistoryPage() {
             {currentPage > 1 && (
               <Link
                 to={`/trades/history?page=${currentPage - 1}`}
-                className="font-display px-3 py-1 rounded transition-all hover:bg-black/30 active:bg-black/70 bg-black/10"
+                className="font-display rounded bg-black/10 px-3 py-1 transition-all hover:bg-black/30 active:bg-black/70"
               >
                 ← Előző
               </Link>
             )}
-            
+
             <span className="font-display px-3 py-1 text-neutral-300">
               {currentPage} / {totalPages}
             </span>
-            
+
             {currentPage < totalPages && (
               <Link
                 to={`/trades/history?page=${currentPage + 1}`}
-                className="font-display px-3 py-1 rounded transition-all hover:bg-black/30 active:bg-black/70 bg-black/10"
+                className="font-display rounded bg-black/10 px-3 py-1 transition-all hover:bg-black/30 active:bg-black/70"
               >
                 Következő →
               </Link>

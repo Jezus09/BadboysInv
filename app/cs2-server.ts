@@ -61,16 +61,19 @@ export class CS2ServerConnection {
   /**
    * Sync player inventory with CS2 server
    */
-  async syncPlayerInventory(steamId: string, inventory: any[]): Promise<boolean> {
+  async syncPlayerInventory(
+    steamId: string,
+    inventory: any[]
+  ): Promise<boolean> {
     try {
       // Clear player inventory first
       await this.sendCommand(`clear_inventory ${steamId}`);
-      
+
       // Give each item
       for (const item of inventory) {
         await this.givePlayerItem(steamId, this.convertToCS2ItemName(item));
       }
-      
+
       return true;
     } catch (error) {
       console.error("Failed to sync player inventory:", error);
@@ -87,7 +90,7 @@ export class CS2ServerConnection {
     const itemMappings: { [key: number]: string } = {
       1: "weapon_ak47",
       4: "weapon_ak47_asiimov",
-      7: "weapon_awp",
+      7: "weapon_awp"
       // Add more mappings based on your server's items
     };
 
@@ -125,7 +128,11 @@ export const cs2ServerWebhooks = {
   /**
    * Handle item pickup/drop events
    */
-  onItemEvent: async (steamId: string, itemId: string, action: "pickup" | "drop") => {
+  onItemEvent: async (
+    steamId: string,
+    itemId: string,
+    action: "pickup" | "drop"
+  ) => {
     console.log(`Player ${steamId} ${action} item ${itemId}`);
     // Update inventory simulator accordingly
   }

@@ -86,12 +86,14 @@ export function AppProvider({
   children,
   preferences,
   rules,
-  user
+  user,
+  marketplaceUids = []
 }: Omit<
   ContextType<typeof AppContext>,
   "inventory" | "inventoryFilter" | "items" | "translation" | "setInventory"
 > & {
   children: ReactNode;
+  marketplaceUids?: number[];
 }) {
   const inventorySpec = {
     data: user?.inventory
@@ -161,7 +163,8 @@ export function AppProvider({
           transform(item, {
             models: rules.inventoryItemEquipHideModel,
             types: rules.inventoryItemEquipHideType
-          })
+          },
+          marketplaceUids)
         ),
         // Default Game Items
         getFreeItemsToDisplay(preferences.hideFreeItems)
@@ -172,7 +175,8 @@ export function AppProvider({
       preferences.hideFilters,
       rules.inventoryItemEquipHideModel,
       rules.inventoryItemEquipHideType,
-      inventoryFilter.sortItems
+      inventoryFilter.sortItems,
+      marketplaceUids
     ]
   );
 

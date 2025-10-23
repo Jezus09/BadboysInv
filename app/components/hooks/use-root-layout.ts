@@ -13,17 +13,22 @@ export function useRootLayout(): {
 } {
   const location = useLocation();
 
-  // Hide inventory on shop and trades pages to give more space
+  // Hide inventory on shop, trades, marketplace and trade-up pages to give more space
   const hideInventoryOnShop = location.pathname === "/shop";
-  const hideInventoryOnTrades = location.pathname === "/trades" || location.pathname.startsWith("/trades/");
+  const hideInventoryOnTrades =
+    location.pathname === "/trades" || location.pathname.startsWith("/trades/");
+  const hideInventoryOnMarketplace = location.pathname === "/marketplace";
+  const hideInventoryOnTradeUp = location.pathname === "/trade-up";
 
   // Show case opening activity on main pages (not on auth pages, etc.)
-  const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(location.pathname);
+  const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(
+    location.pathname
+  );
 
   return {
     footer: true,
     header: true,
-    inventory: !hideInventoryOnShop && !hideInventoryOnTrades,
+    inventory: !hideInventoryOnShop && !hideInventoryOnTrades && !hideInventoryOnMarketplace && !hideInventoryOnTradeUp,
     caseOpeningActivity: showCaseOpeningActivity
   };
 }

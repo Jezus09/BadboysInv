@@ -18,14 +18,17 @@ npm run setup-db
 ## 📋 Részletes parancsok
 
 ### Backup készítése
+
 ```bash
 npx tsx backup-database.ts
 ```
+
 - Elmenti az összes shop item-et, rule-t és user-t
 - Timestamp-pel ellátott fájl készül a `backups/` mappában
 - Legutóbbi backup: `backups/latest-backup.json`
 
 ### Backup visszaállítása
+
 ```bash
 # Legutóbbi backup visszaállítása
 npx tsx restore-database.ts
@@ -35,10 +38,13 @@ npx tsx restore-database.ts backups/backup-2025-10-10T19-30-49-808Z.json
 ```
 
 ### Teljes setup
+
 ```bash
 npx tsx setup-complete-database.ts
 ```
+
 Ez a parancs:
+
 1. ✅ Backup készít a jelenlegi állapotról
 2. ✅ Beállítja a Jézus accountot ownernek
 3. ✅ Feltölti a shop-ot mind a 479 item-mel (39 kulcs + 440 láda)
@@ -47,17 +53,20 @@ Ez a parancs:
 ## 📊 Mit mentenek a backup-ok
 
 ### Shop Items (479 db)
+
 - 🔑 **39 kulcs** - Minden CS2 kulcs
-- 📦 **44 fegyver láda** - Weapon Case-ek  
+- 📦 **44 fegyver láda** - Weapon Case-ek
 - 🏷️ **226 matrica kapszula** - Sticker Capsule-ok
 - 🎨 **5 graffiti doboz** - Graffiti Box-ok
 - 🏆 **141 souvenir láda** - Souvenir Case-ek
 - 📋 **24 egyéb láda** - Más container-ek
 
 ### Rules (1 db)
+
 - 👑 **ownerSteamId** - Owner Steam ID (Jézus account)
 
 ### Users
+
 - 👥 Minden user adatai (csak backup, nem restore-olódnak automatikusan)
 
 ## 🔄 Automatikus mentés

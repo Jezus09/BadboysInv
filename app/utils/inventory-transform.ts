@@ -32,13 +32,16 @@ export function transform(
   nonEquippable = {
     models: [] as string[],
     types: [] as string[]
-  }
+  },
+  marketplaceUids: number[] = []
 ) {
   const isEquippable =
     (item.model === undefined || !nonEquippable.models.includes(item.model)) &&
     !nonEquippable.types.includes(item.type);
 
-  if (!isEquippable) {
+  const isInMarketplace = marketplaceUids.includes(item.uid);
+
+  if (!isEquippable || isInMarketplace) {
     item.equipped = undefined;
     item.equippedCT = undefined;
     item.equippedT = undefined;
@@ -51,7 +54,8 @@ export function transform(
       item.equippedT && "text-yellow-400"
     ],
     item,
-    uid: item.uid
+    uid: item.uid,
+    isInMarketplace
   };
 }
 

@@ -1,0 +1,178 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Ian Lucas. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+import { data, redirect } from "react-router";
+import { z } from "zod";
+import { api } from "~/api.server";
+import { getRequestUserId } from "~/auth.server";
+import { middleware } from "~/http.server";
+import { methodNotAllowed } from "~/responses.server";
+import {
+  getActiveMarketplaceListings,
+  getUserListings,
+  createListing,
+  cancelListing,
+  purchaseListing,
+  getListing
+} from "~/models/marketplace.server";
+import { getUserInventory } from "~/models/user.server";
+import { parseInventory } from "~/utils/inventory";
+import type { Route } from "./+types/api.marketplace._index";
+
+export const ApiMarketplaceUrl = "/api/marketplace";
+
+/**
+ * Handle marketplace API requests
+ */
+export const action = api(async ({ request }: Route.ActionArgs) => {
+  await middleware(request);
+
+  if (request.method !== "POST") {
+    throw methodNotAllowed;
+  }
+
+  const userId = await getRequestUserId(request);
+  if (!userId) {
+    return redirect("/");
+  }
+
+  const body = await request.json();
+  const { action: actionType, ...params } = z
+    .object({
+      action: z.enum([
+        "create_listing",
+        "cancel_listing",
+        "purchase_listing",
+        "get_my_listings"
+      ]),
+      listingId: z.string().optional(),
+      itemUid: z.number().optional(),
+      price: z.number().optional()
+    })
+    .parse(body);
+
+  try {
+    switch (actionType) {
+      case "create_listing": {
+        if (params.itemUid === undefined || params.price === undefined) {
+          return data({
+            success: false,
+            message: "Missing required parameters"
+          });
+        }
+
+        // Get user's inventory
+        const userInventory = await getUserInventory(userId);
+        const inventory = parseInventory(userInventory);
+
+        if (!inventory) {
+          return data({
+            success: false,
+            message: "Inventory not found"
+          });
+        }
+
+        // Check if item exists in inventory
+        const item = inventory.items[params.itemUid];
+        if (!item) {
+          return data({
+            success: false,
+            message: "Item not found in inventory"
+          });
+        }
+
+        // Create listing (this will handle removing item from inventory)
+        const listing = await createListing({
+          userId,
+          itemUid: params.itemUid,
+          itemData: JSON.stringify(item),
+          price: params.price,
+          currentInventory: userInventory
+        });
+
+        return data({
+          success: true,
+          message: "Listing created successfully",
+          listing
+        });
+      }
+
+      case "cancel_listing": {
+        if (!params.listingId) {
+          return data({
+            success: false,
+            message: "Missing listing ID"
+          });
+        }
+
+        await cancelListing(params.listingId, userId);
+
+        return data({
+          success: true,
+          message: "Listing cancelled successfully"
+        });
+      }
+
+      case "purchase_listing": {
+        if (!params.listingId) {
+          return data({
+            success: false,
+            message: "Missing listing ID"
+          });
+        }
+
+        const listing = await purchaseListing(params.listingId, userId);
+
+        return data({
+          success: true,
+          message: "Purchase successful",
+          listing
+        });
+      }
+
+      case "get_my_listings": {
+        const listings = await getUserListings(userId);
+
+        return data({
+          success: true,
+          listings
+        });
+      }
+
+      default:
+        return data({
+          success: false,
+          message: "Invalid action"
+        });
+    }
+  } catch (error: any) {
+    console.error("Marketplace API error:", error);
+    return data(
+      {
+        success: false,
+        message: error.message || "Internal server error"
+      },
+      { status: 500 }
+    );
+  }
+});
+
+/**
+ * Get marketplace listings
+ */
+export const loader = api(async ({ request }: Route.LoaderArgs) => {
+  await middleware(request);
+
+  const url = new URL(request.url);
+  const listingId = url.searchParams.get("listingId");
+
+  if (listingId) {
+    const listing = await getListing(listingId);
+    return data({ listing });
+  }
+
+  const listings = await getActiveMarketplaceListings();
+  return data({ listings });
+});

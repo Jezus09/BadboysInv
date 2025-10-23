@@ -40,6 +40,7 @@ import {
   SOURCE_COMMIT
 } from "./env.server";
 import { middleware } from "./http.server";
+import { getUserActiveListingUids } from "./models/marketplace.server";
 import { getClientRules } from "./models/rule";
 import { steamCallbackUrl } from "./models/rule.server";
 import { getBackground } from "./preferences/background.server";
@@ -103,6 +104,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       }
     : user;
 
+  // Get marketplace listing UIDs for the user
+  const marketplaceUids = user ? await getUserActiveListingUids(user.id) : [];
+
   return data({
     rules: {
       ...(await getClientRules(user?.id)),
@@ -116,7 +120,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       ...(await getLanguage(session, ipCountry)),
       ...(await getToggleable(session))
     },
-    user: serializedUser
+    user: serializedUser,
+    marketplaceUids
   });
 }
 
@@ -164,8 +169,8 @@ export default function App() {
 
           {/* Case Opening Activity Feed - responsive positioning */}
           {caseOpeningActivity && appProps.user && (
-            <div className="fixed top-2 bottom-2 left-2 z-30 w-72 md:top-4 md:bottom-4 md:left-4 md:w-80 lg:w-80">
-              <CaseOpeningActivity className="h-full" />
+            <div className="fixed top-2 left-2 z-30 md:top-4 md:left-4">
+              <CaseOpeningActivity />
             </div>
           )}
 

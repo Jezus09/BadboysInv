@@ -21,7 +21,7 @@ export default defineConfig({
   plugins: [!process.env.VITEST && reactRouter(), tsconfigPaths()],
   build: {
     // Enable minification
-    minify: 'terser',
+    minify: "terser",
     // Optimize chunk size
     chunkSizeWarningLimit: 1000
   },

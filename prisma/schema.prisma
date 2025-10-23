@@ -27,6 +27,10 @@ model User {
   caseOpenings         CaseOpening[]
   sentTrades           Trade[]               @relation("SentTrades")
   receivedTrades       Trade[]               @relation("ReceivedTrades")
+  marketplaceListings  MarketplaceListing[]
+
+  @@index([syncedAt])
+  @@index([inventoryLastUpdateTime])
 }
 
 model UserCache {
@@ -38,6 +42,8 @@ model UserCache {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([url, userId])
+  @@index([timestamp])
+  @@index([userId])
 }
 
 model UserPreference {
@@ -67,6 +73,9 @@ model ApiAuthToken {
   userId     String
   credential ApiCredential @relation(fields: [apiKey], references: [apiKey], onDelete: Cascade)
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([apiKey])
 }
 
 model Rule {
@@ -146,22 +155,42 @@ model ShopItem {
 }
 
 model CaseOpening {
-  id              String   @id @default(uuid())
+  id              String              @id @default(uuid())
   userId          String
-  userName        String   // Cache user name for display
-  userAvatar      String   // Cache user avatar for display
-  caseItemId      Int      // CS2 economy item ID of the case
-  caseName        String   // Cache case name for display
-  keyItemId       Int?     // CS2 economy item ID of the key used
-  keyName         String?  // Cache key name for display
-  unlockedItemId  Int      // CS2 economy item ID of the unlocked item
-  unlockedName    String   // Cache unlocked item name for display
-  unlockedRarity  String?  // Cache unlocked item rarity for display
-  createdAt       DateTime @default(now())
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName        String              // Cache user name for display
+  userAvatar      String              // Cache user avatar for display
+  caseItemId      Int                 // CS2 economy item ID of the case
+  caseName        String              // Cache case name for display
+  keyItemId       Int?                // CS2 economy item ID of the key used
+  keyName         String?             // Cache key name for display
+  unlockedItemId  Int                 // CS2 economy item ID of the unlocked item
+  unlockedName    String              // Cache unlocked item name for display
+  unlockedRarity  String?             // Cache unlocked item rarity for display
+  createdAt       DateTime            @default(now())
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages        CaseOpeningMessage[]
 
   @@index([createdAt])
   @@index([userId])
+}
+
+model CaseOpeningMessage {
+  id            String       @id @default(uuid())
+  caseOpeningId String
+  userId        String
+  userName      String       // Cache user name for display
+  userAvatar    String       // Cache user avatar for display
+  message       String
+  replyToId     String?      // ID of message being replied to
+  createdAt     DateTime     @default(now())
+
+  caseOpening   CaseOpening  @relation(fields: [caseOpeningId], references: [id], onDelete: Cascade)
+  replyTo       CaseOpeningMessage? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies       CaseOpeningMessage[] @relation("MessageReplies")
+
+  @@index([caseOpeningId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Trade {
@@ -196,4 +225,33 @@ enum TradeStatus {
   COMPLETED   // Trade successfully completed
   CANCELLED   // Cancelled by sender
   EXPIRED     // Trade expired
+}
+
+model MarketplaceListing {
+  id              String                @id @default(uuid())
+  userId          String                // Seller's user ID
+  itemUid         Int                   // Item UID from inventory
+  itemData        String                // JSON serialized item data
+  price           Decimal               @db.Decimal(10, 2) // Listing price
+  status          MarketplaceStatus     @default(ACTIVE)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  soldAt          DateTime?             // When item was sold
+  buyerId         String?               // User who purchased the item
+  expiresAt       DateTime              // Listing expiration time
+
+  // Relations
+  seller          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([price])
+}
+
+enum MarketplaceStatus {
+  ACTIVE      // Listed and available for purchase
+  SOLD        // Successfully sold
+  CANCELLED   // Cancelled by seller
+  EXPIRED     // Listing expired
 }

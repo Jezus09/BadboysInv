@@ -30,7 +30,7 @@ export function TradeItemCard({
 }: TradeItemCardProps) {
   const nameItem = useNameItem();
   const translate = useTranslate();
-  
+
   const {
     getHoverFloatingProps,
     getHoverReferenceProps,
@@ -53,7 +53,7 @@ export function TradeItemCard({
     economyItem = CS2Economy.getById(item.id);
     [model, name] = nameItem(economyItem, "inventory-name");
     rarityColor = economyItem.rarity;
-    
+
     // Create a proper inventory item for the tooltip
     inventoryItem = createFakeInventoryItem(economyItem, {
       wear: item.wear,
@@ -69,43 +69,69 @@ export function TradeItemCard({
 
   return (
     <>
-      <div className="w-full max-w-[140px]">
-        <div
-          className={clsx(
-            "group relative bg-gradient-to-b from-neutral-700 to-neutral-500 p-[2px] rounded-lg cursor-pointer transition-all duration-300 hover:scale-105",
-            selected && "ring-3 ring-blue-400 ring-opacity-75 scale-105",
-            disabled && "opacity-50 cursor-not-allowed"
-          )}
-          onClick={!disabled ? onClick : undefined}
-          ref={ref}
-          {...getHoverReferenceProps()}
-        >
-          <div className="bg-gradient-to-b from-neutral-800 to-neutral-600 p-3 rounded-lg min-h-[150px] flex flex-col">
-            <div className="relative flex-1 flex items-center justify-center mb-3">
-              {economyItem ? (
-                <ItemImage 
-                  className="w-[100px] h-[75px] object-contain" 
-                  item={economyItem}
-                  wear={item.wear}
-                />
-              ) : (
-                <div className="w-[100px] h-[75px] bg-gray-700 rounded flex items-center justify-center">
-                  <span className="text-gray-400 text-xs">Unknown</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="text-center bg-black/20 rounded p-2">
-              <div className="text-xs text-white leading-tight">
-                {has(model) && (
-                  <div className="font-bold truncate mb-1 text-sm">
-                    {model}
-                  </div>
-                )}
-                {has(name) && <div className="truncate text-neutral-300 text-xs">{name}</div>}
+      <div className="w-[154px]">
+        <div className="group relative bg-linear-to-b from-neutral-600 to-neutral-400 p-[1px]">
+          <div className="bg-linear-to-b from-neutral-500 to-neutral-300 px-1">
+            {economyItem ? (
+              <ItemImage className="w-[144px]" item={economyItem} wear={item.wear} />
+            ) : (
+              <div className="flex h-[100px] w-[144px] items-center justify-center bg-gray-700">
+                <span className="text-xs text-gray-400">Unknown</span>
               </div>
-            </div>
+            )}
           </div>
+          {/* Stickers display */}
+          {item.stickers && Object.keys(item.stickers).length > 0 && (
+            <div className="absolute bottom-0 left-0 flex items-center p-1">
+              {Object.entries(item.stickers).map(([slot, sticker]: [string, any]) => (
+                <ItemImage
+                  className="h-5"
+                  item={CS2Economy.getById(sticker.id)}
+                  key={slot}
+                />
+              ))}
+            </div>
+          )}
+          {/* Patches display */}
+          {item.patches && Object.keys(item.patches).length > 0 && (
+            <div className="absolute bottom-0 left-0 flex items-center p-1">
+              {Object.entries(item.patches).map(([slot, patchId]: [string, any]) => (
+                <ItemImage
+                  className="h-5"
+                  item={CS2Economy.getById(patchId)}
+                  key={slot}
+                />
+              ))}
+            </div>
+          )}
+          {/* Selected indicator */}
+          {selected && (
+            <div className="absolute top-0 right-0 p-2">
+              <div className="h-3 w-3 rounded-full bg-blue-500 ring-2 ring-white"></div>
+            </div>
+          )}
+          {onClick !== undefined && (
+            <button
+              className={clsx(
+                "absolute top-0 left-0 h-full w-full border-4 border-transparent transition-all hover:border-white",
+                selected && "border-blue-400",
+                disabled && "cursor-not-allowed opacity-50"
+              )}
+              onClick={!disabled ? onClick : undefined}
+              ref={ref}
+              {...getHoverReferenceProps()}
+            />
+          )}
+        </div>
+        {/* Rarity line */}
+        <div
+          className="h-1 shadow-sm shadow-black/50"
+          style={{ backgroundColor: rarityColor }}
+        />
+        {/* Item name */}
+        <div className="font-display mt-1 text-[12px] leading-3 break-words text-white drop-shadow-[0_0_1px_rgba(0,0,0,1)]">
+          {has(model) && <div className="font-bold">{model}</div>}
+          {has(name) && <div>{name}</div>}
         </div>
       </div>
 

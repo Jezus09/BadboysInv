@@ -13,8 +13,10 @@ import {
   faRightFromBracket,
   faShoppingCart,
   faExchangeAlt,
+  faStore,
   faServer,
-  faXmark
+  faXmark,
+  faArrowTrendUp
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useToggle } from "@uidotdev/usehooks";
@@ -105,6 +107,18 @@ export function Header({
                 label="Trades"
                 onClick={closeMenu}
               />
+              <HeaderLink
+                to="/marketplace"
+                icon={faStore}
+                label="Marketplace"
+                onClick={closeMenu}
+              />
+              <HeaderLink
+                to="/trade-up"
+                icon={faArrowTrendUp}
+                label="Trade Up"
+                onClick={closeMenu}
+              />
               {isOwner && (
                 <HeaderLink
                   disabled={isCraftDisabled}
@@ -138,12 +152,6 @@ export function Header({
                 </>
               ) : (
                 <>
-                  <HeaderLink
-                    icon={faRightFromBracket}
-                    label={translate("HeaderSignOutLabel")}
-                    onClick={closeMenu}
-                    to="/sign-out"
-                  />
                   <div className="gap-4 lg:flex lg:flex-1 lg:justify-end">
                     <div className="flex items-center gap-2 px-2 py-1">
                       <CurrencyDisplay amount={(user as any).coins} />
