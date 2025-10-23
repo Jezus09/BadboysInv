@@ -11,6 +11,7 @@ import { findUniqueUser, manipulateUserInventory } from "~/models/user.server";
 import { badRequest, methodNotAllowed } from "~/responses.server";
 import { CS2Economy } from "@ianlucas/cs2-lib";
 import { isUserOwner } from "~/models/rule";
+import { recordItemTransfer, markItemDeleted } from "~/models/item-tracking.server";
 import type { Route } from "./+types/api.trade-up._index";
 
 const RARITY_ORDER = [
@@ -73,6 +74,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
 
   const itemProperties = JSON.parse(items) as Array<{
     id: number;
+    uuid?: string;
     wear?: number;
     seed?: number;
     stickers?: any;
@@ -94,6 +96,8 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     const rawInventory = userData.inventory;
 
     let resultItemId: number | null = null;
+    const consumedUuids: string[] = [];
+    let newItemUuid: string | null = null;
 
     await manipulateUserInventory({
       rawInventory,
@@ -101,31 +105,59 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       manipulate(inventory) {
         console.log(`[TradeUp] Looking for ${itemProperties.length} items`);
 
-        // Get all items from CS2Inventory instance
+        // Parse raw inventory to access UUIDs
+        const inventoryData = rawInventory ? JSON.parse(rawInventory) : { items: {} };
         const allItems = inventory.getAll();
         const itemsToRemove: number[] = [];
 
-        // Find items to remove by properties
+        // Find items to remove by UUID (if available) or properties
         for (const targetItem of itemProperties) {
           let found = false;
 
-          for (const invItem of allItems) {
-            // Skip if already marked for removal
-            if (itemsToRemove.includes(invItem.uid)) {
-              continue;
+          // If UUID provided, find by UUID first
+          if (targetItem.uuid) {
+            const itemEntry = Object.entries(inventoryData.items || {}).find(
+              ([key, item]: [string, any]) => item.uuid === targetItem.uuid || key === targetItem.uuid
+            );
+
+            if (itemEntry) {
+              const [key, item] = itemEntry as [string, any];
+              const uid = item.uid || parseInt(key);
+
+              if (!itemsToRemove.includes(uid)) {
+                console.log(`[TradeUp] Found item by UUID: ${targetItem.uuid}, UID=${uid}`);
+                itemsToRemove.push(uid);
+                consumedUuids.push(targetItem.uuid);
+                found = true;
+              }
             }
+          }
 
-            // Match by item properties
-            const match =
-              invItem.id === targetItem.id &&
-              Math.abs((invItem.wear || 0) - (targetItem.wear || 0)) < 0.0001 &&
-              (invItem.nameTag || "") === (targetItem.nameTag || "");
+          // Fallback: Match by properties if UUID not found
+          if (!found) {
+            for (const invItem of allItems) {
+              if (itemsToRemove.includes(invItem.uid)) continue;
 
-            if (match) {
-              console.log(`[TradeUp] Found item: ID=${invItem.id}, UID=${invItem.uid}`);
-              itemsToRemove.push(invItem.uid);
-              found = true;
-              break;
+              const match =
+                invItem.id === targetItem.id &&
+                Math.abs((invItem.wear || 0) - (targetItem.wear || 0)) < 0.0001 &&
+                (invItem.nameTag || "") === (targetItem.nameTag || "");
+
+              if (match) {
+                console.log(`[TradeUp] Found item by properties: ID=${invItem.id}, UID=${invItem.uid}`);
+                itemsToRemove.push(invItem.uid);
+
+                // Try to get UUID for tracking
+                const itemWithUuid = Object.values(inventoryData.items || {}).find(
+                  (item: any) => item.uid === invItem.uid
+                ) as any;
+                if (itemWithUuid?.uuid) {
+                  consumedUuids.push(itemWithUuid.uuid);
+                }
+
+                found = true;
+                break;
+              }
             }
           }
 
@@ -177,7 +209,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           inventory.removeItem(uid);
         });
 
-        // Add reward
+        // Add reward (UUID will be added automatically by ensureItemUuids)
         inventory.add({ id: resultItemId });
 
         console.log(`[TradeUp] Complete`);
@@ -186,6 +218,66 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
 
     if (!resultItemId) {
       throw new Error("Failed to determine result item");
+    }
+
+    // Record consumed items in ItemHistory (fire and forget)
+    if (consumedUuids.length > 0) {
+      console.log(`[TradeUp] Recording ${consumedUuids.length} consumed items`);
+
+      for (const uuid of consumedUuids) {
+        try {
+          // Record consumption transfer
+          await recordItemTransfer({
+            itemUuid: uuid,
+            fromUser: user.id,
+            toUser: user.id,
+            transferType: "TRADEUP_CONSUME",
+            metadata: { resultItemId }
+          });
+
+          // Mark item as deleted/consumed
+          await markItemDeleted(uuid);
+
+          console.log(`[TradeUp] Marked ${uuid} as consumed`);
+        } catch (err) {
+          console.error(`[TradeUp] Failed to record consumed item ${uuid}:`, err);
+        }
+      }
+    }
+
+    // Find new item UUID from updated inventory
+    try {
+      const updatedUser = await findUniqueUser(user.id);
+      const updatedInventory = updatedUser.inventory ? JSON.parse(updatedUser.inventory) : { items: {} };
+
+      // Find the newest item with matching resultItemId
+      const newItem = Object.entries(updatedInventory.items || {})
+        .map(([key, item]: [string, any]) => ({ key, item }))
+        .filter(({ item }) => item.id === resultItemId)
+        .sort((a, b) => {
+          // Sort by creation (newest items usually have higher UIDs or are at the end)
+          return (b.item.uid || 0) - (a.item.uid || 0);
+        })[0];
+
+      if (newItem?.item?.uuid) {
+        newItemUuid = newItem.item.uuid;
+
+        // Record reward transfer
+        await recordItemTransfer({
+          itemUuid: newItemUuid,
+          fromUser: user.id,
+          toUser: user.id,
+          transferType: "TRADEUP_REWARD",
+          metadata: {
+            consumedItems: consumedUuids.length,
+            resultItemId
+          }
+        });
+
+        console.log(`[TradeUp] Recorded reward item ${newItemUuid}`);
+      }
+    } catch (err) {
+      console.error(`[TradeUp] Failed to record reward item:`, err);
     }
 
     const resultItem = CS2Economy.getById(resultItemId);
