@@ -125,6 +125,13 @@ export async function updateUserInventory(userId: string, inventory: string) {
   const syncedAt = new Date();
   const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
 
+  // Add UUIDs to new items before saving
+  const inventoryWithUuids = await ensureItemUuids({
+    inventoryJson: inventory,
+    userId,
+    source: "DROP"
+  });
+
   // Invalidate cache before update
   await invalidateCachedInventory(userId);
 
@@ -133,7 +140,7 @@ export async function updateUserInventory(userId: string, inventory: string) {
       syncedAt: true
     },
     data: {
-      inventory,
+      inventory: inventoryWithUuids,
       syncedAt,
       inventoryLastUpdateTime
     },
