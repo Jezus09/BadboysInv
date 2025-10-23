@@ -16,7 +16,8 @@ import {
   faStore,
   faServer,
   faXmark,
-  faArrowTrendUp
+  faArrowTrendUp,
+  faUserShield
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useToggle } from "@uidotdev/usehooks";
@@ -73,7 +74,7 @@ export function Header({
         isOnTop ? "before:opacity-0" : "before:opacity-1"
       )}
     >
-      <div className="m-auto px-4 py-4 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] lg:flex lg:w-[1024px] lg:items-center lg:gap-8 lg:px-0">
+      <div className="m-auto px-4 py-4 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] lg:flex lg:w-[1280px] lg:items-center lg:gap-8 lg:px-0">
         <div className="flex items-center justify-between">
           <Logo className="h-8" />
           <button
@@ -157,6 +158,14 @@ export function Header({
                       <CurrencyDisplay amount={(user as any).coins} />
                     </div>
                     <DonateHeaderLink />
+                    {isOwner && (
+                      <HeaderLink
+                        to="/admin"
+                        icon={faUserShield}
+                        label="Admin"
+                        onClick={closeMenu}
+                      />
+                    )}
                     <HeaderLink to="/settings" onClick={closeMenu}>
                       <span className="text-neutral-400">
                         {translate("HeaderSignedInAsLabel")}
