@@ -7,6 +7,7 @@ import { CS2Inventory } from "@ianlucas/cs2-lib";
 import { prisma, Prisma } from "~/db.server";
 import { badRequest, conflict } from "~/responses.server";
 import { parseInventory } from "~/utils/inventory";
+import { ensureItemUuids } from "~/utils/inventory-post-process.server";
 import { inventoryMaxItems, inventoryStorageUnitMaxItems } from "./rule.server";
 import { getCachedInventory, setCachedInventory, invalidateCachedInventory } from "~/redis.server";
 
@@ -214,10 +215,18 @@ export async function manipulateUserInventory({
     const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
     const stringifiedInventory = inventory.stringify();
 
+    // Add UUIDs to new items (determines source based on context)
+    // Default to "DROP" as it's the most common source for sync operations
+    const inventoryWithUuids = await ensureItemUuids({
+      inventoryJson: stringifiedInventory,
+      userId,
+      source: "DROP"
+    });
+
     await tx.user.update({
       where: { id: userId },
       data: {
-        inventory: stringifiedInventory,
+        inventory: inventoryWithUuids,
         syncedAt: newSyncedAt,
         inventoryLastUpdateTime
       }
