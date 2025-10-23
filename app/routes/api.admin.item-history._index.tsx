@@ -64,10 +64,10 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
 
   // Collect all unique user IDs
   const userIds = new Set<string>();
-  items.forEach(item => {
+  items.forEach((item) => {
     userIds.add(item.createdBy);
     if (item.currentOwner) userIds.add(item.currentOwner);
-    item.transfers.forEach(t => {
+    item.transfers.forEach((t) => {
       if (t.fromUser) userIds.add(t.fromUser);
       userIds.add(t.toUser);
     });
@@ -80,11 +80,11 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
   });
 
   // Create user map for quick lookup
-  const userMap = new Map(users.map(u => [u.id, u]));
+  const userMap = new Map(users.map((u) => [u.id, u]));
 
   return Response.json({
     success: true,
-    items: items.map(item => ({
+    items: items.map((item) => ({
       itemUuid: item.itemUuid,
       itemId: item.itemId,
       wear: item.wear,
@@ -99,7 +99,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       currentOwnerUser: item.currentOwner ? userMap.get(item.currentOwner) : null,
       deletedAt: item.deletedAt?.toISOString(),
       transferCount: item.transfers.length,
-      recentTransfers: item.transfers.map(t => ({
+      recentTransfers: item.transfers.map((t) => ({
         fromUser: t.fromUser,
         fromUserInfo: t.fromUser ? userMap.get(t.fromUser) : null,
         toUser: t.toUser,
