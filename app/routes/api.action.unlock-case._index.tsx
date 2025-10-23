@@ -20,6 +20,7 @@ import {
 } from "~/models/user.server";
 import { conflict, methodNotAllowed } from "~/responses.server";
 import { parseInventory } from "~/utils/inventory";
+import { ensureItemUuids } from "~/utils/inventory-post-process.server";
 import { nonNegativeInt, positiveInt } from "~/utils/shapes";
 import type { Route } from "./+types/api.action.unlock-case._index";
 
@@ -146,9 +147,16 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     inventory.unlockContainer(unlockedItem, caseUid, keyUid);
   }
 
+  // Add UUIDs to new items before saving
+  const inventoryWithUuids = await ensureItemUuids({
+    inventoryJson: inventory.stringify(),
+    userId,
+    source: "CASE"
+  });
+
   const { syncedAt: responseSyncedAt } = await updateUserInventory(
     userId,
-    inventory.stringify()
+    inventoryWithUuids
   );
 
   // Get item data for webhook and activity feed
