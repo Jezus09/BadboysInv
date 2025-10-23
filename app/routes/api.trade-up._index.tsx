@@ -130,7 +130,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
 
         // Check all items have same rarity
         const rarities = itemsToRemove.map(uid => {
-          const item = inventory.get(uid);
+          const item = inventory.items[uid];
           const economyItem = CS2Economy.getById(item.id);
           return economyItem.rarity.toLowerCase();
         });
