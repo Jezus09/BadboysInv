@@ -1,0 +1,19 @@
+# Nixpacks Configuration for CS2 Inventory Simulator
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "npm"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = [
+  "npx prisma generate",
+  "npm run build"
+]
+
+[start]
+cmd = "sh start.sh"
+
+[variables]
+NODE_ENV = "production"

@@ -39,6 +39,17 @@ https://github.com/Jezus09/BadboysInv
 
 **Port:** `5000`
 
+### ⚠️ FONTOS: Build Pack Beállítás
+
+**Application → General → Build Pack**
+```
+Válaszd: dockerfile (nem nixpacks!)
+```
+
+**Dockerfile Location:** `./Dockerfile`
+
+❗ Ha nixpacks-et használsz, a build elbukhat! Lásd: `COOLIFY_FIX.md`
+
 ---
 
 ## 3️⃣ Environment Variables
