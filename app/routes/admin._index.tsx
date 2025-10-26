@@ -5,7 +5,7 @@
 
 import { data, redirect, useLoaderData } from "react-router";
 import { useNavigate } from "react-router";
-import { faDatabase, faCog, faUsers, faChartLine } from "@fortawesome/free-solid-svg-icons";
+import { faDatabase, faCog, faUsers, faChartLine, faStore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { middleware } from "~/http.server";
 import { isUserOwner } from "~/models/rule";
@@ -96,6 +96,13 @@ export default function AdminPanel() {
 
         {/* Admin Cards Grid */}
         <div className="grid gap-4 md:grid-cols-2 mb-6">
+          <AdminCard
+            title="Shop Management"
+            description="Add and manage items in the shop with prices and limits"
+            icon={faStore}
+            href="/admin/shop"
+            color="from-yellow-600/20 to-amber-800/20"
+          />
           <AdminCard
             title="Item History"
             description="View all items with UUIDs and track ownership"
