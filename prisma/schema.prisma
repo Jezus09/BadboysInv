@@ -138,17 +138,18 @@ model CurrencyTransaction {
 }
 
 model ShopItem {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  category    String   // "key", "case", "item"
-  itemId      Int?     // CS2 economy item ID
-  enabled     Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  price         Decimal  @db.Decimal(10, 2)
+  category      String   // "key", "case", "item"
+  itemId        Int?     // CS2 economy item ID
+  enabled       Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  imageUrl      String?
+  purchaseLimit Int?     // Max quantity user can purchase (null = unlimited)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([category])
   @@index([enabled])

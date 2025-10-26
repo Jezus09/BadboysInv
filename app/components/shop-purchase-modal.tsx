@@ -28,6 +28,7 @@ interface ShopItem {
   enabled: boolean;
   sortOrder: number;
   imageUrl?: string;
+  purchaseLimit?: number | null;
 }
 
 export function ShopPurchaseModal({
@@ -52,6 +53,7 @@ export function ShopPurchaseModal({
   const itemPrice = parseFloat(item.price);
   const totalPrice = itemPrice * quantity;
   const canAfford = userBalance >= totalPrice;
+  const maxQuantity = item.purchaseLimit ?? 99; // Use purchase limit or 99 as default
 
   // Get economy item for image display
   const getEconomyItem = () => {
@@ -195,22 +197,27 @@ export function ShopPurchaseModal({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="flex h-8 w-8 items-center justify-center rounded bg-neutral-600 text-white hover:bg-neutral-500"
+              className="flex h-8 w-8 items-center justify-center rounded bg-neutral-600 text-white hover:bg-neutral-500 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={quantity <= 1}
             >
               -
             </button>
-            <span className="w-8 text-center font-bold text-white">
+            <span className="w-12 text-center font-bold text-white">
               {quantity}
             </span>
             <button
-              onClick={() => setQuantity(quantity + 1)}
-              className="flex h-8 w-8 items-center justify-center rounded bg-neutral-600 text-white hover:bg-neutral-500"
-              disabled={quantity >= 10} // Max 10
+              onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
+              className="flex h-8 w-8 items-center justify-center rounded bg-neutral-600 text-white hover:bg-neutral-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={quantity >= maxQuantity}
             >
               +
             </button>
           </div>
+          {item.purchaseLimit && (
+            <span className="text-xs text-yellow-400">
+              Max: {item.purchaseLimit}x
+            </span>
+          )}
         </div>
 
         {/* Price info */}

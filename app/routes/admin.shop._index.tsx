@@ -59,6 +59,10 @@ export async function action({ request }: Route.ActionArgs) {
       const name = String(formData.get("name"));
       const price = new Decimal(String(formData.get("price")));
       const category = String(formData.get("category"));
+      const purchaseLimitStr = formData.get("purchaseLimit");
+      const purchaseLimit = purchaseLimitStr && String(purchaseLimitStr).trim() !== ""
+        ? parseInt(String(purchaseLimitStr))
+        : null;
 
       await prisma.shopItem.create({
         data: {
@@ -68,6 +72,7 @@ export async function action({ request }: Route.ActionArgs) {
           itemId,
           enabled: true,
           sortOrder: 0,
+          purchaseLimit
         }
       });
 
@@ -295,7 +300,12 @@ export default function AdminShop() {
                   </div>
 
                   <div className="text-sm font-medium mb-1">{shopItem.name}</div>
-                  <div className="text-xl font-bold text-green-400 mb-3">${shopItem.price}</div>
+                  <div className="text-xl font-bold text-green-400 mb-1">${shopItem.price}</div>
+                  {(shopItem as any).purchaseLimit && (
+                    <div className="text-xs text-yellow-400 mb-2">
+                      Limit: {(shopItem as any).purchaseLimit}x
+                    </div>
+                  )}
 
                   <div className="flex gap-2">
                     <button

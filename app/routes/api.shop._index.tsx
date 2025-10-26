@@ -70,6 +70,14 @@ export async function action({ request }: ActionFunctionArgs) {
         );
       }
 
+      // Check purchase limit
+      if (shopItem.purchaseLimit !== null && quantity > shopItem.purchaseLimit) {
+        return data({
+          success: false,
+          message: `Purchase limit exceeded! Maximum ${shopItem.purchaseLimit}x per transaction.`
+        });
+      }
+
       const totalCost = shopItem.price.mul(quantity);
 
       // Deduct total cost from user
