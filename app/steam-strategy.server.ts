@@ -5,18 +5,18 @@
 
 import { SteamStrategy as BaseSteamStrategy } from "@ianlucas/remix-auth-steam";
 import SteamAPI, { type UserSummary } from "steamapi";
-import { steamApiKey, steamCallbackUrl } from "./models/rule.server";
+import { STEAM_API_KEY, STEAM_CALLBACK_URL } from "./env.server";
 import { upsertUser } from "./models/user.server";
 
 export class SteamStrategy extends BaseSteamStrategy<string> {
   constructor() {
     super(
       async () => ({
-        returnURL: await steamCallbackUrl.get()
+        returnURL: STEAM_CALLBACK_URL || "http://localhost/sign-in/steam/callback"
       }),
       async ({ userID }) =>
         await upsertUser(
-          (await new SteamAPI(await steamApiKey.get()).getUserSummary(
+          (await new SteamAPI(STEAM_API_KEY || "YOUR_STEAM_API_KEY").getUserSummary(
             userID
           )) as UserSummary
         )
