@@ -101,6 +101,29 @@ export async function action({ request }: Route.ActionArgs) {
       return data({ success: true, message: enabled ? "Item enabled!" : "Item disabled!" });
     }
 
+    if (actionType === "update") {
+      const shopItemId = String(formData.get("shopItemId"));
+      const price = new Decimal(String(formData.get("price")));
+      const category = String(formData.get("category"));
+      const enabled = String(formData.get("enabled")) === "true";
+      const purchaseLimitStr = formData.get("purchaseLimit");
+      const purchaseLimit = purchaseLimitStr && String(purchaseLimitStr).trim() !== ""
+        ? parseInt(String(purchaseLimitStr))
+        : null;
+
+      await prisma.shopItem.update({
+        where: { id: shopItemId },
+        data: {
+          price,
+          category,
+          enabled,
+          purchaseLimit
+        }
+      });
+
+      return data({ success: true, message: "Item updated successfully!" });
+    }
+
     return data({ success: false, message: "Invalid action" }, { status: 400 });
   } catch (error) {
     console.error("Admin shop error:", error);
@@ -109,6 +132,16 @@ export async function action({ request }: Route.ActionArgs) {
       { status: 500 }
     );
   }
+}
+
+interface ShopItemType {
+  id: string;
+  name: string;
+  price: string;
+  category: string;
+  enabled: boolean;
+  purchaseLimit?: number | null;
+  itemId?: number | null;
 }
 
 export default function AdminShop() {
@@ -120,6 +153,13 @@ export default function AdminShop() {
   const [price, setPrice] = useState("0.99");
   const [purchaseLimit, setPurchaseLimit] = useState("");
   const [category, setCategory] = useState("weapon-case");
+
+  // Edit state
+  const [editingItem, setEditingItem] = useState<ShopItemType | null>(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [editPurchaseLimit, setEditPurchaseLimit] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editEnabled, setEditEnabled] = useState(true);
 
   function handleSelectItem(item: CS2EconomyItem) {
     setSelectedItem(item);
@@ -185,6 +225,37 @@ export default function AdminShop() {
     formData.append("enabled", (!currentEnabled).toString());
 
     fetcher.submit(formData, { method: "POST" });
+  }
+
+  function handleEdit(shopItem: any) {
+    setEditingItem(shopItem);
+    setEditPrice(shopItem.price);
+    setEditCategory(shopItem.category);
+    setEditPurchaseLimit(shopItem.purchaseLimit?.toString() || "");
+    setEditEnabled(shopItem.enabled);
+  }
+
+  function handleSaveEdit() {
+    if (!editingItem) return;
+
+    const formData = new FormData();
+    formData.append("action", "update");
+    formData.append("shopItemId", editingItem.id);
+    formData.append("price", editPrice);
+    formData.append("category", editCategory);
+    formData.append("enabled", editEnabled.toString());
+    if (editPurchaseLimit) {
+      formData.append("purchaseLimit", editPurchaseLimit);
+    }
+
+    fetcher.submit(formData, { method: "POST" });
+
+    // Reset edit state
+    setEditingItem(null);
+    setEditPrice("");
+    setEditCategory("");
+    setEditPurchaseLimit("");
+    setEditEnabled(true);
   }
 
   return (
@@ -309,6 +380,12 @@ export default function AdminShop() {
 
                   <div className="flex gap-2">
                     <button
+                      onClick={() => handleEdit(shopItem)}
+                      className="flex-1 rounded-sm bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
                       onClick={() => handleToggleEnabled(shopItem.id, shopItem.enabled)}
                       className={`flex-1 rounded-sm px-2 py-1 text-xs font-medium ${
                         shopItem.enabled
@@ -343,6 +420,89 @@ export default function AdminShop() {
         <Modal className="w-[95%] max-w-[720px]">
           <ModalHeader title="Select Item" onClose={() => setShowItemPicker(false)} />
           <ItemPicker onPickItem={handleSelectItem} />
+        </Modal>
+      )}
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <Modal className="w-[500px]">
+          <ModalHeader title="Edit Shop Item" onClose={() => setEditingItem(null)} />
+
+          <div className="p-4 space-y-4">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-bold">{editingItem.name}</h3>
+              <p className="text-xs text-neutral-400">{editingItem.category}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Price ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={editPrice}
+                onChange={(e) => setEditPrice(e.target.value)}
+                className="w-full rounded-sm border border-neutral-500/30 bg-black/40 px-3 py-2 text-white focus:border-neutral-400 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Category</label>
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+                className="w-full rounded-sm border border-neutral-500/30 bg-black/40 px-3 py-2 text-white focus:border-neutral-400 focus:outline-none"
+              >
+                <option value="key">Kulcs</option>
+                <option value="weapon-case">Fegyver láda</option>
+                <option value="sticker-capsule">Matrica kapszula</option>
+                <option value="graffiti-box">Graffiti doboz</option>
+                <option value="souvenir-case">Souvenir láda</option>
+                <option value="other-container">Egyéb láda</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Purchase Limit (optional)</label>
+              <input
+                type="number"
+                min="1"
+                value={editPurchaseLimit}
+                onChange={(e) => setEditPurchaseLimit(e.target.value)}
+                className="w-full rounded-sm border border-neutral-500/30 bg-black/40 px-3 py-2 text-white focus:border-neutral-400 focus:outline-none"
+                placeholder="Unlimited"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="editEnabled"
+                checked={editEnabled}
+                onChange={(e) => setEditEnabled(e.target.checked)}
+                className="w-4 h-4 rounded"
+              />
+              <label htmlFor="editEnabled" className="text-sm font-medium cursor-pointer">
+                Enabled
+              </label>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingItem(null)}
+                className="flex-1 rounded-sm bg-neutral-600 px-4 py-2 font-medium text-white hover:bg-neutral-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={fetcher.state !== "idle"}
+                className="flex-1 rounded-sm bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors"
+              >
+                {fetcher.state !== "idle" ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </>
