@@ -330,10 +330,10 @@ export default function AdminShop() {
 
       {/* Item Picker Modal */}
       {showItemPicker && (
-        <ItemPicker
-          onPickItem={handleSelectItem}
-          onClose={() => setShowItemPicker(false)}
-        />
+        <Modal className="w-[95%] max-w-[720px]">
+          <ModalHeader title="Select Item" onClose={() => setShowItemPicker(false)} />
+          <ItemPicker onPickItem={handleSelectItem} />
+        </Modal>
       )}
     </>
   );
