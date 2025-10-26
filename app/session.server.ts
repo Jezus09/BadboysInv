@@ -13,7 +13,8 @@ export const sessionStorage = createCookieSessionStorage({
     path: "/",
     httpOnly: true,
     secrets: [SESSION_SECRET],
-    secure: process.env.NODE_ENV === "production",
+    // Set to false if running on HTTP without SSL
+    secure: false,
     maxAge: 2147483647
   }
 });
