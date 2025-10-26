@@ -21,8 +21,14 @@ export class SteamStrategy extends BaseSteamStrategy<string> {
         try {
           console.log("[SteamAuth] Authenticating user ID:", userID);
           console.log("[SteamAuth] Steam API Key configured:", STEAM_API_KEY ? "Yes" : "No");
+          console.log("[SteamAuth] Steam API Key length:", STEAM_API_KEY?.length || 0);
+          console.log("[SteamAuth] Steam API Key first 8 chars:", STEAM_API_KEY?.substring(0, 8) || "MISSING");
 
-          const steamAPI = new SteamAPI(STEAM_API_KEY || "YOUR_STEAM_API_KEY");
+          if (!STEAM_API_KEY || STEAM_API_KEY === "YOUR_STEAM_API_KEY") {
+            throw new Error("STEAM_API_KEY environment variable is not set or invalid");
+          }
+
+          const steamAPI = new SteamAPI(STEAM_API_KEY);
           const userSummary = await steamAPI.getUserSummary(userID);
 
           console.log("[SteamAuth] Steam user summary received:", userSummary.nickname);
