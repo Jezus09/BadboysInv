@@ -12,6 +12,7 @@ import { parseInventory, createFakeInventoryItemFromBase } from "~/utils/invento
 import { CS2Inventory } from "@ianlucas/cs2-lib";
 import { ItemImage } from "~/components/item-image";
 import { inventoryMaxItems, inventoryStorageUnitMaxItems } from "~/models/rule.server";
+import { getK4PlayerStats } from "~/models/k4system.server";
 import type { Route } from "./+types/profile.$userId._index";
 
 export const meta = getMetaTitle("Player Profile");
@@ -77,17 +78,22 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     }
   }
 
+  // Fetch K4System statistics
+  // userId is the Steam ID (format: 76561199513508022)
+  const k4Stats = await getK4PlayerStats(userId);
+
   return data({
     user: {
       ...user,
       coins: user.coins?.toString() || "0"
     },
-    inventoryItems
+    inventoryItems,
+    k4Stats
   });
 }
 
 export default function PlayerProfile() {
-  const { user, inventoryItems } = useLoaderData<typeof loader>();
+  const { user, inventoryItems, k4Stats } = useLoaderData<typeof loader>();
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("hu-HU", {
@@ -220,15 +226,131 @@ export default function PlayerProfile() {
           </div>
         </div>
 
-        {/* Stats Placeholder - Will be added later with K4System integration */}
+        {/* CS2 Server Statistics */}
         <div className="mt-6 rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <span className="text-green-400">📊</span>
             CS2 Server Statistics
           </h2>
-          <div className="text-center py-8 text-neutral-400">
-            Server statistics will be available soon
-          </div>
+
+          {k4Stats ? (
+            <div className="space-y-4">
+              {/* Rank and Points */}
+              {k4Stats.rankName && (
+                <div className="rounded-sm border border-yellow-500/20 bg-gradient-to-r from-yellow-900/20 to-orange-900/20 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm text-neutral-400">Rank</div>
+                      <div className="text-2xl font-bold text-yellow-400">{k4Stats.rankName}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-neutral-400">Points</div>
+                      <div className="text-2xl font-bold text-orange-400">{k4Stats.rankPoints}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Main Stats Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {/* Kills */}
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Kills</div>
+                  <div className="text-2xl font-bold text-green-400">{k4Stats.kills}</div>
+                </div>
+
+                {/* Deaths */}
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Deaths</div>
+                  <div className="text-2xl font-bold text-red-400">{k4Stats.deaths}</div>
+                </div>
+
+                {/* K/D Ratio */}
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">K/D Ratio</div>
+                  <div className="text-2xl font-bold text-blue-400">{k4Stats.kd}</div>
+                </div>
+
+                {/* Assists */}
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Assists</div>
+                  <div className="text-2xl font-bold text-purple-400">{k4Stats.assists}</div>
+                </div>
+
+                {/* Headshots */}
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Headshots</div>
+                  <div className="text-2xl font-bold text-yellow-400">{k4Stats.headshots}</div>
+                  <div className="text-xs text-neutral-500 mt-1">{k4Stats.headshotPercentage}%</div>
+                </div>
+
+                {/* Accuracy */}
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Accuracy</div>
+                  <div className="text-2xl font-bold text-cyan-400">{k4Stats.accuracy}%</div>
+                  <div className="text-xs text-neutral-500 mt-1">{k4Stats.shotsHit}/{k4Stats.shotsFired}</div>
+                </div>
+
+                {/* MVPs */}
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">MVPs</div>
+                  <div className="text-2xl font-bold text-orange-400">{k4Stats.mvps}</div>
+                </div>
+
+                {/* Win Rate */}
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Win Rate</div>
+                  <div className="text-2xl font-bold text-green-400">{k4Stats.winRate}%</div>
+                  <div className="text-xs text-neutral-500 mt-1">{k4Stats.roundsWon}W / {k4Stats.roundsLost}L</div>
+                </div>
+              </div>
+
+              {/* Secondary Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Rounds Played</div>
+                  <div className="text-lg font-bold text-white">{k4Stats.roundsPlayed}</div>
+                </div>
+
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Bombs Planted</div>
+                  <div className="text-lg font-bold text-white">{k4Stats.bombPlanted}</div>
+                </div>
+
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Bombs Defused</div>
+                  <div className="text-lg font-bold text-white">{k4Stats.bombDefused}</div>
+                </div>
+
+                <div className="rounded-sm border border-neutral-500/20 bg-black/40 p-3">
+                  <div className="text-xs text-neutral-400 mb-1">Damage Dealt</div>
+                  <div className="text-lg font-bold text-white">{k4Stats.damageDealt.toLocaleString()}</div>
+                </div>
+              </div>
+
+              {/* Playtime */}
+              <div className="rounded-sm border border-blue-500/20 bg-gradient-to-r from-blue-900/20 to-cyan-900/20 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-neutral-400">Total Playtime</div>
+                    <div className="text-2xl font-bold text-blue-400">{k4Stats.playtimeFormatted}</div>
+                  </div>
+                  {k4Stats.lastConnect && (
+                    <div className="text-right">
+                      <div className="text-sm text-neutral-400">Last Seen</div>
+                      <div className="text-sm text-cyan-400">
+                        {new Date(k4Stats.lastConnect).toLocaleDateString("hu-HU")}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-neutral-400">
+              No server statistics available for this player
+            </div>
+          )}
         </div>
       </div>
     </Modal>
