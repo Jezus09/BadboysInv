@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router";
 import { CS2Economy } from "@ianlucas/cs2-lib";
 import { useWindowSize } from "@uidotdev/usehooks";
 
@@ -58,6 +59,7 @@ export function refreshCaseOpenings() {
 export function CaseOpeningActivity({
   className = ""
 }: CaseOpeningActivityProps) {
+  const navigate = useNavigate();
   const [caseOpenings, setCaseOpenings] = useState<CaseOpening[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
@@ -285,6 +287,12 @@ export function CaseOpeningActivity({
     }
   };
 
+  const handleProfileClick = (userId: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    navigate(`/profile/${userId}`);
+  };
+
   if (loading) {
     return (
       <div
@@ -431,16 +439,23 @@ export function CaseOpeningActivity({
                   <img
                     src={opening.user.avatar}
                     alt={opening.user.name}
-                    className="h-6 w-6 rounded-full"
+                    className="h-6 w-6 rounded-full cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                    onClick={(e) => handleProfileClick(opening.user.id, e)}
                   />
                 ) : (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-600">
+                  <div
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-600 cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                    onClick={(e) => handleProfileClick(opening.user.id, e)}
+                  >
                     <i className="fas fa-user text-xs text-gray-400"></i>
                   </div>
                 )}
-                <span className="text-sm font-medium text-white">
+                <button
+                  onClick={(e) => handleProfileClick(opening.user.id, e)}
+                  className="text-sm font-medium text-white hover:text-blue-400 transition-colors cursor-pointer"
+                >
                   {opening.user.name}
-                </span>
+                </button>
                 <span className="ml-auto text-xs text-gray-400">
                   {formatTimeAgo(opening.createdAt)}
                 </span>
@@ -526,16 +541,23 @@ export function CaseOpeningActivity({
                                 <img
                                   src={msg.userAvatar}
                                   alt={msg.userName}
-                                  className="h-4 w-4 rounded-full"
+                                  className="h-4 w-4 rounded-full cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                                  onClick={(e) => handleProfileClick(msg.userId, e)}
                                 />
                               ) : (
-                                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-600">
+                                <div
+                                  className="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-600 cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                                  onClick={(e) => handleProfileClick(msg.userId, e)}
+                                >
                                   <i className="fas fa-user text-[8px] text-gray-400"></i>
                                 </div>
                               )}
-                              <span className="font-medium text-white">
+                              <button
+                                onClick={(e) => handleProfileClick(msg.userId, e)}
+                                className="font-medium text-white hover:text-blue-400 transition-colors cursor-pointer"
+                              >
                                 {msg.userName}
-                              </span>
+                              </button>
                               <span className="ml-auto text-gray-500">
                                 {formatTimeAgo(msg.createdAt)}
                               </span>
