@@ -8,7 +8,7 @@ import { middleware } from "~/http.server";
 import { getMetaTitle } from "~/root-meta";
 import { Modal, ModalHeader } from "~/components/modal";
 import { prisma } from "~/db.server";
-import { parseInventory } from "~/utils/inventory";
+import { parseInventory, createFakeInventoryItemFromBase } from "~/utils/inventory";
 import { CS2Inventory } from "@ianlucas/cs2-lib";
 import { ItemImage } from "~/components/item-image";
 import { inventoryMaxItems, inventoryStorageUnitMaxItems } from "~/models/rule.server";
@@ -145,20 +145,23 @@ export default function PlayerProfile() {
 
             {inventoryItems.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
-                {inventoryItems.slice(0, 20).map((item) => (
-                  <div
-                    key={item.uid}
-                    className="rounded-sm border border-neutral-500/20 bg-black/40 p-2 hover:border-neutral-400/40 transition-colors"
-                  >
-                    <ItemImage
-                      item={item}
-                      className="w-full h-16 object-contain mb-1"
-                    />
-                    <div className="text-xs text-neutral-400 truncate text-center">
-                      {item.id}
+                {inventoryItems.slice(0, 20).map((item) => {
+                  const inventoryItem = createFakeInventoryItemFromBase(item);
+                  return (
+                    <div
+                      key={item.uid}
+                      className="rounded-sm border border-neutral-500/20 bg-black/40 p-2 hover:border-neutral-400/40 transition-colors"
+                    >
+                      <ItemImage
+                        item={inventoryItem}
+                        className="w-full h-16 object-contain mb-1"
+                      />
+                      <div className="text-xs text-neutral-400 truncate text-center">
+                        {inventoryItem.name}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-neutral-400">
