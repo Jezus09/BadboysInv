@@ -3,6 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { useState } from "react";
+
 interface RankBadgeProps {
   rankName: string;
   points: number;
@@ -111,10 +113,13 @@ const RANK_CONFIG: Record<string, { rankId: number; color: string; gradient: str
 export function RankBadge({ rankName, points, size = "medium" }: RankBadgeProps) {
   const config = RANK_CONFIG[rankName] || RANK_CONFIG["Unranked"];
 
-  // CS2 official rank image URL from Valve CDN
+  // Try multiple CDN sources for CS2 rank images
   const rankImageUrl = config.rankId > 0
-    ? `https://steamcdn-a.akamaihd.net/apps/csgo/images/rank_icons/skillgroup${config.rankId}.svg`
-    : "https://steamcdn-a.akamaihd.net/apps/csgo/images/rank_icons/skillgroup0.svg";
+    ? `https://raw.githubusercontent.com/xPaw/CounterStrikeSharp/main/docs/images/ranks/rank${config.rankId}.png`
+    : `https://raw.githubusercontent.com/xPaw/CounterStrikeSharp/main/docs/images/ranks/rank0.png`;
+
+  // Fallback: display rank ID as badge if image fails
+  const [imageError, setImageError] = useState(false);
 
   const sizeClasses = {
     small: "w-20 h-20",
@@ -146,15 +151,31 @@ export function RankBadge({ rankName, points, size = "medium" }: RankBadgeProps)
 
         {/* Badge Container */}
         <div className={`relative ${sizeClasses[size]} rounded-lg bg-gradient-to-br from-neutral-900/80 to-neutral-800/80 border-2 border-neutral-700/50 shadow-2xl flex items-center justify-center transform group-hover:scale-105 transition-all duration-300 group-hover:border-neutral-600`}>
-          {/* Rank Image */}
-          <img
-            src={rankImageUrl}
-            alt={rankName}
-            className={`${imageSizeClasses[size]} object-contain drop-shadow-2xl`}
-            style={{
-              filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.3))'
-            }}
-          />
+          {!imageError ? (
+            /* Rank Image */
+            <img
+              src={rankImageUrl}
+              alt={rankName}
+              className={`${imageSizeClasses[size]} object-contain drop-shadow-2xl`}
+              style={{
+                filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.3))'
+              }}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            /* Fallback: Colored badge with rank ID */
+            <div className="flex flex-col items-center justify-center">
+              <div
+                className="text-6xl font-black drop-shadow-2xl"
+                style={{ color: config.color }}
+              >
+                {config.rankId}
+              </div>
+              <div className="text-xs text-neutral-400 uppercase tracking-wider">
+                RANK
+              </div>
+            </div>
+          )}
 
           {/* Shine effect */}
           <div className="absolute inset-0 rounded-lg bg-gradient-to-tr from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
