@@ -1,14 +1,44 @@
 # Database Migrations
 
-This directory contains database migration scripts for the BadboysInv application.
+This directory contains **external** database migration scripts that are separate from the main Prisma migrations.
 
-## K4System Setup
+## Main Application Database (Prisma)
 
-The K4System database stores CS2 server statistics including player stats, ranks, and playtime.
+The main application database is managed by **Prisma**. All tables and schema changes are handled automatically via Prisma migrations located in `prisma/migrations/`.
+
+### Automatic Setup
+
+When deploying the application, Prisma automatically runs all migrations:
+
+```bash
+# This runs automatically on deployment
+npx prisma migrate deploy
+```
+
+### Main Database Tables (Managed by Prisma)
+
+- **User** - User accounts and authentication
+- **ShopItem** - Shop items with purchaseLimit (added in migration 20251030)
+- **CaseOpening** - Case opening history
+- **Trade** - Trading system
+- **MarketplaceListing** - Marketplace listings
+- **ItemHistory** - Item tracking with UUIDs
+- And many more...
+
+## K4System Database (Separate - Manual Setup)
+
+The K4System database stores **CS2 server statistics** and is **separate** from the main application.
+
+### Why Separate?
+
+- K4System data comes from the CS2 game server plugin
+- Uses different database (k4system vs postgres/inventory)
+- Can be on same PostgreSQL instance but different database
+- Not managed by Prisma
 
 ### Quick Setup
 
-Run this script to automatically set up the K4System database:
+Run this script to set up K4System database:
 
 ```bash
 # From the project root
@@ -17,10 +47,8 @@ bash migrations/setup-k4system.sh
 
 ### Manual Setup
 
-If you prefer to run commands manually:
-
 ```bash
-# 1. Find your PostgreSQL container name
+# 1. Find your PostgreSQL container
 docker ps | grep postgres
 
 # 2. Create database
@@ -32,60 +60,51 @@ docker exec <CONTAINER_NAME> psql -U postgres -c "CREATE USER k4user WITH PASSWO
 # 4. Grant privileges
 docker exec <CONTAINER_NAME> psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE k4system TO k4user;"
 
-# 5. Run migration SQL
-docker exec -i <CONTAINER_NAME> psql -U postgres -d k4system < migrations/k4system-setup.sql
+# 5. Import tables
+cat migrations/k4system-setup.sql | docker exec -i <CONTAINER_NAME> psql -U postgres -d k4system
 ```
 
-### Database Structure
+### K4System Tables
 
-The K4System database includes the following tables:
-
-- **k4_players** - Player basic information (steam_id, name, first/last seen)
-- **k4_stats** - Combat statistics (kills, deaths, headshots, etc.)
+- **k4_players** - Player information
+- **k4_stats** - Combat statistics
 - **k4_ranks** - Player ranks and points
-- **k4_times** - Playtime and connection tracking
-- **k4_vips** - VIP player management
+- **k4_times** - Playtime tracking
+- **k4_vips** - VIP management
 - **k4_round_stats** - Per-round statistics
 
-### Verify Setup
+## Files in This Directory
 
-Check that all tables were created:
+- **k4system-setup.sql** - K4System database structure
+- **setup-k4system.sh** - Automated K4System setup script
+- **admin-panel-setup.sql** - ⚠️ DEPRECATED - Use Prisma migrations instead
 
-```bash
-docker exec <CONTAINER_NAME> psql -U postgres -d k4system -c "\dt"
-```
+## Deployment Checklist
 
-You should see 6 tables: k4_players, k4_stats, k4_ranks, k4_times, k4_vips, k4_round_stats
+When deploying to a new environment:
 
-## Application Database
+1. ✅ **Main Database** - Automatically handled by Prisma
+   ```bash
+   npx prisma migrate deploy
+   ```
 
-The main application database (`postgres` or `inventory`) is managed by Prisma.
+2. ✅ **K4System Database** - Manual setup required
+   ```bash
+   bash migrations/setup-k4system.sh
+   ```
 
-### Add Missing Columns
+3. ✅ **Verify Setup**
+   ```bash
+   # Check main database
+   docker exec <CONTAINER> psql -U postgres -d postgres -c "\dt"
 
-If you need to add the `purchaseLimit` column to ShopItem:
-
-```bash
-docker exec <CONTAINER_NAME> psql -U postgres -d postgres -c 'ALTER TABLE "ShopItem" ADD COLUMN "purchaseLimit" INTEGER;'
-```
-
-### Prisma Migrations
-
-For application schema changes, use Prisma:
-
-```bash
-# Push schema changes to database
-npx prisma db push
-
-# Generate Prisma client
-npx prisma generate
-
-# Create a new migration
-npx prisma migrate dev --name your_migration_name
-```
+   # Check K4System
+   docker exec <CONTAINER> psql -U postgres -d k4system -c "\dt"
+   ```
 
 ## Notes
 
-- The K4System database is separate from the main application database
-- K4System stats are populated by the CS2 server K4-System plugin
-- The profile system queries both databases to display complete player information
+- ✅ Main app database = Prisma handles everything automatically
+- ⚠️ K4System database = Manual setup required (one-time)
+- 🔄 The CS2 server plugin (K4-System) populates K4System tables automatically
+- 🔗 Profile pages query both databases to show complete player info
