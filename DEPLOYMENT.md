@@ -78,7 +78,8 @@ alias "give_player_item" "echo Giving item to player"
 alias "clear_inventory" "echo Clearing player inventory"
 
 // Webhook URLs (replace with your deployed app URL)
-sv_webhook_url "https://your-app.vercel.app/api/cs2-server"
+// Example: https://inventory.badboyscs2.site/api/cs2-server
+sv_webhook_url "https://your-domain.com/api/cs2-server"
 ```
 
 ## 📋 Setup Steps
