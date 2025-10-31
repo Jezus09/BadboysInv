@@ -10,8 +10,8 @@ import { findUniqueUser, manipulateUserInventory } from "~/models/user.server";
 import { badRequest, methodNotAllowed, unauthorized } from "~/responses.server";
 import type { Route } from "./+types/api.case-drop-reward._index";
 
-// API Key for security
-const CASE_DROP_API_KEY = "badboys_secure_api_key_2025";
+// API Key for security (from environment variable)
+const CASE_DROP_API_KEY = process.env.PLUGIN_API_KEY || "badboys_secure_api_key_2025";
 
 // Mystery Case will use Community Case 33 as the container ID
 // This case will be detected in unlock logic to give random other cases
