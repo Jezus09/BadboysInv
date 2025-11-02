@@ -15,7 +15,9 @@
     "upgrade": "npx npm-check-updates@latest --target minor -u",
     "backup": "tsx backup-database.ts",
     "restore": "tsx restore-database.ts",
-    "setup-db": "tsx setup-complete-database.ts"
+    "setup-db": "tsx setup-complete-database.ts",
+    "seed-ranks": "tsx prisma/seed-ranks.ts",
+    "seed-shop": "tsx prisma/seed-shop.ts"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.16",
