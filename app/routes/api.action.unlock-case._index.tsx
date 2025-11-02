@@ -67,37 +67,56 @@ function selectMysteryReward(): number {
 
 /**
  * Convert CS2Economy rarity to plugin-expected format with exact CS2 color names
+ * CS2Economy returns HEX color codes, so we map those to rarity names
  * Maps to official CS2 rarity grades that match the in-game colors
  */
 function formatRarityForPlugin(rarity: string): string {
-  const rarityMap: Record<string, string> = {
-    // Yellow (Knives/Gloves) - Sárga
+  // CS2Economy uses HEX color codes for rarities
+  const hexColorMap: Record<string, string> = {
+    // Yellow/Gold (Knives/Gloves) - Sárga (#e4ae39, #ffd700)
+    "#e4ae39": "Contraband",
+    "#ffd700": "Extraordinary",
+
+    // Red skins - Piros (#eb4b4b)
+    "#eb4b4b": "Covert",
+
+    // Pink/Magenta skins - Pink (#d32ce6)
+    "#d32ce6": "Classified",
+
+    // Purple skins - Lila (#8847ff)
+    "#8847ff": "Restricted",
+
+    // Blue skins - Kék (#4b69ff)
+    "#4b69ff": "Mil-Spec Grade",
+
+    // Light blue - Világoskék (#5e98d9)
+    "#5e98d9": "Industrial Grade",
+
+    // Gray/White - Szürke/Fehér (#b0c3d9)
+    "#b0c3d9": "Consumer Grade"
+  };
+
+  // Check if it's a HEX color code
+  if (rarity.startsWith("#")) {
+    return hexColorMap[rarity.toLowerCase()] || "Consumer Grade";
+  }
+
+  // Fallback: Try text-based mapping (for older versions or custom items)
+  const textMap: Record<string, string> = {
     contraband: "Contraband",
     extraordinary: "Extraordinary",
-
-    // Red skins - Piros
     covert: "Covert",
-
-    // Pink/Magenta skins - Pink
     classified: "Classified",
-
-    // Purple skins - Lila
     restricted: "Restricted",
-
-    // Blue skins - Kék
     "mil-spec": "Mil-Spec Grade",
     "mil-spec grade": "Mil-Spec Grade",
-
-    // Light blue - Világoskék
     "industrial grade": "Industrial Grade",
     industrial: "Industrial Grade",
-
-    // Gray/White - Szürke/Fehér
     "consumer grade": "Consumer Grade",
     consumer: "Consumer Grade"
   };
 
-  return rarityMap[rarity.toLowerCase()] || "Consumer Grade";
+  return textMap[rarity.toLowerCase()] || "Consumer Grade";
 }
 
 export const action = api(async ({ request }: Route.ActionArgs) => {
