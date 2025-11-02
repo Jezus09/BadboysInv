@@ -179,11 +179,17 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
   const caseItemData = CS2Economy.getById(caseItem.id);
   const keyItemData = keyItem ? CS2Economy.getById(keyItem.id) : undefined;
 
+  // Format rarity for plugin
+  const mappedRarity = formatRarityForPlugin(unlockedItemData.rarity);
+
+  // DEBUG: Log rarity mapping
+  console.log(`[CaseOpening] Original rarity: '${unlockedItemData.rarity}' → Mapped: '${mappedRarity}'`);
+
   // Notify CS2 plugin about case opening immediately (fire and forget)
   notifyCaseOpeningBroadcast({
     playerName: user.name,
     itemName: unlockedItemData.name,
-    rarity: formatRarityForPlugin(unlockedItemData.rarity),
+    rarity: mappedRarity,
     statTrak: unlockedItem.statTrak !== undefined
   }).catch((error) => {
     console.error("[CaseOpening] Background webhook notification failed:", error);
