@@ -40,5 +40,3 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     leaderboard
   });
 });
-
-export { action } from "./api.$";

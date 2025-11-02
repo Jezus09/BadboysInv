@@ -37,5 +37,3 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     logs
   });
 });
-
-export { action } from "./api.$";

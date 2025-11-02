@@ -30,5 +30,3 @@ export const loader = api(async ({ request, params }: Route.LoaderArgs) => {
     player: stats
   });
 });
-
-export { action } from "./api.$";

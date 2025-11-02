@@ -25,5 +25,3 @@ export const loader = api(async ({ request, params }: Route.LoaderArgs) => {
     admin: adminInfo
   });
 });
-
-export { action } from "./api.$";

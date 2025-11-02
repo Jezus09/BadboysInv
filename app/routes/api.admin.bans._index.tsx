@@ -31,5 +31,3 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     bans
   });
 });
-
-export { action } from "./api.$";

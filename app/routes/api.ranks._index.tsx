@@ -26,5 +26,3 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     ranks
   });
 });
-
-export { action } from "./api.$";
