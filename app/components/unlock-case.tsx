@@ -97,8 +97,8 @@ export function UnlockCase({
         }
         wait(() => {
           setItems(
-            range(20).map((_, index) =>
-              index === 18 ? unlockedItem : unlockNonSpecialItem(caseItem)
+            range(23).map((_, index) =>
+              index === 20 ? unlockedItem : unlockNonSpecialItem(caseItem)
             )
           );
           setIsDisplaying(true);
