@@ -66,23 +66,38 @@ function selectMysteryReward(): number {
 }
 
 /**
- * Convert CS2Economy rarity to plugin-expected format
+ * Convert CS2Economy rarity to plugin-expected format with exact CS2 color names
+ * Maps to official CS2 rarity grades that match the in-game colors
  */
 function formatRarityForPlugin(rarity: string): string {
   const rarityMap: Record<string, string> = {
+    // Yellow (Knives/Gloves) - Sárga
     contraband: "Contraband",
+    extraordinary: "Extraordinary",
+
+    // Red skins - Piros
     covert: "Covert",
+
+    // Pink/Magenta skins - Pink
     classified: "Classified",
+
+    // Purple skins - Lila
     restricted: "Restricted",
-    "mil-spec": "Mil-Spec",
-    "mil-spec grade": "Mil-Spec",
-    "industrial grade": "Industrial",
-    industrial: "Industrial",
-    "consumer grade": "Consumer",
-    consumer: "Consumer"
+
+    // Blue skins - Kék
+    "mil-spec": "Mil-Spec Grade",
+    "mil-spec grade": "Mil-Spec Grade",
+
+    // Light blue - Világoskék
+    "industrial grade": "Industrial Grade",
+    industrial: "Industrial Grade",
+
+    // Gray/White - Szürke/Fehér
+    "consumer grade": "Consumer Grade",
+    consumer: "Consumer Grade"
   };
 
-  return rarityMap[rarity.toLowerCase()] || "Consumer";
+  return rarityMap[rarity.toLowerCase()] || "Consumer Grade";
 }
 
 export const action = api(async ({ request }: Route.ActionArgs) => {
