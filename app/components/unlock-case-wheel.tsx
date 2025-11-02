@@ -24,8 +24,8 @@ export function UnlockCaseWheel({
   const scale = useResponsiveScale();
   const [offset] = useState(randomInt(188, 440));
   const scaleY = isDisplaying ? 1 : 0;
-  // Stops at items[28] with an offset.
-  const translateX = isDisplaying ? -29 * 256 + offset : 0;
+  // Stops at items[18] with an offset.
+  const translateX = isDisplaying ? -19 * 256 + offset : 0;
 
   useDetectCollision({
     disabled: !isDisplaying,

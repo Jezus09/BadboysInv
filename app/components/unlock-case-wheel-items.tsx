@@ -26,10 +26,10 @@ export const UnlockCaseWheelItems = forwardRef(function Items(
     <div
       className={clsx(
         "h-[192px] whitespace-nowrap",
-        !instant && "[transition:all_6s_cubic-bezier(0,0.11,0.33,1)_0s]"
+        !instant && "[transition:all_3.5s_cubic-bezier(0,0.11,0.33,1)_0s]"
       )}
       ref={ref as any}
-      style={{ transform: `translate(${translateX}px, 0)` }}
+      style={{ transform: `translate(${translateX}px, 0)`, willChange: 'transform' }}
     >
       {items.map((item, index) => (
         <UnlockCaseWheelItem

@@ -97,12 +97,12 @@ export function UnlockCase({
         }
         wait(() => {
           setItems(
-            range(32).map((_, index) =>
-              index === 28 ? unlockedItem : unlockNonSpecialItem(caseItem)
+            range(20).map((_, index) =>
+              index === 18 ? unlockedItem : unlockNonSpecialItem(caseItem)
             )
           );
           setIsDisplaying(true);
-          wait(addUnlockedItemToInventory, 6000);
+          wait(addUnlockedItemToInventory, 3500);
         }, 100);
       }, 250);
     } catch {
