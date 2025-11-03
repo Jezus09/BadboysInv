@@ -14,7 +14,9 @@ import {
   faShoppingCart,
   faExchangeAlt,
   faServer,
-  faXmark
+  faXmark,
+  faTrophy,
+  faMedal
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useToggle } from "@uidotdev/usehooks";
@@ -103,6 +105,18 @@ export function Header({
                 to="/trades"
                 icon={faExchangeAlt}
                 label="Trades"
+                onClick={closeMenu}
+              />
+              <HeaderLink
+                to="/ranks"
+                icon={faMedal}
+                label="Ranks"
+                onClick={closeMenu}
+              />
+              <HeaderLink
+                to="/leaderboard"
+                icon={faTrophy}
+                label="Leaderboard"
                 onClick={closeMenu}
               />
               {isOwner && (
