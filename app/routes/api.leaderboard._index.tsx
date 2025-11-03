@@ -26,11 +26,20 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     // Validate sortBy parameter
     const validSortBy = z.enum(['experience', 'kd_ratio', 'kills']).parse(sortBy);
 
+    // Map frontend sortBy to Prisma field names (camelCase)
+    const sortByFieldMap: Record<string, string> = {
+      'experience': 'experience',
+      'kd_ratio': 'kdRatio',
+      'kills': 'kills'
+    };
+
+    const prismaField = sortByFieldMap[validSortBy];
+
     // Get all player stats with ranks
     const playerStats = await prisma.playerStats.findMany({
       take: limit,
       orderBy: {
-        [validSortBy]: 'desc'
+        [prismaField]: 'desc'
       },
       include: {
         rank: true
