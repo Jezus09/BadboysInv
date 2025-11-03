@@ -27,6 +27,10 @@ model User {
   caseOpenings         CaseOpening[]
   sentTrades           Trade[]               @relation("SentTrades")
   receivedTrades       Trade[]               @relation("ReceivedTrades")
+  marketplaceListings  MarketplaceListing[]
+
+  @@index([syncedAt])
+  @@index([inventoryLastUpdateTime])
 }
 
 model UserCache {
@@ -38,6 +42,8 @@ model UserCache {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([url, userId])
+  @@index([timestamp])
+  @@index([userId])
 }
 
 model UserPreference {
@@ -67,6 +73,9 @@ model ApiAuthToken {
   userId     String
   credential ApiCredential @relation(fields: [apiKey], references: [apiKey], onDelete: Cascade)
   user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([apiKey])
 }
 
 model Rule {
@@ -129,39 +138,60 @@ model CurrencyTransaction {
 }
 
 model ShopItem {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  category    String   // "key", "case", "item"
-  itemId      Int?     // CS2 economy item ID
-  enabled     Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  price         Decimal  @db.Decimal(10, 2)
+  category      String   // "key", "case", "item"
+  itemId        Int?     // CS2 economy item ID
+  enabled       Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  imageUrl      String?
+  purchaseLimit Int?     // Max quantity user can purchase (null = unlimited)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([category])
   @@index([enabled])
 }
 
 model CaseOpening {
-  id              String   @id @default(uuid())
+  id              String              @id @default(uuid())
   userId          String
-  userName        String   // Cache user name for display
-  userAvatar      String   // Cache user avatar for display
-  caseItemId      Int      // CS2 economy item ID of the case
-  caseName        String   // Cache case name for display
-  keyItemId       Int?     // CS2 economy item ID of the key used
-  keyName         String?  // Cache key name for display
-  unlockedItemId  Int      // CS2 economy item ID of the unlocked item
-  unlockedName    String   // Cache unlocked item name for display
-  unlockedRarity  String?  // Cache unlocked item rarity for display
-  createdAt       DateTime @default(now())
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName        String              // Cache user name for display
+  userAvatar      String              // Cache user avatar for display
+  caseItemId      Int                 // CS2 economy item ID of the case
+  caseName        String              // Cache case name for display
+  keyItemId       Int?                // CS2 economy item ID of the key used
+  keyName         String?             // Cache key name for display
+  unlockedItemId  Int                 // CS2 economy item ID of the unlocked item
+  unlockedName    String              // Cache unlocked item name for display
+  unlockedRarity  String?             // Cache unlocked item rarity for display
+  createdAt       DateTime            @default(now())
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages        CaseOpeningMessage[]
 
   @@index([createdAt])
   @@index([userId])
+}
+
+model CaseOpeningMessage {
+  id            String       @id @default(uuid())
+  caseOpeningId String
+  userId        String
+  userName      String       // Cache user name for display
+  userAvatar    String       // Cache user avatar for display
+  message       String
+  replyToId     String?      // ID of message being replied to
+  createdAt     DateTime     @default(now())
+
+  caseOpening   CaseOpening  @relation(fields: [caseOpeningId], references: [id], onDelete: Cascade)
+  replyTo       CaseOpeningMessage? @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies       CaseOpeningMessage[] @relation("MessageReplies")
+
+  @@index([caseOpeningId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Trade {
@@ -196,4 +226,157 @@ enum TradeStatus {
   COMPLETED   // Trade successfully completed
   CANCELLED   // Cancelled by sender
   EXPIRED     // Trade expired
+}
+
+model MarketplaceListing {
+  id              String                @id @default(uuid())
+  userId          String                // Seller's user ID
+  itemUid         Int                   // Item UID from inventory
+  itemData        String                // JSON serialized item data
+  price           Decimal               @db.Decimal(10, 2) // Listing price
+  status          MarketplaceStatus     @default(ACTIVE)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  soldAt          DateTime?             // When item was sold
+  buyerId         String?               // User who purchased the item
+  expiresAt       DateTime              // Listing expiration time
+
+  // Relations
+  seller          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([price])
+}
+
+enum MarketplaceStatus {
+  ACTIVE      // Listed and available for purchase
+  SOLD        // Successfully sold
+  CANCELLED   // Cancelled by seller
+  EXPIRED     // Listing expired
+}
+
+model ItemHistory {
+  id           String         @id @default(uuid())
+  itemUuid     String         @unique // Global UUID for the item
+  itemId       Int            // CS2 economy item ID
+  wear         Float?         // Item wear value
+  seed         Int?           // Item seed
+  nameTag      String?        // Custom name tag
+  stickers     String?        // JSON serialized stickers data
+  createdAt    DateTime       @default(now())
+  createdBy    String         // User ID who created/received the item
+  source       String         // "DROP", "CASE", "SHOP", "TRADE", "MARKETPLACE", "CRAFT", "TRADEUP"
+  currentOwner String?        // Current owner user ID (null if deleted/consumed)
+  deletedAt    DateTime?      // When item was deleted/consumed
+
+  // Relations
+  transfers    ItemTransfer[]
+
+  @@index([itemUuid])
+  @@index([currentOwner])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+model ItemTransfer {
+  id           String      @id @default(uuid())
+  itemUuid     String      // UUID of the item being transferred
+  fromUser     String?     // Source user ID (null for new items)
+  toUser       String      // Destination user ID
+  transferType String      // "TRADE", "MARKETPLACE_SELL", "MARKETPLACE_BUY", "INITIAL_CREATE", "TRADEUP_CONSUME", "TRADEUP_REWARD"
+  tradeId      String?     // Reference to Trade if applicable
+  listingId    String?     // Reference to MarketplaceListing if applicable
+  timestamp    DateTime    @default(now())
+  metadata     String?     // Additional JSON metadata about the transfer
+
+  // Relations
+  itemHistory  ItemHistory @relation(fields: [itemUuid], references: [itemUuid], onDelete: Cascade)
+
+  @@index([itemUuid])
+  @@index([fromUser])
+  @@index([toUser])
+  @@index([timestamp])
+  @@index([transferType])
+}
+
+// ============================================
+// BadBoys CS2 Rank System Tables
+// ============================================
+
+model PlayerStats {
+  steamId             String   @id @map("steam_id")
+  playerName          String   @map("player_name")
+  rankId              Int      @map("rank_id")
+  experience          Int      @default(0)
+  kills               Int      @default(0)
+  deaths              Int      @default(0)
+  kdRatio             Float    @default(0) @map("kd_ratio") @db.DoublePrecision
+  headshotPercentage  Float    @default(0) @map("headshot_percentage") @db.DoublePrecision
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  rank                Rank     @relation(fields: [rankId], references: [id])
+
+  @@map("player_stats")
+  @@index([rankId])
+  @@index([experience])
+  @@index([kills])
+}
+
+model Rank {
+  id            Int           @id @default(autoincrement())
+  rankName      String        @unique @map("rank_name")
+  rankTag       String        @map("rank_tag")
+  minExperience Int           @map("min_experience")
+  maxExperience Int           @map("max_experience")
+  rankColor     String        @map("rank_color")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  players       PlayerStats[]
+
+  @@map("ranks")
+  @@index([minExperience])
+}
+
+model PlayerAdmin {
+  steamId    String   @id @map("steam_id")
+  adminRole  String   @map("admin_role")
+  flags      String   @default("")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("player_admins")
+  @@index([isActive])
+}
+
+model PlayerBan {
+  id        String    @id @default(uuid())
+  steamId   String    @map("steam_id")
+  bannedBy  String    @map("banned_by")
+  reason    String
+  bannedAt  DateTime  @default(now()) @map("banned_at")
+  expiresAt DateTime? @map("expires_at")
+  isActive  Boolean   @default(true) @map("is_active")
+
+  @@map("player_bans")
+  @@index([steamId])
+  @@index([isActive])
+  @@index([bannedAt])
+}
+
+model AdminLog {
+  id              String   @id @default(uuid())
+  adminSteamId    String   @map("admin_steam_id")
+  actionType      String   @map("action_type")
+  targetSteamId   String?  @map("target_steam_id")
+  actionDetails   String?  @map("action_details")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("admin_logs")
+  @@index([adminSteamId])
+  @@index([actionType])
+  @@index([createdAt])
 }
