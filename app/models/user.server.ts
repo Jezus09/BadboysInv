@@ -397,7 +397,9 @@ export async function notifyPluginMarketplaceListing(data: {
  * Notify CS2 plugin about marketplace purchase
  */
 export async function notifyPluginMarketplacePurchase(data: {
+  buyerId: string;
   buyerName: string;
+  sellerId: string;
   sellerName: string;
   itemName: string;
   rarity: string;
@@ -416,7 +418,9 @@ export async function notifyPluginMarketplacePurchase(data: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        BuyerId: data.buyerId,
         BuyerName: data.buyerName,
+        SellerId: data.sellerId,
         SellerName: data.sellerName,
         ItemName: data.itemName,
         Rarity: data.rarity,

@@ -151,7 +151,9 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           // Notify CS2 plugin
           const buyer = await requireUser(request);
           await notifyPluginMarketplacePurchase({
+            buyerId: buyer.id,
             buyerName: buyer.name,
+            sellerId: listingInfo.userId,
             sellerName: listingInfo.sellerName || "Unknown",
             itemName: economyData.name,
             rarity: economyData.rarity || "Common",
