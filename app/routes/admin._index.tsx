@@ -3,323 +3,178 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { useState, useEffect } from "react";
-import { data, useLoaderData } from "react-router";
-import { requireUser } from "~/auth.server";
+import { data, redirect, useLoaderData } from "react-router";
+import { useNavigate } from "react-router";
+import { faDatabase, faCog, faUsers, faChartLine, faStore } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { middleware } from "~/http.server";
+import { isUserOwner } from "~/models/rule";
+import { getRequestUserId } from "~/auth.server";
+import { getMetaTitle } from "~/root-meta";
+import { prisma } from "~/db.server";
+import { Modal, ModalHeader } from "~/components/modal";
 import type { Route } from "./+types/admin._index";
 
+export const meta = getMetaTitle("Admin Panel");
+
 export async function loader({ request }: Route.LoaderArgs) {
-  await requireUser(request);
-  return data({});
+  await middleware(request);
+
+  // Check if user is owner
+  const userId = await getRequestUserId(request);
+  const isOwner = await isUserOwner(userId);
+
+  if (!isOwner) {
+    throw redirect("/?error=AccessDenied");
+  }
+
+  // Fetch quick stats
+  const [totalItems, totalUsers, totalTrades, marketplaceListings] = await Promise.all([
+    prisma.itemHistory.count({ where: { deletedAt: null } }),
+    prisma.user.count(),
+    prisma.trade.count(),
+    prisma.marketplaceListing.count({ where: { status: "ACTIVE" } })
+  ]);
+
+  return data({
+    stats: {
+      totalItems,
+      totalUsers,
+      totalTrades,
+      marketplaceListings
+    }
+  });
 }
 
-interface Player {
-  steam_id: string;
-  player_name: string;
-  rank_name: string;
-  rank_tag: string;
-  rank_color: string;
-  experience: number;
-  kills: number;
-  deaths: number;
-  kd_ratio: number;
-  headshot_percentage: number;
-  playtime_hours: number;
-  last_seen: string;
+interface AdminCardProps {
+  title: string;
+  description: string;
+  icon: any;
+  href: string;
+  color: string;
 }
 
-interface AdminLog {
-  id: number;
-  admin_steam_id: string;
-  admin_name: string;
-  target_steam_id: string;
-  target_name: string;
-  action: string;
-  reason: string;
-  timestamp: string;
-}
-
-export default function AdminPage() {
-  useLoaderData<typeof loader>();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [adminLogs, setAdminLogs] = useState<AdminLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'players' | 'logs'>('players');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-
-  useEffect(() => {
-    if (activeTab === 'players') {
-      fetchPlayers();
-    } else {
-      fetchAdminLogs();
-    }
-  }, [activeTab, searchQuery]);
-
-  const fetchPlayers = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/admin/players?search=${searchQuery}`);
-      const data = await response.json();
-      if (data.success) {
-        setPlayers(data.players);
-      }
-    } catch (error) {
-      console.error('Error fetching players:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAdminLogs = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/admin/logs');
-      const data = await response.json();
-      if (data.success) {
-        setAdminLogs(data.logs);
-      }
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEditPlayer = (player: Player) => {
-    setSelectedPlayer(player);
-    setShowEditModal(true);
-  };
-
-  const handleUpdatePlayer = async (newXP: number) => {
-    if (!selectedPlayer) return;
-
-    try {
-      const response = await fetch('/api/admin/update-player', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          steam_id: selectedPlayer.steam_id,
-          experience: newXP
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setShowEditModal(false);
-        fetchPlayers();
-      }
-    } catch (error) {
-      console.error('Error updating player:', error);
-    }
-  };
+function AdminCard({ title, description, icon, href, color }: AdminCardProps) {
+  const navigate = useNavigate();
 
   return (
-    <div className="m-auto max-w-7xl px-4 py-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-white mb-2">🛠️ Admin Panel</h1>
-        <p className="text-neutral-400">Manage players, ranks, and view admin logs</p>
+    <button
+      onClick={() => navigate(href)}
+      className={`font-display group relative overflow-hidden rounded-sm border border-neutral-500/20 bg-gradient-to-br ${color} p-4 text-left transition-all hover:scale-[1.02] hover:border-neutral-400/40 hover:shadow-lg`}
+    >
+      <div className="absolute right-2 top-2 opacity-5 transition-opacity group-hover:opacity-10">
+        <FontAwesomeIcon icon={icon} className="h-16 w-16" />
       </div>
-
-      {/* Tabs */}
-      <div className="mb-6 flex gap-2">
-        <button
-          onClick={() => setActiveTab('players')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            activeTab === 'players'
-              ? 'bg-blue-600 text-white'
-              : 'bg-stone-800 text-neutral-400 hover:bg-stone-700'
-          }`}
-        >
-          👥 Players
-        </button>
-        <button
-          onClick={() => setActiveTab('logs')}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            activeTab === 'logs'
-              ? 'bg-blue-600 text-white'
-              : 'bg-stone-800 text-neutral-400 hover:bg-stone-700'
-          }`}
-        >
-          📝 Admin Logs
-        </button>
-      </div>
-
-      {/* Players Tab */}
-      {activeTab === 'players' && (
-        <>
-          {/* Search */}
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Search by name or Steam ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 bg-stone-800 text-white rounded-lg border border-stone-700 focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Players Table */}
-          {loading ? (
-            <div className="text-center text-neutral-400 py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-              Loading players...
-            </div>
-          ) : (
-            <div className="bg-stone-900/50 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-stone-800 border-b border-stone-700">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-neutral-400 font-semibold">Player</th>
-                      <th className="px-4 py-3 text-left text-neutral-400 font-semibold">Rank</th>
-                      <th className="px-4 py-3 text-right text-neutral-400 font-semibold">XP</th>
-                      <th className="px-4 py-3 text-right text-neutral-400 font-semibold">K/D</th>
-                      <th className="px-4 py-3 text-right text-neutral-400 font-semibold">Last Seen</th>
-                      <th className="px-4 py-3 text-center text-neutral-400 font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-800">
-                    {players.map((player) => (
-                      <tr key={player.steam_id} className="hover:bg-stone-800/50 transition-colors">
-                        <td className="px-4 py-4">
-                          <div className="font-semibold text-white">{player.player_name}</div>
-                          <div className="text-xs text-neutral-500">{player.steam_id}</div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span
-                            className="px-2 py-1 rounded text-xs font-bold"
-                            style={{
-                              backgroundColor: `${player.rank_color}20`,
-                              color: player.rank_color
-                            }}
-                          >
-                            {player.rank_tag}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right font-bold text-white">
-                          {player.experience.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-4 text-right text-neutral-300">
-                          {player.kd_ratio.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-4 text-right text-neutral-300 text-sm">
-                          {new Date(player.last_seen).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <button
-                            onClick={() => handleEditPlayer(player)}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-                          >
-                            Edit
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {players.length === 0 && (
-                <div className="text-center py-12 text-neutral-400">
-                  No players found
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Admin Logs Tab */}
-      {activeTab === 'logs' && (
-        <div className="bg-stone-900/50 rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="text-center text-neutral-400 py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-              Loading logs...
-            </div>
-          ) : (
-            <div className="divide-y divide-stone-800">
-              {adminLogs.map((log) => (
-                <div key={log.id} className="p-4 hover:bg-stone-800/50 transition-colors">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <span className="font-semibold text-white">{log.admin_name}</span>
-                      <span className="text-neutral-400 mx-2">→</span>
-                      <span className="text-orange-400 font-medium">{log.action}</span>
-                      <span className="text-neutral-400 mx-2">→</span>
-                      <span className="text-white">{log.target_name}</span>
-                    </div>
-                    <span className="text-xs text-neutral-500">
-                      {new Date(log.timestamp).toLocaleString()}
-                    </span>
-                  </div>
-                  {log.reason && (
-                    <div className="text-sm text-neutral-400">
-                      Reason: {log.reason}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {adminLogs.length === 0 && (
-                <div className="text-center py-12 text-neutral-400">
-                  No admin logs found
-                </div>
-              )}
-            </div>
-          )}
+      <div className="relative">
+        <div className="mb-2 flex items-center gap-2">
+          <FontAwesomeIcon icon={icon} className="h-5 w-5" />
+          <h3 className="text-lg font-bold">{title}</h3>
         </div>
-      )}
+        <p className="text-xs text-white/70">{description}</p>
+      </div>
+    </button>
+  );
+}
 
-      {/* Edit Player Modal */}
-      {showEditModal && selectedPlayer && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-stone-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-white mb-4">
-              Edit Player: {selectedPlayer.player_name}
-            </h2>
+export default function AdminPanel() {
+  const { stats } = useLoaderData<typeof loader>();
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-neutral-400 mb-2">Current XP</label>
-                <div className="text-2xl font-bold text-white">
-                  {selectedPlayer.experience.toLocaleString()}
-                </div>
-              </div>
+  return (
+    <Modal className="w-[95%] max-w-[900px] max-h-[90vh]">
+      <ModalHeader title="Admin Panel" linkTo="/" />
 
-              <div>
-                <label className="block text-neutral-400 mb-2">New XP</label>
-                <input
-                  type="number"
-                  defaultValue={selectedPlayer.experience}
-                  id="newXP"
-                  className="w-full px-4 py-2 bg-stone-900 text-white rounded border border-stone-700 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
+      <div className="mt-4 px-4 pb-4 overflow-y-auto max-h-[80vh]">
+        {/* CS2 Style Title */}
+        <div className="relative mb-6 text-center">
+          <h1 className="font-display bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-4xl font-black text-transparent drop-shadow-2xl">
+            ADMIN PANEL
+          </h1>
+          <div className="absolute inset-0 text-4xl font-black text-blue-400/10 blur-sm">
+            ADMIN PANEL
+          </div>
+        </div>
 
-              <div className="flex gap-2 mt-6">
-                <button
-                  onClick={() => {
-                    const input = document.getElementById('newXP') as HTMLInputElement;
-                    handleUpdatePlayer(parseInt(input.value));
-                  }}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-                >
-                  Update
-                </button>
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  className="flex-1 px-4 py-2 bg-stone-700 hover:bg-stone-600 text-white rounded transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+        {/* Admin Cards Grid */}
+        <div className="grid gap-4 md:grid-cols-2 mb-6">
+          <AdminCard
+            title="Shop Management"
+            description="Add and manage items in the shop with prices and limits"
+            icon={faStore}
+            href="/admin/shop"
+            color="from-yellow-600/20 to-amber-800/20"
+          />
+          <AdminCard
+            title="Item History"
+            description="View all items with UUIDs and track ownership"
+            icon={faDatabase}
+            href="/admin/item-history"
+            color="from-blue-600/20 to-blue-800/20"
+          />
+          <AdminCard
+            title="System Settings"
+            description="View system configuration and status"
+            icon={faCog}
+            href="/admin/settings"
+            color="from-purple-600/20 to-purple-800/20"
+          />
+          <AdminCard
+            title="User Management"
+            description="View and manage user accounts"
+            icon={faUsers}
+            href="/admin/users"
+            color="from-green-600/20 to-green-800/20"
+          />
+          <AdminCard
+            title="Statistics"
+            description="View system statistics and analytics"
+            icon={faChartLine}
+            href="/admin/stats"
+            color="from-orange-600/20 to-orange-800/20"
+          />
+        </div>
+
+        {/* Quick Stats */}
+        <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4 mb-4">
+          <h2 className="mb-3 text-lg font-bold text-white">Quick Stats</h2>
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            <div className="rounded-sm bg-black/40 p-3 border border-neutral-500/10">
+              <div className="text-xs text-white/60">Total Items</div>
+              <div className="text-xl font-bold text-white">{stats.totalItems.toLocaleString()}</div>
+            </div>
+            <div className="rounded-sm bg-black/40 p-3 border border-neutral-500/10">
+              <div className="text-xs text-white/60">Active Users</div>
+              <div className="text-xl font-bold text-white">{stats.totalUsers.toLocaleString()}</div>
+            </div>
+            <div className="rounded-sm bg-black/40 p-3 border border-neutral-500/10">
+              <div className="text-xs text-white/60">Total Trades</div>
+              <div className="text-xl font-bold text-white">{stats.totalTrades.toLocaleString()}</div>
+            </div>
+            <div className="rounded-sm bg-black/40 p-3 border border-neutral-500/10">
+              <div className="text-xs text-white/60">Marketplace</div>
+              <div className="text-xl font-bold text-white">{stats.marketplaceListings.toLocaleString()}</div>
             </div>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* System Info */}
+        <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4">
+          <h2 className="mb-3 text-lg font-bold text-white">System Status</h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between py-1">
+              <span className="text-white/60">UUID Tracking</span>
+              <span className="font-medium text-green-400">● Active</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-white/60">Database</span>
+              <span className="font-medium text-green-400">● Connected</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-white/60">Redis Cache</span>
+              <span className="font-medium text-green-400">● Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }

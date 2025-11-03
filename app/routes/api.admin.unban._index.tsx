@@ -8,32 +8,38 @@ import { z } from "zod";
 import { api } from "~/api.server";
 import { getRequestUserId } from "~/auth.server";
 import { middleware } from "~/http.server";
-import { getAdminLogs, isPlayerAdmin } from "~/models/rank-system.server";
-import { unauthorized } from "~/responses.server";
-import type { Route } from "./+types/api.admin.logs._index";
+import { unbanPlayer, isPlayerAdmin } from "~/models/rank-system.server";
+import { methodNotAllowed, unauthorized } from "~/responses.server";
+import type { Route } from "./+types/api.admin.unban._index";
 
 /**
- * GET /api/admin/logs?limit=100
- * Get admin action logs (admin only)
+ * POST /api/admin/unban
+ * Unban a player (admin only)
  */
-export const loader = api(async ({ request }: Route.LoaderArgs) => {
+export const action = api(async ({ request }: Route.ActionArgs) => {
   await middleware(request);
+
+  if (request.method !== "POST") {
+    throw methodNotAllowed;
+  }
 
   const adminId = await getRequestUserId(request);
   if (!adminId || !(await isPlayerAdmin(adminId))) {
     throw unauthorized;
   }
 
-  const url = new URL(request.url);
-  const limit = z.coerce.number().min(1).max(500).default(100).parse(
-    url.searchParams.get("limit") || "100"
-  );
+  const { steamId } = z
+    .object({
+      steamId: z.string()
+    })
+    .parse(await request.json());
 
-  const logs = await getAdminLogs(limit);
+  await unbanPlayer(steamId, adminId);
 
   return data({
     success: true,
-    count: logs.length,
-    logs
+    message: `Unbanned ${steamId}`
   });
 });
+
+export { loader } from "./api.$";

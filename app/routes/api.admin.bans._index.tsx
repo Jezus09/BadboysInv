@@ -4,17 +4,16 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { data } from "react-router";
-import { z } from "zod";
 import { api } from "~/api.server";
 import { getRequestUserId } from "~/auth.server";
 import { middleware } from "~/http.server";
-import { getAdminLogs, isPlayerAdmin } from "~/models/rank-system.server";
+import { getActiveBans, isPlayerAdmin } from "~/models/rank-system.server";
 import { unauthorized } from "~/responses.server";
-import type { Route } from "./+types/api.admin.logs._index";
+import type { Route } from "./+types/api.admin.bans._index";
 
 /**
- * GET /api/admin/logs?limit=100
- * Get admin action logs (admin only)
+ * GET /api/admin/bans
+ * Get all active bans (admin only)
  */
 export const loader = api(async ({ request }: Route.LoaderArgs) => {
   await middleware(request);
@@ -24,16 +23,11 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     throw unauthorized;
   }
 
-  const url = new URL(request.url);
-  const limit = z.coerce.number().min(1).max(500).default(100).parse(
-    url.searchParams.get("limit") || "100"
-  );
-
-  const logs = await getAdminLogs(limit);
+  const bans = await getActiveBans();
 
   return data({
     success: true,
-    count: logs.length,
-    logs
+    count: bans.length,
+    bans
   });
 });
