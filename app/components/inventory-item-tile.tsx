@@ -54,11 +54,6 @@ export function InventoryItemTile({
             MARKETPLACE
           </div>
         )}
-        {inventoryItem?.statTrak !== undefined && (
-          <div className="absolute bottom-[1px] right-[1px] bg-orange-600 px-1 py-1 text-[10px] font-bold text-orange-200 shadow-lg transition-all group-hover:text-white">
-            ST
-          </div>
-        )}
         {inventoryItem?.stickers !== undefined && (
           <div className="absolute bottom-0 left-0 flex items-center p-1">
             {inventoryItem.someStickers().map(([slot, { id }]) => (
