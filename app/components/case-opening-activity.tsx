@@ -204,7 +204,7 @@ export function CaseOpeningActivity({
         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white pointer-events-auto"
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
@@ -240,7 +240,7 @@ export function CaseOpeningActivity({
         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white pointer-events-auto"
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
