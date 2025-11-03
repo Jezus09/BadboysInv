@@ -10,6 +10,7 @@ import { ClientOnly } from "remix-utils/client-only";
 import { ItemImage } from "~/components/item-image";
 import { CurrencyDisplay } from "~/components/currency-display";
 import { TradeItemTooltip } from "~/components/trade-item-tooltip";
+import { MarketplacePriceChart } from "~/components/marketplace-price-chart";
 import { useInventoryItemFloating } from "~/components/hooks/use-inventory-item-floating";
 import { createFakeInventoryItem } from "~/utils/inventory";
 import { wearToString } from "~/utils/economy";
@@ -137,6 +138,17 @@ export function MarketplaceItemCard({
             />
           </div>
         </div>
+
+        {/* Price trend chart */}
+        <ClientOnly
+          children={() => (
+            <MarketplacePriceChart
+              itemId={item.id}
+              wear={item.wear}
+              className="mt-2"
+            />
+          )}
+        />
       </div>
 
       {/* Tooltip using Portal */}

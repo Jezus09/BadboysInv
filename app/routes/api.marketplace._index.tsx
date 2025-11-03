@@ -16,7 +16,8 @@ import {
   createListing,
   cancelListing,
   purchaseListing,
-  getListing
+  getListing,
+  getPriceHistory
 } from "~/models/marketplace.server";
 import { getUserInventory, notifyPluginMarketplaceListing, notifyPluginMarketplacePurchase } from "~/models/user.server";
 import { parseInventory } from "~/utils/inventory";
@@ -46,11 +47,15 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         "create_listing",
         "cancel_listing",
         "purchase_listing",
-        "get_my_listings"
+        "get_my_listings",
+        "get_price_history"
       ]),
       listingId: z.string().optional(),
       itemUid: z.number().optional(),
-      price: z.number().optional()
+      price: z.number().optional(),
+      itemId: z.number().optional(),
+      wear: z.number().optional(),
+      days: z.number().optional()
     })
     .parse(body);
 
@@ -176,6 +181,26 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         return data({
           success: true,
           listings
+        });
+      }
+
+      case "get_price_history": {
+        if (params.itemId === undefined) {
+          return data({
+            success: false,
+            message: "Missing itemId parameter"
+          });
+        }
+
+        const history = await getPriceHistory(
+          params.itemId,
+          params.wear,
+          params.days || 30
+        );
+
+        return data({
+          success: true,
+          history
         });
       }
 

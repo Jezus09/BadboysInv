@@ -43,6 +43,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router": "^7.9.1",
+    "recharts": "^3.3.0",
     "remix-auth": "^4.2.0",
     "remix-utils": "^8.8.0",
     "steamapi": "^3.1.3",
