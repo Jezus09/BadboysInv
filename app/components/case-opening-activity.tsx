@@ -195,8 +195,10 @@ export function CaseOpeningActivity({
   if (loading) {
     return (
       <div
-        className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-          isCollapsed ? "p-2" : "p-4"
+        className={`rounded-lg transition-all duration-300 ${
+          isCollapsed
+            ? "p-2 border-transparent bg-transparent"
+            : "p-4 border border-neutral-700 bg-neutral-800/50"
         } flex flex-col ${className}`}
       >
         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
@@ -229,8 +231,10 @@ export function CaseOpeningActivity({
   if (caseOpenings.length === 0) {
     return (
       <div
-        className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-          isCollapsed ? "p-2" : "p-4"
+        className={`rounded-lg transition-all duration-300 ${
+          isCollapsed
+            ? "p-2 border-transparent bg-transparent"
+            : "p-4 border border-neutral-700 bg-neutral-800/50"
         } flex flex-col ${className}`}
       >
         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
@@ -262,8 +266,10 @@ export function CaseOpeningActivity({
 
   return (
     <div
-      className={`rounded-lg border border-neutral-700 bg-neutral-800/50 transition-all duration-300 ${
-        isCollapsed ? "p-2" : "p-4"
+      className={`rounded-lg transition-all duration-300 ${
+        isCollapsed
+          ? "p-2 border-transparent bg-transparent"
+          : "p-4 border border-neutral-700 bg-neutral-800/50"
       } flex flex-col ${className}`}
     >
       <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
