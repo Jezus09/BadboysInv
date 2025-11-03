@@ -4,15 +4,29 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CS2Inventory } from "@ianlucas/cs2-lib";
-import { prisma } from "~/db.server";
+import { prisma, Prisma } from "~/db.server";
 import { badRequest, conflict } from "~/responses.server";
 import { parseInventory } from "~/utils/inventory";
+import { ensureItemUuids } from "~/utils/inventory-post-process.server";
 import { inventoryMaxItems, inventoryStorageUnitMaxItems } from "./rule.server";
+import { getCachedInventory, setCachedInventory, invalidateCachedInventory } from "~/redis.server";
 
 export async function getUserInventory(userId: string) {
-  return (
-    (await prisma.user.findFirst({ where: { id: userId } }))?.inventory ?? null
-  );
+  // Try cache first
+  const cached = await getCachedInventory(userId);
+  if (cached) {
+    return cached;
+  }
+
+  // Cache miss - get from DB
+  const inventory = (await prisma.user.findFirst({ where: { id: userId } }))?.inventory ?? null;
+
+  // Cache the result for 5 minutes
+  if (inventory) {
+    await setCachedInventory(userId, inventory, 300);
+  }
+
+  return inventory;
 }
 
 export async function upsertUser(user: {
@@ -24,14 +38,14 @@ export async function upsertUser(user: {
     avatar: user.avatar.medium,
     name: user.nickname
   };
-  
+
   // Create an empty inventory for new users
   const emptyInventory = new CS2Inventory({
     data: { items: [], version: 1 },
     maxItems: 256, // Default max items
     storageUnitMaxItems: 256
   }).stringify();
-  
+
   return (
     await prisma.user.upsert({
       select: {
@@ -40,7 +54,7 @@ export async function upsertUser(user: {
       create: {
         id: user.steamID,
         inventory: emptyInventory,
-        coins: 0,
+        coins: 10,
         ...data
       },
       update: {
@@ -54,7 +68,9 @@ export async function upsertUser(user: {
 }
 
 // Add timestamp functions
-export async function getUserInventoryLastUpdateTime(userId: string): Promise<bigint> {
+export async function getUserInventoryLastUpdateTime(
+  userId: string
+): Promise<bigint> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { inventoryLastUpdateTime: true }
@@ -63,10 +79,12 @@ export async function getUserInventoryLastUpdateTime(userId: string): Promise<bi
   return user?.inventoryLastUpdateTime || BigInt(Math.floor(Date.now() / 1000));
 }
 
-export async function updateUserInventoryTimestamp(userId: string): Promise<void> {
+export async function updateUserInventoryTimestamp(
+  userId: string
+): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
-    data: { 
+    data: {
       inventoryLastUpdateTime: BigInt(Math.floor(Date.now() / 1000))
     }
   });
@@ -103,15 +121,32 @@ export async function existsUser(userId: string) {
   );
 }
 
-export async function updateUserInventory(userId: string, inventory: string) {
+export async function updateUserInventory(
+  userId: string,
+  inventory: string,
+  source: "DROP" | "CASE" | "SHOP" | "TRADE" | "MARKETPLACE" | "CRAFT" | "TRADEUP" = "DROP"
+) {
   const syncedAt = new Date();
+  const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
+
+  // Add UUIDs to new items before saving
+  const inventoryWithUuids = await ensureItemUuids({
+    inventoryJson: inventory,
+    userId,
+    source
+  });
+
+  // Invalidate cache before update
+  await invalidateCachedInventory(userId);
+
   return await prisma.user.update({
     select: {
       syncedAt: true
     },
     data: {
-      inventory,
-      syncedAt
+      inventory: inventoryWithUuids,
+      syncedAt,
+      inventoryLastUpdateTime
     },
     where: {
       id: userId
@@ -132,7 +167,8 @@ export async function manipulateUserInventory({
   manipulate,
   rawInventory,
   syncedAt,
-  userId
+  userId,
+  source = "DROP"
 }: {
   manipulate:
     | ((inventory: CS2Inventory) => void)
@@ -140,24 +176,90 @@ export async function manipulateUserInventory({
   rawInventory: string | null;
   syncedAt?: number;
   userId: string;
+  source?: "DROP" | "CASE" | "SHOP" | "TRADE" | "MARKETPLACE" | "CRAFT" | "TRADEUP";
 }) {
-  const inventory = new CS2Inventory({
-    data: parseInventory(rawInventory),
-    maxItems: await inventoryMaxItems.for(userId).get(),
-    storageUnitMaxItems: await inventoryStorageUnitMaxItems.for(userId).get()
-  });
-  try {
-    await manipulate(inventory);
-  } catch {
-    throw badRequest;
-  }
-  if (syncedAt !== undefined) {
-    const currentSyncedAt = await getUserSyncedAt(userId);
-    if (syncedAt !== currentSyncedAt.getTime()) {
-      throw conflict;
+  // Use transaction with row-level locking to prevent race conditions and item duplication
+  const result = await prisma.$transaction(async (tx) => {
+    console.log(`[InventoryLock] Acquiring lock for user ${userId}`);
+
+    // Lock the user row with FOR UPDATE to prevent concurrent modifications
+    // This ensures no two operations can modify the same user's inventory simultaneously
+    const lockedUser = await tx.$queryRaw<Array<{ inventory: string; syncedAt: Date }>>`
+      SELECT inventory, "syncedAt"
+      FROM "User"
+      WHERE id = ${userId}
+      FOR UPDATE
+    `;
+
+    if (!lockedUser || lockedUser.length === 0) {
+      throw new Error("User not found");
     }
-  }
-  return await updateUserInventory(userId, inventory.stringify());
+
+    const currentInventory = lockedUser[0].inventory;
+    const currentSyncedAt = lockedUser[0].syncedAt;
+
+    console.log(`[InventoryLock] Lock acquired for user ${userId}`);
+
+    // Check syncedAt if provided (optimistic locking on top of pessimistic)
+    if (syncedAt !== undefined) {
+      if (syncedAt !== currentSyncedAt.getTime()) {
+        console.log(`[InventoryLock] Sync conflict for user ${userId}`);
+        throw conflict;
+      }
+    }
+
+    // Create inventory instance with locked data
+    const inventory = new CS2Inventory({
+      data: parseInventory(currentInventory),
+      maxItems: await inventoryMaxItems.for(userId).get(),
+      storageUnitMaxItems: await inventoryStorageUnitMaxItems.for(userId).get()
+    });
+
+    // Apply the manipulation
+    try {
+      await manipulate(inventory);
+    } catch (error) {
+      console.error(`[InventoryLock] Manipulation failed for user ${userId}:`, error);
+      throw badRequest;
+    }
+
+    // Update the inventory and timestamp in the same transaction
+    const newSyncedAt = new Date();
+    const inventoryLastUpdateTime = BigInt(Math.floor(Date.now() / 1000));
+    const stringifiedInventory = inventory.stringify();
+
+    // Add UUIDs to new items with the specified source
+    const inventoryWithUuids = await ensureItemUuids({
+      inventoryJson: stringifiedInventory,
+      userId,
+      source
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        inventory: inventoryWithUuids,
+        syncedAt: newSyncedAt,
+        inventoryLastUpdateTime
+      }
+    });
+
+    console.log(`[InventoryLock] Inventory updated and lock released for user ${userId}`);
+
+    return {
+      syncedAt: newSyncedAt
+    };
+  }, {
+    // Set transaction timeout to 10 seconds
+    timeout: 10000,
+    // Use serializable isolation level for maximum safety against race conditions
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable
+  });
+
+  // Invalidate cache after successful transaction
+  await invalidateCachedInventory(userId);
+
+  return result;
 }
 
 export async function getUserBasicData(userId: string) {
@@ -172,4 +274,81 @@ export async function getUserBasicData(userId: string) {
       }
     })) || undefined
   );
+}
+
+/**
+ * Notify CS2 plugin about inventory changes via webhook
+ */
+export async function notifyPluginInventoryChange(steamId: string) {
+  const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log("[InventorySync] CS2_PLUGIN_WEBHOOK_URL not configured, skipping webhook");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${webhookUrl}/api/plugin/refresh-inventory`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          SteamId: steamId  // Plugin expects capital S
+        })
+      }
+    );
+
+    if (response.ok) {
+      console.log(`[InventorySync] Successfully notified plugin for SteamId ${steamId}`);
+    } else {
+      console.error(`[InventorySync] Plugin webhook returned status ${response.status}`);
+    }
+  } catch (error) {
+    console.error("[InventorySync] Failed to notify plugin:", error);
+  }
+}
+
+/**
+ * Notify CS2 plugin about case opening via webhook
+ */
+export async function notifyCaseOpeningBroadcast(data: {
+  playerName: string;
+  itemName: string;
+  rarity: string;
+  statTrak: boolean;
+}) {
+  const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log(
+      "[CaseOpening] CS2_PLUGIN_WEBHOOK_URL not configured, skipping webhook"
+    );
+    return;
+  }
+
+  try {
+    const response = await fetch(`${webhookUrl}/api/plugin/case-opened`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        PlayerName: data.playerName,
+        ItemName: data.itemName,
+        Rarity: data.rarity,
+        StatTrak: data.statTrak
+      })
+    });
+
+    if (response.ok) {
+      console.log(
+        `[CaseOpening] Successfully notified plugin - ${data.playerName} opened ${data.itemName}`
+      );
+    } else {
+      console.error(
+        `[CaseOpening] Plugin webhook returned status ${response.status}`
+      );
+    }
+  } catch (error) {
+    console.error("[CaseOpening] Failed to notify plugin:", error);
+  }
 }
