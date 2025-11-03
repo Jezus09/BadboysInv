@@ -5,7 +5,7 @@
 
 import { data, redirect, useLoaderData } from "react-router";
 import { useNavigate } from "react-router";
-import { faDatabase, faCog, faUsers, faChartLine, faStore } from "@fortawesome/free-solid-svg-icons";
+import { faDatabase, faCog, faUsers, faChartLine, faStore, faTrophy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { middleware } from "~/http.server";
 import { isUserOwner } from "~/models/rule";
@@ -94,6 +94,13 @@ export default function AdminPanel() {
 
         {/* Admin Cards Grid */}
         <div className="grid gap-4 md:grid-cols-2 mb-6">
+          <AdminCard
+            title="Rank Management"
+            description="Manage player ranks, XP, bans, and admin permissions"
+            icon={faTrophy}
+            href="/admin/rank-management"
+            color="from-pink-600/20 to-rose-800/20"
+          />
           <AdminCard
             title="Shop Management"
             description="Add and manage items in the shop with prices and limits"
