@@ -120,7 +120,7 @@ export function Header({
                 onClick={closeMenu}
               />
               <HeaderLink
-                to="/cs2-server"
+                to="/admin"
                 icon={faServer}
                 label="Admin"
                 onClick={closeMenu}
