@@ -197,14 +197,15 @@ export function CaseOpeningActivity({
       <div
         className={`rounded-lg transition-all duration-300 ${
           isCollapsed
-            ? "p-2 border-transparent bg-transparent pointer-events-none"
+            ? "w-auto h-auto border-transparent bg-transparent pointer-events-none p-0"
             : "p-4 border border-neutral-700 bg-neutral-800/50 pointer-events-auto"
         } flex flex-col ${className}`}
+        style={isCollapsed ? { width: 'fit-content', height: 'fit-content' } : undefined}
       >
-        <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+        <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? '' : 'mb-4'}`}>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white pointer-events-auto"
+            className="p-2 text-gray-400 transition-colors hover:text-white pointer-events-auto bg-neutral-800/80 rounded-lg border border-neutral-700 hover:bg-neutral-700/80"
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
@@ -213,8 +214,12 @@ export function CaseOpeningActivity({
               className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
             ></i>
           </button>
-          <i className="fas fa-history"></i>
-          {!isCollapsed && "Ládanyitási előzmények"}
+          {!isCollapsed && (
+            <>
+              <i className="fas fa-history"></i>
+              <span>Ládanyitási előzmények</span>
+            </>
+          )}
         </div>
         {!isCollapsed && (
           <div className="flex flex-1 items-center justify-center py-8 text-center text-gray-400">
@@ -233,14 +238,15 @@ export function CaseOpeningActivity({
       <div
         className={`rounded-lg transition-all duration-300 ${
           isCollapsed
-            ? "p-2 border-transparent bg-transparent pointer-events-none"
+            ? "w-auto h-auto border-transparent bg-transparent pointer-events-none p-0"
             : "p-4 border border-neutral-700 bg-neutral-800/50 pointer-events-auto"
         } flex flex-col ${className}`}
+        style={isCollapsed ? { width: 'fit-content', height: 'fit-content' } : undefined}
       >
-        <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+        <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? '' : 'mb-4'}`}>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white pointer-events-auto"
+            className="p-2 text-gray-400 transition-colors hover:text-white pointer-events-auto bg-neutral-800/80 rounded-lg border border-neutral-700 hover:bg-neutral-700/80"
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
@@ -249,8 +255,12 @@ export function CaseOpeningActivity({
               className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
             ></i>
           </button>
-          <i className="fas fa-history"></i>
-          {!isCollapsed && "Ládanyitási előzmények"}
+          {!isCollapsed && (
+            <>
+              <i className="fas fa-history"></i>
+              <span>Ládanyitási előzmények</span>
+            </>
+          )}
         </div>
         {!isCollapsed && (
           <div className="flex flex-1 items-center justify-center py-8 text-center text-gray-400">
@@ -268,9 +278,10 @@ export function CaseOpeningActivity({
     <div
       className={`rounded-lg transition-all duration-300 ${
         isCollapsed
-          ? "p-2 border-transparent bg-transparent pointer-events-none"
+          ? "w-auto h-auto border-transparent bg-transparent pointer-events-none p-0"
           : "p-4 border border-neutral-700 bg-neutral-800/50 pointer-events-auto"
       } flex flex-col ${className}`}
+      style={isCollapsed ? { width: 'fit-content', height: 'fit-content' } : undefined}
     >
       <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
         <button
