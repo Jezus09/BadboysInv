@@ -26,37 +26,31 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
     // Validate sortBy parameter
     const validSortBy = z.enum(['experience', 'kd_ratio', 'kills']).parse(sortBy);
 
-    let orderByClause = 'ps.experience DESC';
-    switch (validSortBy) {
-      case 'kd_ratio':
-        orderByClause = 'ps.kd_ratio DESC';
-        break;
-      case 'kills':
-        orderByClause = 'ps.kills DESC';
-        break;
-      default:
-        orderByClause = 'ps.experience DESC';
-    }
+    // Get all player stats with ranks
+    const playerStats = await prisma.playerStats.findMany({
+      take: limit,
+      orderBy: {
+        [validSortBy]: 'desc'
+      },
+      include: {
+        rank: true
+      }
+    });
 
-    const players = await prisma.$queryRawUnsafe(`
-      SELECT
-        ps.steam_id,
-        ps.player_name,
-        r.rank_name,
-        r.rank_tag,
-        r.rank_color,
-        ps.experience,
-        ps.kills,
-        ps.deaths,
-        ps.kd_ratio,
-        ps.headshot_percentage,
-        ps.playtime_hours
-      FROM player_stats ps
-      LEFT JOIN ranks r ON ps.experience >= r.min_experience
-        AND (r.max_experience IS NULL OR ps.experience <= r.max_experience)
-      ORDER BY ${orderByClause}
-      LIMIT $1
-    `, limit);
+    // Map to frontend format
+    const players = playerStats.map(ps => ({
+      steam_id: ps.steamId,
+      player_name: ps.playerName,
+      rank_name: ps.rank.rankName,
+      rank_tag: ps.rank.rankTag,
+      rank_color: ps.rank.rankColor,
+      experience: ps.experience,
+      kills: ps.kills,
+      deaths: ps.deaths,
+      kd_ratio: ps.kdRatio,
+      headshot_percentage: ps.headshotPercentage,
+      playtime_hours: 0 // TODO: Add playtime tracking
+    }));
 
     return data({
       success: true,
