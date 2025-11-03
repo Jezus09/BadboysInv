@@ -48,18 +48,8 @@ export function CaseOpeningActivity({
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const { width } = useWindowSize();
   
-  // Start collapsed on mobile (mobile-first approach)
+  // Always start collapsed (mobile and desktop)
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const [initializedCollapse, setInitializedCollapse] = useState(false);
-
-  // Initialize collapse state based on screen size once on first render
-  useEffect(() => {
-    if (!initializedCollapse && width !== null) {
-      // Expand on desktop (width > 1024), keep collapsed on mobile
-      setIsCollapsed(width <= 1024);
-      setInitializedCollapse(true);
-    }
-  }, [width, initializedCollapse]);
 
   const fetchCaseOpenings = useCallback(async () => {
     try {

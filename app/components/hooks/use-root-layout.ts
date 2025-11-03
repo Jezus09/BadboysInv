@@ -20,8 +20,11 @@ export function useRootLayout(): {
   const hideInventoryOnLeaderboard = location.pathname === "/leaderboard";
   const hideInventoryOnAdmin = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
 
-  // Show case opening activity on main pages (not on auth pages, etc.)
-  const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(location.pathname);
+  // Show case opening activity on main pages (not on auth, admin, ranks, leaderboard pages, etc.)
+  const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(location.pathname) &&
+    !location.pathname.startsWith("/admin") &&
+    location.pathname !== "/ranks" &&
+    location.pathname !== "/leaderboard";
 
   return {
     footer: true,
