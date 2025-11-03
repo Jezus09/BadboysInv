@@ -197,8 +197,8 @@ export function CaseOpeningActivity({
       <div
         className={`rounded-lg transition-all duration-300 ${
           isCollapsed
-            ? "p-2 border-transparent bg-transparent"
-            : "p-4 border border-neutral-700 bg-neutral-800/50"
+            ? "p-2 border-transparent bg-transparent pointer-events-none"
+            : "p-4 border border-neutral-700 bg-neutral-800/50 pointer-events-auto"
         } flex flex-col ${className}`}
       >
         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
@@ -233,8 +233,8 @@ export function CaseOpeningActivity({
       <div
         className={`rounded-lg transition-all duration-300 ${
           isCollapsed
-            ? "p-2 border-transparent bg-transparent"
-            : "p-4 border border-neutral-700 bg-neutral-800/50"
+            ? "p-2 border-transparent bg-transparent pointer-events-none"
+            : "p-4 border border-neutral-700 bg-neutral-800/50 pointer-events-auto"
         } flex flex-col ${className}`}
       >
         <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
@@ -268,14 +268,14 @@ export function CaseOpeningActivity({
     <div
       className={`rounded-lg transition-all duration-300 ${
         isCollapsed
-          ? "p-2 border-transparent bg-transparent"
-          : "p-4 border border-neutral-700 bg-neutral-800/50"
+          ? "p-2 border-transparent bg-transparent pointer-events-none"
+          : "p-4 border border-neutral-700 bg-neutral-800/50 pointer-events-auto"
       } flex flex-col ${className}`}
     >
       <div className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white"
+          className="-ml-1 p-1 text-gray-400 transition-colors hover:text-white pointer-events-auto"
           aria-label={
             isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
           }

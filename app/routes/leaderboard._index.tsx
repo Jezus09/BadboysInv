@@ -71,111 +71,129 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <div className="m-auto max-w-7xl px-4 py-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-white mb-2">🏅 Leaderboard</h1>
-        <p className="text-neutral-400">Top players on the server</p>
-      </div>
+    <div className="m-auto w-full px-4 lg:w-[1024px] lg:px-0">
+      <div className="my-8">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          {/* Leaderboard Title */}
+          <div className="relative mb-6">
+            <h1 className="font-display text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 drop-shadow-2xl">
+              TOPLISTA
+            </h1>
+            <div className="absolute inset-0 text-6xl font-black text-yellow-400/20 blur-sm">
+              TOPLISTA
+            </div>
+          </div>
 
-      <div className="mb-6 flex justify-center gap-2">
-        <button
-          onClick={() => setSortBy('experience')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-            sortBy === 'experience'
-              ? 'bg-blue-600 text-white'
-              : 'bg-stone-800 text-neutral-400 hover:bg-stone-700'
-          }`}
-        >
-          By XP
-        </button>
-        <button
-          onClick={() => setSortBy('kd_ratio')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-            sortBy === 'kd_ratio'
-              ? 'bg-blue-600 text-white'
-              : 'bg-stone-800 text-neutral-400 hover:bg-stone-700'
-          }`}
-        >
-          By K/D
-        </button>
-        <button
-          onClick={() => setSortBy('kills')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-            sortBy === 'kills'
-              ? 'bg-blue-600 text-white'
-              : 'bg-stone-800 text-neutral-400 hover:bg-stone-700'
-          }`}
-        >
-          By Kills
-        </button>
-      </div>
-
-      {loading && (
-        <div className="text-center text-neutral-400 py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          Loading leaderboard...
+          {/* Description */}
+          <div className="text-center mb-4">
+            <p className="font-display text-lg text-neutral-300 font-medium">
+              A szerver legjobb játékosai
+            </p>
+          </div>
         </div>
-      )}
 
-      {error && (
-        <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 text-red-400 text-center">
-          {error}
+        {/* Sort Buttons */}
+        <div className="mb-6 flex justify-center gap-4">
+          <button
+            onClick={() => setSortBy('experience')}
+            className={`font-display px-4 py-2 transition-all hover:bg-black/30 active:bg-black/70 ${
+              sortBy === 'experience'
+                ? 'bg-black/30 text-white'
+                : 'text-neutral-400'
+            }`}
+          >
+            XP szerint
+          </button>
+          <button
+            onClick={() => setSortBy('kd_ratio')}
+            className={`font-display px-4 py-2 transition-all hover:bg-black/30 active:bg-black/70 ${
+              sortBy === 'kd_ratio'
+                ? 'bg-black/30 text-white'
+                : 'text-neutral-400'
+            }`}
+          >
+            K/D szerint
+          </button>
+          <button
+            onClick={() => setSortBy('kills')}
+            className={`font-display px-4 py-2 transition-all hover:bg-black/30 active:bg-black/70 ${
+              sortBy === 'kills'
+                ? 'bg-black/30 text-white'
+                : 'text-neutral-400'
+            }`}
+          >
+            Ölés szerint
+          </button>
         </div>
-      )}
 
-      {!loading && !error && (
-        <div className="bg-stone-900/50 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-stone-800 border-b border-stone-700">
-                <tr>
-                  <th className="px-4 py-3 text-left text-neutral-400 font-semibold">Rank</th>
-                  <th className="px-4 py-3 text-left text-neutral-400 font-semibold">Player</th>
-                  <th className="px-4 py-3 text-left text-neutral-400 font-semibold">Tier</th>
-                  <th className="px-4 py-3 text-right text-neutral-400 font-semibold">XP</th>
-                  <th className="px-4 py-3 text-right text-neutral-400 font-semibold">K/D</th>
-                  <th className="px-4 py-3 text-right text-neutral-400 font-semibold">Kills</th>
-                  <th className="px-4 py-3 text-right text-neutral-400 font-semibold">HS%</th>
-                  <th className="px-4 py-3 text-right text-neutral-400 font-semibold">Hours</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-800">
+        {loading && (
+          <div className="text-center text-neutral-400 py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <span className="font-display">Betöltés...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 text-red-400 text-center">
+            <span className="font-display">{error}</span>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="bg-neutral-900/50 backdrop-blur-sm rounded-lg overflow-hidden border border-neutral-700">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-neutral-800/80 border-b border-neutral-700">
+                  <tr>
+                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">Helyezés</th>
+                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">Játékos</th>
+                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">Rang</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">XP</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">K/D</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">Ölés</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">HS%</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">Órák</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800/50">
                 {players.map((player, index) => (
                   <tr
                     key={player.steam_id}
-                    className="hover:bg-stone-800/50 transition-colors"
+                    className="hover:bg-neutral-800/50 transition-colors"
                   >
-                    <td className={`px-4 py-4 font-bold ${getMedalColor(index + 1)}`}>
+                    <td className={`font-display px-4 py-4 font-bold ${getMedalColor(index + 1)}`}>
                       {getMedalEmoji(index + 1)}
                     </td>
                     <td className="px-4 py-4">
-                      <div className="font-semibold text-white">{player.player_name}</div>
-                      <div className="text-xs text-neutral-500">{player.steam_id}</div>
+                      <div className="font-display font-semibold text-white">{player.player_name}</div>
+                      <div className="font-display text-xs text-neutral-500">{player.steam_id}</div>
                     </td>
                     <td className="px-4 py-4">
                       <span
-                        className="px-2 py-1 rounded text-xs font-bold"
+                        className="font-display px-2 py-1 rounded text-xs font-bold border"
                         style={{
-                          backgroundColor: `${player.rank_color}20`,
-                          color: player.rank_color
+                          backgroundColor: `${player.rank_color}15`,
+                          color: player.rank_color,
+                          borderColor: `${player.rank_color}40`
                         }}
                       >
                         {player.rank_tag}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-right font-bold text-white">
+                    <td className="font-display px-4 py-4 text-right font-bold text-white">
                       {player.experience.toLocaleString()}
                     </td>
-                    <td className="px-4 py-4 text-right text-neutral-300">
+                    <td className="font-display px-4 py-4 text-right text-neutral-300">
                       {player.kd_ratio.toFixed(2)}
                     </td>
-                    <td className="px-4 py-4 text-right text-neutral-300">
+                    <td className="font-display px-4 py-4 text-right text-neutral-300">
                       {player.kills.toLocaleString()}
                     </td>
-                    <td className="px-4 py-4 text-right text-neutral-300">
+                    <td className="font-display px-4 py-4 text-right text-neutral-300">
                       {player.headshot_percentage.toFixed(1)}%
                     </td>
-                    <td className="px-4 py-4 text-right text-neutral-300">
+                    <td className="font-display px-4 py-4 text-right text-neutral-300">
                       {player.playtime_hours.toFixed(1)}h
                     </td>
                   </tr>
@@ -186,11 +204,12 @@ export default function LeaderboardPage() {
 
           {players.length === 0 && (
             <div className="text-center py-12 text-neutral-400">
-              No players found
+              <span className="font-display">Nincsenek játékosok</span>
             </div>
           )}
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

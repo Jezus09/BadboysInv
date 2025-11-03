@@ -51,64 +51,81 @@ export default function RanksPage() {
   }, []);
 
   return (
-    <div className="m-auto max-w-7xl px-4 py-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-white mb-2">🏆 CS2 Ranks</h1>
-        <p className="text-neutral-400">View all available ranks and their XP requirements</p>
-      </div>
+    <div className="m-auto w-full px-4 lg:w-[1024px] lg:px-0">
+      <div className="my-8">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          {/* Ranks Title */}
+          <div className="relative mb-6">
+            <h1 className="font-display text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 drop-shadow-2xl">
+              RANGOK
+            </h1>
+            <div className="absolute inset-0 text-6xl font-black text-purple-400/20 blur-sm">
+              RANGOK
+            </div>
+          </div>
 
-      {loading && (
-        <div className="text-center text-neutral-400 py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          Loading ranks...
+          {/* Description */}
+          <div className="text-center mb-4">
+            <p className="font-display text-lg text-neutral-300 font-medium">
+              Minden elérhető rang és XP követelmény
+            </p>
+          </div>
         </div>
-      )}
 
-      {error && (
-        <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 text-red-400 text-center">
-          {error}
-        </div>
-      )}
+        {loading && (
+          <div className="text-center text-neutral-400 py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <span className="font-display">Betöltés...</span>
+          </div>
+        )}
 
-      {!loading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ranks.map((rank) => (
-            <div
-              key={rank.rank_order}
-              className="bg-gradient-to-br from-stone-800 to-stone-900 rounded-lg p-6 border-2 hover:scale-105 transition-transform"
-              style={{ borderColor: rank.rank_color }}
-            >
+        {error && (
+          <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 text-red-400 text-center">
+            <span className="font-display">{error}</span>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {ranks.map((rank) => (
+              <div
+                key={rank.rank_order}
+                className="bg-neutral-900/50 backdrop-blur-sm rounded-lg p-6 border border-neutral-700 hover:border-neutral-600 hover:bg-neutral-900/70 transition-all duration-300"
+              >
               <div className="flex items-center justify-between mb-4">
                 <span
-                  className="px-3 py-1 rounded font-bold text-sm"
+                  className="font-display px-3 py-1 rounded font-bold text-sm border"
                   style={{
-                    backgroundColor: `${rank.rank_color}20`,
-                    color: rank.rank_color
+                    backgroundColor: `${rank.rank_color}15`,
+                    color: rank.rank_color,
+                    borderColor: `${rank.rank_color}40`
                   }}
                 >
                   {rank.rank_tag}
                 </span>
-                <span className="text-neutral-400 text-sm">#{rank.rank_order}</span>
+                <span className="font-display text-neutral-400 text-sm">#{rank.rank_order}</span>
               </div>
 
-              <h3 className="text-xl font-bold text-white mb-4">{rank.rank_name}</h3>
+              <h3 className="font-display text-xl font-bold text-white mb-4" style={{ color: rank.rank_color }}>{rank.rank_name}</h3>
 
               <div className="space-y-2 text-sm text-neutral-300">
-                <div className="flex justify-between">
+                <div className="font-display flex justify-between">
                   <span>Min XP:</span>
-                  <span className="font-bold">{rank.min_experience.toLocaleString()}</span>
+                  <span className="font-bold text-white">{rank.min_experience.toLocaleString()}</span>
                 </div>
                 {rank.max_experience !== null && (
-                  <div className="flex justify-between">
+                  <div className="font-display flex justify-between">
                     <span>Max XP:</span>
-                    <span className="font-bold">{rank.max_experience.toLocaleString()}</span>
+                    <span className="font-bold text-white">{rank.max_experience.toLocaleString()}</span>
                   </div>
                 )}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
