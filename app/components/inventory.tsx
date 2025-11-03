@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CS2ItemType, CS2TeamValues } from "@ianlucas/cs2-lib";
 import { useNavigate } from "react-router";
 import { useApplyItemSticker } from "~/components/hooks/use-apply-item-sticker";
@@ -81,6 +81,7 @@ export function Inventory() {
   const [inventory, setInventory] = useInventory();
   const [itemSelector, setItemSelector] = useItemSelector();
   const navigate = useNavigate();
+  const [marketplaceListingUids, setMarketplaceListingUids] = useState<Set<number>>(new Set());
 
   const ownApplicableStickers =
     items.filter(({ item }) => item.isSticker()).length > 0 &&
@@ -168,7 +169,7 @@ export function Inventory() {
     try {
       // Get the current timestamp
       const timestamp = Math.floor(Date.now() / 1000);
-      
+
       // Update the inventory last update time in the database
       await fetch(`/api/inventory-timestamp/${steamId}`, {
         method: "POST",
@@ -178,7 +179,7 @@ export function Inventory() {
       const response = await fetch("http://cs2badboys.ggwp.cc:5005/api/refresh-inventory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           SteamId: steamId,
           LastUpdateTimestamp: timestamp
         })
@@ -188,6 +189,30 @@ export function Inventory() {
       console.error("Failed to refresh inventory:", e);
     }
   }
+
+  // Load marketplace listings to show badges
+  useEffect(() => {
+    async function loadMarketplaceListings() {
+      try {
+        const response = await fetch("/api/marketplace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get_my_listings" })
+        });
+        const data = await response.json();
+        if (data.success && Array.isArray(data.listings)) {
+          const uids = new Set(data.listings.map((listing: any) => listing.itemUid));
+          setMarketplaceListingUids(uids);
+        }
+      } catch (e) {
+        console.error("Failed to load marketplace listings:", e);
+      }
+    }
+
+    if (user) {
+      loadMarketplaceListings();
+    }
+  }, [user]);
 
   function handleEquip(uid: number, team?: CS2TeamValues) {
     playSound(
@@ -295,6 +320,7 @@ export function Inventory() {
           <div key={item.uid} className="flex items-start justify-center">
             <InventoryItem
               {...item}
+              isOnMarketplace={marketplaceListingUids.has(item.uid)}
               {...(isSelectingAnItem
                 ? {
                     disableContextMenu: true,

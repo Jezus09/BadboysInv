@@ -36,6 +36,7 @@ export function InventoryItem({
   disableContextMenu,
   disableHover,
   equipped,
+  isOnMarketplace,
   item,
   onApplyPatch,
   onApplySticker,
@@ -61,6 +62,7 @@ export function InventoryItem({
 }: TransformedInventoryItem & {
   disableContextMenu?: boolean;
   disableHover?: boolean;
+  isOnMarketplace?: boolean;
   onApplyPatch?: (uid: number) => void;
   onApplySticker?: (uid: number) => void;
   onClick?: (uid: number) => void;
@@ -201,6 +203,7 @@ export function InventoryItem({
       >
         <InventoryItemTile
           equipped={equipped}
+          isOnMarketplace={isOnMarketplace}
           item={item}
           onClick={
             onClick !== undefined ? close(() => onClick(uid)) : undefined
