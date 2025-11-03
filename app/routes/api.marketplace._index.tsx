@@ -3,10 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { CS2Economy } from "@ianlucas/cs2-lib";
 import { data, redirect } from "react-router";
 import { z } from "zod";
 import { api } from "~/api.server";
-import { getRequestUserId } from "~/auth.server";
+import { getRequestUserId, requireUser } from "~/auth.server";
 import { middleware } from "~/http.server";
 import { methodNotAllowed } from "~/responses.server";
 import {
@@ -17,7 +18,7 @@ import {
   purchaseListing,
   getListing
 } from "~/models/marketplace.server";
-import { getUserInventory } from "~/models/user.server";
+import { getUserInventory, notifyPluginMarketplaceListing, notifyPluginMarketplacePurchase } from "~/models/user.server";
 import { parseInventory } from "~/utils/inventory";
 import type { Route } from "./+types/api.marketplace._index";
 
@@ -91,6 +92,17 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           price: params.price
         });
 
+        // Notify CS2 plugin
+        const user = await requireUser(request);
+        const itemData = CS2Economy.getById(item.id);
+        await notifyPluginMarketplaceListing({
+          playerName: user.name,
+          itemName: itemData.name,
+          rarity: itemData.rarity || "Common",
+          statTrak: item.stattrak || false,
+          price: params.price
+        });
+
         return data({
           success: true,
           message: "Listing created successfully",
@@ -119,6 +131,33 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           return data({
             success: false,
             message: "Missing listing ID"
+          });
+        }
+
+        // Get listing info before purchase
+        const listingInfo = await getListing(params.listingId);
+        if (listingInfo) {
+          const itemData = JSON.parse(listingInfo.itemData);
+          const economyData = CS2Economy.getById(itemData.id);
+
+          // Purchase listing
+          const listing = await purchaseListing(params.listingId, userId);
+
+          // Notify CS2 plugin
+          const buyer = await requireUser(request);
+          await notifyPluginMarketplacePurchase({
+            buyerName: buyer.name,
+            sellerName: listingInfo.sellerName || "Unknown",
+            itemName: economyData.name,
+            rarity: economyData.rarity || "Common",
+            statTrak: itemData.stattrak || false,
+            price: listingInfo.price
+          });
+
+          return data({
+            success: true,
+            message: "Purchase successful",
+            listing
           });
         }
 

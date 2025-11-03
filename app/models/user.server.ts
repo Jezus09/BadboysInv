@@ -352,3 +352,85 @@ export async function notifyCaseOpeningBroadcast(data: {
     console.error("[CaseOpening] Failed to notify plugin:", error);
   }
 }
+
+/**
+ * Notify CS2 plugin about marketplace listing
+ */
+export async function notifyPluginMarketplaceListing(data: {
+  playerName: string;
+  itemName: string;
+  rarity: string;
+  statTrak: boolean;
+  price: number;
+}) {
+  const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log("[MarketplaceListing] CS2_PLUGIN_WEBHOOK_URL not configured, skipping webhook");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${webhookUrl}/api/plugin/marketplace-listing`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        PlayerName: data.playerName,
+        ItemName: data.itemName,
+        Rarity: data.rarity,
+        StatTrak: data.statTrak,
+        Price: data.price
+      })
+    });
+
+    if (response.ok) {
+      console.log(`[MarketplaceListing] Successfully notified plugin - ${data.playerName} listed ${data.itemName} for ${data.price}`);
+    } else {
+      console.error(`[MarketplaceListing] Plugin webhook returned status ${response.status}`);
+    }
+  } catch (error) {
+    console.error("[MarketplaceListing] Failed to notify plugin:", error);
+  }
+}
+
+/**
+ * Notify CS2 plugin about marketplace purchase
+ */
+export async function notifyPluginMarketplacePurchase(data: {
+  buyerName: string;
+  sellerName: string;
+  itemName: string;
+  rarity: string;
+  statTrak: boolean;
+  price: number;
+}) {
+  const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log("[MarketplacePurchase] CS2_PLUGIN_WEBHOOK_URL not configured, skipping webhook");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${webhookUrl}/api/plugin/marketplace-purchase`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        BuyerName: data.buyerName,
+        SellerName: data.sellerName,
+        ItemName: data.itemName,
+        Rarity: data.rarity,
+        StatTrak: data.statTrak,
+        Price: data.price
+      })
+    });
+
+    if (response.ok) {
+      console.log(`[MarketplacePurchase] Successfully notified plugin - ${data.buyerName} purchased ${data.itemName} from ${data.sellerName} for ${data.price}`);
+    } else {
+      console.error(`[MarketplacePurchase] Plugin webhook returned status ${response.status}`);
+    }
+  } catch (error) {
+    console.error("[MarketplacePurchase] Failed to notify plugin:", error);
+  }
+}
