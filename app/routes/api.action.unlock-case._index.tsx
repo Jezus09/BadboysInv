@@ -14,7 +14,7 @@ import {
   inventoryMaxItems,
   inventoryStorageUnitMaxItems
 } from "~/models/rule.server";
-import { updateUserInventory, notifyPluginCaseOpened } from "~/models/user.server";
+import { updateUserInventory, notifyCaseOpeningBroadcast } from "~/models/user.server";
 import { conflict, methodNotAllowed } from "~/responses.server";
 import { parseInventory } from "~/utils/inventory";
 import { nonNegativeInt, positiveInt } from "~/utils/shapes";
@@ -90,7 +90,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       });
 
       // Notify CS2 plugin via webhook
-      await notifyPluginCaseOpened({
+      await notifyCaseOpeningBroadcast({
         playerName: user.name,
         itemName: unlockedItemData.name,
         rarity: unlockedItemData.rarity || "Common",
