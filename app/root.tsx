@@ -167,9 +167,9 @@ export default function App() {
           {/* Case Opening Activity Feed - responsive positioning */}
           {caseOpeningActivity && appProps.user && (
             <div
-              className={`fixed z-30 transition-all duration-300 ${
+              className={`fixed z-50 transition-all duration-300 ${
                 isCaseHistoryCollapsed
-                  ? "top-2 left-2 w-auto h-auto"
+                  ? "top-20 left-4 w-auto h-auto"
                   : "top-2 bottom-2 left-2 w-72 md:top-4 md:bottom-4 md:left-4 md:w-80 lg:w-80"
               }`}
             >
