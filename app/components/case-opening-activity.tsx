@@ -212,14 +212,26 @@ export function CaseOpeningActivity({
         <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? '' : 'mb-4'}`}>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 text-gray-400 transition-colors hover:text-white pointer-events-auto bg-neutral-800/80 rounded-lg border border-neutral-700 hover:bg-neutral-700/80"
+            className={`group relative transition-all pointer-events-auto ${
+              isCollapsed
+                ? "p-3 bg-gradient-to-r from-blue-600/90 to-purple-600/90 hover:from-blue-500 hover:to-purple-500 rounded-lg border-2 border-blue-400/50 shadow-lg hover:shadow-xl hover:scale-105"
+                : "p-2 text-gray-400 bg-neutral-800/80 hover:bg-neutral-700/80 rounded-lg border border-neutral-700 hover:text-white"
+            }`}
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
           >
-            <i
-              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
-            ></i>
+            {isCollapsed ? (
+              <div className="flex flex-col items-center gap-1">
+                <i className="fas fa-history text-white text-lg animate-pulse"></i>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-white font-bold">Történet</span>
+                  <i className="fas fa-chevron-right text-white text-xs animate-bounce"></i>
+                </div>
+              </div>
+            ) : (
+              <i className="fas fa-chevron-down text-sm"></i>
+            )}
           </button>
           {!isCollapsed && (
             <>
@@ -253,14 +265,26 @@ export function CaseOpeningActivity({
         <div className={`flex items-center gap-2 text-lg font-bold text-white ${isCollapsed ? '' : 'mb-4'}`}>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 text-gray-400 transition-colors hover:text-white pointer-events-auto bg-neutral-800/80 rounded-lg border border-neutral-700 hover:bg-neutral-700/80"
+            className={`group relative transition-all pointer-events-auto ${
+              isCollapsed
+                ? "p-3 bg-gradient-to-r from-blue-600/90 to-purple-600/90 hover:from-blue-500 hover:to-purple-500 rounded-lg border-2 border-blue-400/50 shadow-lg hover:shadow-xl hover:scale-105"
+                : "p-2 text-gray-400 bg-neutral-800/80 hover:bg-neutral-700/80 rounded-lg border border-neutral-700 hover:text-white"
+            }`}
             aria-label={
               isCollapsed ? "Előzmények megnyitása" : "Előzmények összecsukása"
             }
           >
-            <i
-              className={`fas fa-chevron-${isCollapsed ? "right" : "down"} text-sm`}
-            ></i>
+            {isCollapsed ? (
+              <div className="flex flex-col items-center gap-1">
+                <i className="fas fa-history text-white text-lg animate-pulse"></i>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-white font-bold">Történet</span>
+                  <i className="fas fa-chevron-right text-white text-xs animate-bounce"></i>
+                </div>
+              </div>
+            ) : (
+              <i className="fas fa-chevron-down text-sm"></i>
+            )}
           </button>
           {!isCollapsed && (
             <>
