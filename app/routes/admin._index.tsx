@@ -29,19 +29,17 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 
   // Fetch quick stats
-  const [totalItems, totalUsers, totalTrades, marketplaceListings] = await Promise.all([
+  const [totalItems, totalUsers, totalTrades] = await Promise.all([
     prisma.itemHistory.count({ where: { deletedAt: null } }),
     prisma.user.count(),
-    prisma.trade.count(),
-    prisma.marketplaceListing.count({ where: { status: "ACTIVE" } })
+    prisma.trade.count()
   ]);
 
   return data({
     stats: {
       totalItems,
       totalUsers,
-      totalTrades,
-      marketplaceListings
+      totalTrades
     }
   });
 }
@@ -136,7 +134,7 @@ export default function AdminPanel() {
         {/* Quick Stats */}
         <div className="rounded-sm border border-neutral-500/20 bg-neutral-800/50 p-4 mb-4">
           <h2 className="mb-3 text-lg font-bold text-white">Quick Stats</h2>
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          <div className="grid gap-3 grid-cols-3">
             <div className="rounded-sm bg-black/40 p-3 border border-neutral-500/10">
               <div className="text-xs text-white/60">Total Items</div>
               <div className="text-xl font-bold text-white">{stats.totalItems.toLocaleString()}</div>
@@ -148,10 +146,6 @@ export default function AdminPanel() {
             <div className="rounded-sm bg-black/40 p-3 border border-neutral-500/10">
               <div className="text-xs text-white/60">Total Trades</div>
               <div className="text-xl font-bold text-white">{stats.totalTrades.toLocaleString()}</div>
-            </div>
-            <div className="rounded-sm bg-black/40 p-3 border border-neutral-500/10">
-              <div className="text-xs text-white/60">Marketplace</div>
-              <div className="text-xl font-bold text-white">{stats.marketplaceListings.toLocaleString()}</div>
             </div>
           </div>
         </div>

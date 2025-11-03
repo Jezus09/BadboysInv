@@ -28,10 +28,18 @@ export function Modal({
   const [animate, setAnimate] = useState(true);
 
   useEffect(() => {
-    if (ref.current !== null) {
-      document.body.append(ref.current);
+    const element = ref.current;
+    if (element !== null) {
+      document.body.append(element);
     }
     requestAnimationFrame(() => setAnimate(hidden ? true : false));
+
+    // Cleanup: remove element when component unmounts
+    return () => {
+      if (element !== null && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    };
   }, [hidden]);
 
   return (
