@@ -380,3 +380,18 @@ model AdminLog {
   @@index([actionType])
   @@index([createdAt])
 }
+
+model MarketplaceAnnouncement {
+  id              String   @id @default(uuid())
+  userId          String   // Seller's user ID
+  userName        String   // Cache user name for display
+  itemId          Int      // CS2 economy item ID
+  itemName        String   // Cache item name for display
+  itemRarity      String?  // Cache item rarity for color
+  price           Decimal  @db.Decimal(10, 2) // Listing price
+  announced       Boolean  @default(false) // Whether it was announced in-game
+  createdAt       DateTime @default(now())
+
+  @@index([announced])
+  @@index([createdAt])
+}

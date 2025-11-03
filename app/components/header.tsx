@@ -13,6 +13,7 @@ import {
   faRightFromBracket,
   faShoppingCart,
   faExchangeAlt,
+  faStore,
   faServer,
   faXmark,
   faTrophy,
@@ -105,6 +106,12 @@ export function Header({
                 to="/trades"
                 icon={faExchangeAlt}
                 label="Trades"
+                onClick={closeMenu}
+              />
+              <HeaderLink
+                to="/marketplace"
+                icon={faStore}
+                label="Marketplace"
                 onClick={closeMenu}
               />
               <HeaderLink
