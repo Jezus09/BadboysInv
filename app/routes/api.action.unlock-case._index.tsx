@@ -14,7 +14,7 @@ import {
   inventoryMaxItems,
   inventoryStorageUnitMaxItems
 } from "~/models/rule.server";
-import { updateUserInventory } from "~/models/user.server";
+import { updateUserInventory, notifyPluginCaseOpened } from "~/models/user.server";
 import { conflict, methodNotAllowed } from "~/responses.server";
 import { parseInventory } from "~/utils/inventory";
 import { nonNegativeInt, positiveInt } from "~/utils/shapes";
@@ -73,7 +73,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       const unlockedItemData = CS2Economy.getById(unlockedItem.id);
       const caseItemData = CS2Economy.getById(caseItem.id);
       const keyItemData = keyItem ? CS2Economy.getById(keyItem.id) : undefined;
-      
+
       await prisma.caseOpening.create({
         data: {
           userId: user.id,
@@ -87,6 +87,14 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           unlockedName: unlockedItemData.name,
           unlockedRarity: unlockedItemData.rarity,
         },
+      });
+
+      // Notify CS2 plugin via webhook
+      await notifyPluginCaseOpened({
+        playerName: user.name,
+        itemName: unlockedItemData.name,
+        rarity: unlockedItemData.rarity || "Common",
+        statTrak: unlockedItem.stattrak || false
       });
     } catch (error) {
       console.error("Error saving case opening:", error);
