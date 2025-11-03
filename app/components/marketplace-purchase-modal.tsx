@@ -9,6 +9,7 @@ import { useUser } from "~/components/app-context";
 import { ItemImage } from "~/components/item-image";
 import { CurrencyDisplay } from "~/components/currency-display";
 import { ModalButton } from "~/components/modal-button";
+import { MarketplacePriceChart } from "~/components/marketplace-price-chart";
 import { wearToString } from "~/utils/economy";
 
 interface MarketplaceListing {
@@ -171,6 +172,15 @@ export function MarketplacePurchaseModal({
               showIcon={true}
             />
           </div>
+        </div>
+
+        {/* Price History Chart */}
+        <div className="mb-4 rounded-lg border border-neutral-700 bg-black/20 p-4">
+          <MarketplacePriceChart
+            itemId={item.id}
+            wear={item.wear}
+            className=""
+          />
         </div>
 
         {/* User Balance */}
