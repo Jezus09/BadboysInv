@@ -29,6 +29,7 @@ interface CaseOpening {
 
 interface CaseOpeningActivityProps {
   className?: string;
+  onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
 // Global function to trigger refresh from anywhere
@@ -41,7 +42,8 @@ export function refreshCaseOpenings() {
 }
 
 export function CaseOpeningActivity({
-  className = ""
+  className = "",
+  onCollapseChange
 }: CaseOpeningActivityProps) {
   const [caseOpenings, setCaseOpenings] = useState<CaseOpening[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +52,11 @@ export function CaseOpeningActivity({
   
   // Always start collapsed (mobile and desktop)
   const [isCollapsed, setIsCollapsed] = useState(true);
+
+  // Notify parent when collapse state changes
+  useEffect(() => {
+    onCollapseChange?.(isCollapsed);
+  }, [isCollapsed, onCollapseChange]);
 
   const fetchCaseOpenings = useCallback(async () => {
     try {

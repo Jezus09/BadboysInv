@@ -17,6 +17,7 @@ import {
   ScrollRestoration,
   useLoaderData
 } from "react-router";
+import * as React from "react";
 
 import { findRequestUser } from "./auth.server";
 import { AppProvider } from "./components/app-context";
@@ -123,6 +124,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function App() {
   const appProps = useLoaderData<typeof loader>();
   const { footer, header, inventory, caseOpeningActivity } = useRootLayout();
+  const [isCaseHistoryCollapsed, setIsCaseHistoryCollapsed] = React.useState(true);
 
   return (
     <AppProvider {...appProps}>
@@ -164,8 +166,17 @@ export default function App() {
 
           {/* Case Opening Activity Feed - responsive positioning */}
           {caseOpeningActivity && appProps.user && (
-            <div className="fixed top-2 bottom-2 left-2 z-30 w-72 md:top-4 md:bottom-4 md:left-4 md:w-80 lg:w-80">
-              <CaseOpeningActivity className="h-full" />
+            <div
+              className={`fixed z-30 transition-all duration-300 ${
+                isCaseHistoryCollapsed
+                  ? "top-2 left-2 w-auto h-auto"
+                  : "top-2 bottom-2 left-2 w-72 md:top-4 md:bottom-4 md:left-4 md:w-80 lg:w-80"
+              }`}
+            >
+              <CaseOpeningActivity
+                className={isCaseHistoryCollapsed ? "" : "h-full"}
+                onCollapseChange={setIsCaseHistoryCollapsed}
+              />
             </div>
           )}
 
