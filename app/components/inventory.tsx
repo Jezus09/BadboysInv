@@ -379,9 +379,9 @@ export function Inventory() {
       {isInspectingItem(inspectItem) && (
         <InspectItem {...inspectItem} onClose={closeInspectItem} />
       )}
-      {sellMarketplaceItem && (
+      {sellMarketplaceItem && sellMarketplaceItem.item && (
         <SellItemMarketplace
-          item={sellMarketplaceItem}
+          item={sellMarketplaceItem.item}
           onClose={closeSellMarketplace}
         />
       )}
