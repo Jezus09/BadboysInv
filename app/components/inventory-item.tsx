@@ -51,6 +51,7 @@ export function InventoryItem({
   onRenameStorageUnit,
   onRetrieveFromStorageUnit,
   onScrapeSticker,
+  onSellMarketplace,
   onSwapItemsStatTrak,
   onUnequip,
   onUnlockContainer,
@@ -74,6 +75,7 @@ export function InventoryItem({
   onRenameStorageUnit?: (uid: number) => void;
   onRetrieveFromStorageUnit?: (uid: number) => void;
   onScrapeSticker?: (uid: number) => void;
+  onSellMarketplace?: (uid: number) => void;
   onSwapItemsStatTrak?: (uid: number) => void;
   onUnequip?: (uid: number, team?: CS2TeamValues) => void;
   onUnlockContainer?: (uid: number) => void;
@@ -177,6 +179,7 @@ export function InventoryItem({
     (item.model === undefined || !editHideModel.includes(item.model)) &&
     !editHideId.includes(item.id);
   const canShare = inventoryItemAllowShare && item.isPaintable();
+  const canSellMarketplace = item.isPaintable() && !isFreeInventoryItem;
 
   function close(callBeforeClosing: () => void) {
     return function close() {
@@ -383,6 +386,11 @@ export function InventoryItem({
                     clickLabel: translate("InventoryItemShareCopied"),
                     onClick: () =>
                       copyToClipboard(getInventoryItemShareUrl(item, user?.id))
+                  },
+                  {
+                    condition: canSellMarketplace,
+                    label: "Sell on Marketplace",
+                    onClick: close(() => onSellMarketplace?.(uid))
                   },
                   {
                     condition: true,

@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { useState } from "react";
 import { CS2ItemType, CS2TeamValues } from "@ianlucas/cs2-lib";
 import { useNavigate } from "react-router";
 import { useApplyItemSticker } from "~/components/hooks/use-apply-item-sticker";
@@ -39,6 +40,7 @@ import { RemoveItemPatch } from "./remove-item-patch";
 import { RenameItem } from "./rename-item";
 import { RenameStorageUnit } from "./rename-storage-unit";
 import { ScrapeItemSticker } from "./scrape-item-sticker";
+import { SellItemMarketplace } from "./sell-item-marketplace";
 import { SwapItemsStatTrak } from "./swap-items-stattrak";
 import { UnlockCase } from "./unlock-case";
 
@@ -159,6 +161,8 @@ export function Inventory() {
   const { closeInspectItem, handleInspectItem, inspectItem, isInspectingItem } =
     useInspectItem();
 
+  const [sellMarketplaceItem, setSellMarketplaceItem] = useState<typeof items[0] | null>(null);
+
   // Helper to trigger plugin inventory sync
   async function triggerPluginInventorySync(steamId: string) {
     try {
@@ -216,6 +220,17 @@ export function Inventory() {
     return navigate(`/craft?uid=${uid}`);
   }
 
+  function handleSellMarketplace(uid: number) {
+    const item = items.find((i) => i.uid === uid);
+    if (item) {
+      setSellMarketplaceItem(item);
+    }
+  }
+
+  function closeSellMarketplace() {
+    setSellMarketplaceItem(null);
+  }
+
   function dismissSelectItem() {
     setItemSelector(undefined);
     closeApplyItemPatch();
@@ -225,6 +240,7 @@ export function Inventory() {
     closeRenameItem();
     closeRenameStorageUnit();
     closeScrapeItemSticker();
+    closeSellMarketplace();
     closeSwapItemsStatTrak();
     closeUnlockCase();
   }
@@ -300,6 +316,7 @@ export function Inventory() {
                     onRenameStorageUnit: handleRenameStorageUnit,
                     onRetrieveFromStorageUnit: handleRetrieveFromStorageUnit,
                     onScrapeSticker: handleScrapeItemSticker,
+                    onSellMarketplace: handleSellMarketplace,
                     onSwapItemsStatTrak: handleSwapItemsStatTrak,
                     onUnequip: handleUnequip,
                     onUnlockContainer: handleUnlockCase,
@@ -361,6 +378,12 @@ export function Inventory() {
       )}
       {isInspectingItem(inspectItem) && (
         <InspectItem {...inspectItem} onClose={closeInspectItem} />
+      )}
+      {sellMarketplaceItem && (
+        <SellItemMarketplace
+          item={sellMarketplaceItem}
+          onClose={closeSellMarketplace}
+        />
       )}
     </>
   );
