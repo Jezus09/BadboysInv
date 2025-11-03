@@ -19,6 +19,7 @@ export function useRootLayout(): {
   const hideInventoryOnRanks = location.pathname === "/ranks";
   const hideInventoryOnLeaderboard = location.pathname === "/leaderboard";
   const hideInventoryOnAdmin = location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+  const hideInventoryOnMarketplace = location.pathname === "/marketplace";
 
   // Show case opening activity on main pages (not on auth, admin, ranks, leaderboard pages, etc.)
   const showCaseOpeningActivity = ["/", "/shop", "/craft"].includes(location.pathname) &&
@@ -29,7 +30,7 @@ export function useRootLayout(): {
   return {
     footer: true,
     header: true,
-    inventory: !hideInventoryOnShop && !hideInventoryOnTrades && !hideInventoryOnRanks && !hideInventoryOnLeaderboard && !hideInventoryOnAdmin,
+    inventory: !hideInventoryOnShop && !hideInventoryOnTrades && !hideInventoryOnRanks && !hideInventoryOnLeaderboard && !hideInventoryOnAdmin && !hideInventoryOnMarketplace,
     caseOpeningActivity: showCaseOpeningActivity
   };
 }
