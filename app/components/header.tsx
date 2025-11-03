@@ -119,6 +119,12 @@ export function Header({
                 label="Leaderboard"
                 onClick={closeMenu}
               />
+              <HeaderLink
+                to="/cs2-server"
+                icon={faServer}
+                label="Admin"
+                onClick={closeMenu}
+              />
               {isOwner && (
                 <HeaderLink
                   disabled={isCraftDisabled}
