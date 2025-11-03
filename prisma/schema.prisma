@@ -257,6 +257,20 @@ enum MarketplaceStatus {
   EXPIRED     // Listing expired
 }
 
+model MarketplacePriceHistory {
+  id          String   @id @default(uuid())
+  itemId      Int      // CS2 economy item ID
+  wear        Float?   // Item wear (for price comparison of same wear)
+  price       Decimal  @db.Decimal(10, 2)
+  listingId   String?  // Reference to marketplace listing (if still exists)
+  soldAt      DateTime? // When it was sold (null = listing created)
+  createdAt   DateTime @default(now())
+
+  @@index([itemId, createdAt])
+  @@index([itemId, wear, createdAt])
+  @@index([createdAt])
+}
+
 model ItemHistory {
   id           String         @id @default(uuid())
   itemUuid     String         @unique // Global UUID for the item

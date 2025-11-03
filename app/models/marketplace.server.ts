@@ -84,7 +84,7 @@ export async function createListing({
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
-  return await prisma.marketplaceListing.create({
+  const listing = await prisma.marketplaceListing.create({
     data: {
       userId,
       itemUid,
@@ -93,6 +93,20 @@ export async function createListing({
       expiresAt
     }
   });
+
+  // Record price history when listing is created
+  const item = JSON.parse(itemData);
+  await prisma.marketplacePriceHistory.create({
+    data: {
+      itemId: item.id,
+      wear: item.wear,
+      price: new Decimal(price),
+      listingId: listing.id,
+      soldAt: null // Not sold yet, just listed
+    }
+  });
+
+  return listing;
 }
 
 export async function cancelListing(listingId: string, userId: string) {
@@ -294,6 +308,17 @@ export async function purchaseListing(listingId: string, buyerId: string) {
       }
     });
 
+    // Record sold price in price history
+    await tx.marketplacePriceHistory.create({
+      data: {
+        itemId: itemData.id,
+        wear: itemData.wear,
+        price: listing.price,
+        listingId: listingId,
+        soldAt: new Date()
+      }
+    });
+
     console.log("=== MARKETPLACE PURCHASE COMPLETED SUCCESSFULLY ===");
     return listing;
   });
@@ -310,6 +335,38 @@ export async function getListing(listingId: string) {
           avatar: true
         }
       }
+    }
+  });
+}
+
+export async function getPriceHistory(itemId: number, wear?: number, days: number = 30) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const whereClause: any = {
+    itemId,
+    createdAt: {
+      gte: startDate
+    }
+  };
+
+  // If wear is specified, filter by similar wear (±0.05)
+  if (wear !== undefined) {
+    whereClause.wear = {
+      gte: wear - 0.05,
+      lte: wear + 0.05
+    };
+  }
+
+  return await prisma.marketplacePriceHistory.findMany({
+    where: whereClause,
+    orderBy: {
+      createdAt: "asc"
+    },
+    select: {
+      price: true,
+      soldAt: true,
+      createdAt: true
     }
   });
 }
