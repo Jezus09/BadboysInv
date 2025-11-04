@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { data, useLoaderData, useActionData, Form, redirect } from "react-router";
 import { CS2Economy, CS2ItemType } from "@ianlucas/cs2-lib";
 import { ClientOnly } from "remix-utils/client-only";
@@ -6,6 +6,7 @@ import { ItemImage } from "~/components/item-image";
 import { requireUser } from "~/auth.server";
 import { useInventory } from "~/components/app-context";
 import type { Route } from "./+types/sticker-editor.$uid._index";
+import SimpleWeapon3DViewer from "~/components/simple-weapon-3d-viewer.client";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const user = await requireUser(request);
@@ -39,9 +40,15 @@ function StickerEditorContent({ uid }: { uid: number }) {
   const [inventory] = useInventory();
 
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
-  const [stickers, setStickers] = useState<Record<number, { id: number; x: number; y: number; rotation: number; scale: number }>>({});
-  const [draggingSlot, setDraggingSlot] = useState<number | null>(null);
-  const weaponImageRef = useRef<HTMLDivElement>(null);
+  const [stickers, setStickers] = useState<Record<number, {
+    id: number;
+    imageUrl: string;
+    x: number;
+    y: number;
+    z: number;
+    rotation: number;
+    scale: number;
+  }>>({});
 
   // Safely find weapon item
   const weaponItem = inventory?.items?.find((item) => item.uid === uid);
@@ -65,29 +72,35 @@ function StickerEditorContent({ uid }: { uid: number }) {
     }
   }) || [];
 
-  const handleStickerClick = (stickerId: number) => {
+  const handleStickerClick = (stickerId: number, imageUrl: string) => {
     if (editingSlot !== null) {
       setStickers({
         ...stickers,
-        [editingSlot]: { id: stickerId, x: 0.5, y: 0.5, rotation: 0, scale: 1.0 },
+        [editingSlot]: {
+          id: stickerId,
+          imageUrl,
+          x: 0,
+          y: 0,
+          z: 0.2,
+          rotation: 0,
+          scale: 1.0
+        },
       });
-      setEditingSlot(null);
     }
   };
 
-  const handleStickerMouseDown = (slot: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDraggingSlot(slot);
-    setEditingSlot(slot);
-  };
+  const handleSurfaceClick = (position: [number, number, number]) => {
+    if (editingSlot === null || !stickers[editingSlot]) return;
 
-  const handleWeaponMouseMove = (e: React.MouseEvent) => {
-    if (draggingSlot === null || !weaponImageRef.current) return;
-    const rect = weaponImageRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    setStickers({ ...stickers, [draggingSlot]: { ...stickers[draggingSlot], x, y } });
+    setStickers({
+      ...stickers,
+      [editingSlot]: {
+        ...stickers[editingSlot],
+        x: position[0],
+        y: position[1],
+        z: position[2]
+      }
+    });
   };
 
   const handleRemoveSticker = (slot: number) => {
@@ -97,18 +110,23 @@ function StickerEditorContent({ uid }: { uid: number }) {
     if (editingSlot === slot) setEditingSlot(null);
   };
 
+  // Convert stickers to 3D viewer format
+  const stickers3D = Object.entries(stickers).map(([slotStr, sticker]) => ({
+    id: sticker.id,
+    imageUrl: sticker.imageUrl,
+    position: [sticker.x, sticker.y, sticker.z] as [number, number, number],
+    rotation: sticker.rotation,
+    scale: sticker.scale,
+    slot: parseInt(slotStr)
+  }));
+
   return (
     <div className="min-h-screen bg-stone-800 text-white">
       <div className="mx-auto max-w-7xl px-4 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold font-display">{economyItem.name}</h1>
-          {weaponItem.wear !== undefined && (
-            <p className="text-sm text-neutral-400 mt-1">
-              Float: {weaponItem.wear.toFixed(4)}
-              {weaponItem.seed && <> | Seed: {weaponItem.seed}</>}
-            </p>
-          )}
+          <h1 className="text-2xl font-bold font-display">3D Sticker Editor</h1>
+          <p className="text-sm text-neutral-400 mt-1">{economyItem.name}</p>
         </div>
 
         <div className="grid lg:grid-cols-[300px_1fr] gap-6">
@@ -124,10 +142,12 @@ function StickerEditorContent({ uid }: { uid: number }) {
             <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
               {ownedStickers.map((item) => {
                 const stickerEconomy = CS2Economy.getById(item.id);
+                const imageUrl = `https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/images/econ/stickers/${stickerEconomy.image}`;
+
                 return (
                   <button
                     key={item.uid}
-                    onClick={() => handleStickerClick(item.id)}
+                    onClick={() => handleStickerClick(item.id, imageUrl)}
                     disabled={editingSlot === null}
                     className="p-2 rounded border-2 border-stone-700 hover:border-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition aspect-square bg-stone-800"
                   >
@@ -141,43 +161,21 @@ function StickerEditorContent({ uid }: { uid: number }) {
             )}
           </div>
 
-          {/* Main: Weapon & Editor */}
+          {/* Main: 3D Viewer & Editor */}
           <div className="space-y-4">
-            {/* Weapon with stickers overlay */}
+            {/* 3D Weapon Viewer */}
             <div className="rounded-lg border border-stone-700 bg-stone-900/50 p-6">
-              <div
-                ref={weaponImageRef}
-                className="relative max-w-2xl mx-auto select-none"
-                onMouseMove={handleWeaponMouseMove}
-                onMouseUp={() => setDraggingSlot(null)}
-                onMouseLeave={() => setDraggingSlot(null)}
-              >
-                <ItemImage className="w-full pointer-events-none" item={economyItem} />
-
-                {/* Stickers overlay */}
-                {Object.entries(stickers).map(([slotStr, sticker]) => {
-                  const slot = parseInt(slotStr);
-                  const stickerEconomy = CS2Economy.getById(sticker.id);
-                  return (
-                    <div
-                      key={slot}
-                      className={`absolute cursor-move ${editingSlot === slot ? "ring-2 ring-blue-500" : ""}`}
-                      style={{
-                        left: `${sticker.x * 100}%`,
-                        top: `${sticker.y * 100}%`,
-                        transform: `translate(-50%, -50%) rotate(${sticker.rotation}deg) scale(${sticker.scale})`,
-                        width: "64px",
-                        height: "64px",
-                      }}
-                      onMouseDown={(e) => handleStickerMouseDown(slot, e)}
-                    >
-                      <ItemImage className="w-full h-full" item={stickerEconomy} />
-                    </div>
-                  );
-                })}
+              <div className="h-96 w-full">
+                <SimpleWeapon3DViewer
+                  weaponName={economyItem.name}
+                  stickers={stickers3D}
+                  onSurfaceClick={handleSurfaceClick}
+                  enableClickToPlace={editingSlot !== null && stickers[editingSlot] !== undefined}
+                  className="w-full h-full"
+                />
               </div>
               <p className="text-xs text-center text-neutral-500 mt-2">
-                💡 Drag stickers to position
+                🖱️ Drag to rotate | Scroll to zoom | Click weapon to place sticker
               </p>
             </div>
 
@@ -197,7 +195,7 @@ function StickerEditorContent({ uid }: { uid: number }) {
                       }`}
                     >
                       {sticker ? (
-                        <ItemImage className="w-full p-2" item={CS2Economy.getById(sticker.id)} />
+                        <img src={sticker.imageUrl} alt="sticker" className="w-full p-2" />
                       ) : (
                         <span className="text-neutral-500 text-sm">{slot + 1}</span>
                       )}
@@ -212,6 +210,40 @@ function StickerEditorContent({ uid }: { uid: number }) {
               <div className="rounded-lg border border-stone-700 bg-stone-900/50 p-4">
                 <h3 className="text-base font-bold mb-3">Slot {editingSlot + 1} Controls</h3>
                 <div className="space-y-3">
+                  <div>
+                    <label className="text-sm">Position X: {stickers[editingSlot].x.toFixed(2)}</label>
+                    <input
+                      type="range"
+                      min="-1.5"
+                      max="1.5"
+                      step="0.01"
+                      value={stickers[editingSlot].x}
+                      onChange={(e) =>
+                        setStickers({
+                          ...stickers,
+                          [editingSlot]: { ...stickers[editingSlot], x: parseFloat(e.target.value) },
+                        })
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm">Position Y: {stickers[editingSlot].y.toFixed(2)}</label>
+                    <input
+                      type="range"
+                      min="-0.3"
+                      max="0.3"
+                      step="0.01"
+                      value={stickers[editingSlot].y}
+                      onChange={(e) =>
+                        setStickers({
+                          ...stickers,
+                          [editingSlot]: { ...stickers[editingSlot], y: parseFloat(e.target.value) },
+                        })
+                      }
+                      className="w-full"
+                    />
+                  </div>
                   <div>
                     <label className="text-sm">Rotation: {stickers[editingSlot].rotation}°</label>
                     <input
@@ -286,7 +318,7 @@ export default function StickerEditor() {
     <ClientOnly fallback={
       <div className="min-h-screen bg-stone-800 text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl">Loading...</p>
+          <p className="text-xl">Loading 3D Editor...</p>
         </div>
       </div>
     }>
