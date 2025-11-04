@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { data, useLoaderData, useActionData, Form, redirect } from "react-router";
-import { CS2Economy } from "@ianlucas/cs2-lib";
-import StickerBrowser from "~/components/sticker-browser";
+import { CS2Economy, CS2ItemType } from "@ianlucas/cs2-lib";
 import { ItemImage } from "~/components/item-image";
 import { requireUser } from "~/auth.server";
 import { useInventory } from "~/components/app-context";
@@ -194,12 +193,15 @@ export default function StickerEditor() {
 
   return (
     <div className="min-h-screen bg-stone-800 text-white">
-      {/* Mobile Sticker Browser Overlay */}
+      {/* Mobile Owned Stickers Overlay */}
       {showStickerBrowser && (
         <div className="fixed inset-0 z-50 bg-black/80 lg:hidden">
           <div className="flex h-full flex-col bg-stone-900">
             <div className="flex items-center justify-between border-b border-stone-700 p-4">
-              <h2 className="text-xl font-bold">Select Sticker</h2>
+              <div>
+                <h2 className="text-xl font-bold">Your Stickers</h2>
+                <p className="text-xs text-neutral-400 mt-1">Select from your inventory</p>
+              </div>
               <button
                 onClick={() => {
                   setShowStickerBrowser(false);
@@ -210,24 +212,95 @@ export default function StickerEditor() {
                 Cancel
               </button>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <StickerBrowser
-                onSelectSticker={handleSelectSticker}
-                selectedStickerId={selectedSticker?.id}
-              />
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="grid grid-cols-3 gap-2">
+                {inventory.items
+                  .filter((item) => CS2Economy.getById(item.id).type === CS2ItemType.Sticker)
+                  .map((item) => {
+                    const economyItem = CS2Economy.getById(item.id);
+                    const isSelected = selectedSticker?.id === item.id;
+                    return (
+                      <button
+                        key={item.uid}
+                        onClick={() => {
+                          handleSelectSticker({ id: item.id.toString(), ...economyItem });
+                        }}
+                        className={`
+                          relative p-2 rounded-lg border-2 transition-all aspect-square
+                          ${isSelected ? "border-blue-500 bg-blue-500/20" : "border-stone-700 bg-stone-800/50"}
+                          hover:border-stone-600
+                        `}
+                        title={economyItem.name}
+                      >
+                        <ItemImage className="w-full h-full" item={economyItem} />
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+              {inventory.items.filter((item) => CS2Economy.getById(item.id).type === CS2ItemType.Sticker).length === 0 && (
+                <div className="text-center py-12 text-neutral-500">
+                  <p className="text-base">No stickers in inventory</p>
+                  <p className="text-sm mt-2">Get stickers from cases!</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
       <div className="mx-auto max-w-[1400px] px-4 py-6 lg:flex lg:gap-6">
-        {/* Left Panel: Sticker Browser (Desktop Only) */}
+        {/* Left Panel: Owned Stickers Only (Desktop Only) */}
         <div className="hidden lg:block lg:w-80 xl:w-96">
           <div className="sticky top-24 rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm overflow-hidden">
-            <StickerBrowser
-              onSelectSticker={handleSelectSticker}
-              selectedStickerId={selectedSticker?.id}
-            />
+            <div className="p-4 border-b border-stone-700">
+              <h2 className="text-lg font-bold font-display">Your Stickers</h2>
+              <p className="text-xs text-neutral-400 mt-1">Select from your inventory</p>
+            </div>
+            <div className="p-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-2">
+                {inventory.items
+                  .filter((item) => CS2Economy.getById(item.id).type === CS2ItemType.Sticker)
+                  .map((item) => {
+                    const economyItem = CS2Economy.getById(item.id);
+                    const isSelected = selectedSticker?.id === item.id;
+                    return (
+                      <button
+                        key={item.uid}
+                        onClick={() => {
+                          if (editingSlot !== null) {
+                            handleSelectSticker({ id: item.id.toString(), ...economyItem });
+                          }
+                        }}
+                        disabled={editingSlot === null}
+                        className={`
+                          relative p-2 rounded-lg border-2 transition-all aspect-square
+                          ${isSelected ? "border-blue-500 bg-blue-500/20" : "border-stone-700 bg-stone-800/50"}
+                          ${editingSlot === null ? "opacity-50 cursor-not-allowed" : "hover:border-stone-600 cursor-pointer"}
+                        `}
+                        title={economyItem.name}
+                      >
+                        <ItemImage className="w-full h-full" item={economyItem} />
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+              {inventory.items.filter((item) => CS2Economy.getById(item.id).type === CS2ItemType.Sticker).length === 0 && (
+                <div className="text-center py-8 text-neutral-500 text-sm">
+                  <p>No stickers in inventory</p>
+                  <p className="text-xs mt-1">Get stickers from cases!</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
