@@ -1,3 +1,8 @@
+/**
+ * 3D Weapon Viewer with Sticker Support
+ * Uses React Three Fiber for 3D rendering
+ * Cache-busting rebuild: v2.0
+ */
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import { Suspense, useRef } from "react";
