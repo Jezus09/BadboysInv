@@ -27,7 +27,6 @@ import {
 } from "./app-context";
 import { ApplyItemPatch } from "./apply-item-patch";
 import { ApplyItemSticker } from "./apply-item-sticker";
-import { ApplyItemSticker3D } from "./apply-item-sticker-3d";
 import { useApplyItemPatch } from "./hooks/use-apply-item-patch";
 import { useListenAppEvent } from "./hooks/use-listen-app-event";
 import { useRemoveItemPatch } from "./hooks/use-remove-item-patch";
@@ -164,14 +163,6 @@ export function Inventory() {
     useInspectItem();
 
   const [sellMarketplaceItem, setSellMarketplaceItem] = useState<typeof items[0] | null>(null);
-  const [stickerMode, setStickerMode] = useState<"2d" | "3d">("2d");
-
-  // Reset sticker mode when modal closes
-  useEffect(() => {
-    if (!isApplyingItemSticker(applyItemSticker)) {
-      setStickerMode("2d");
-    }
-  }, [applyItemSticker, isApplyingItemSticker]);
 
   // Helper to trigger plugin inventory sync
   async function triggerPluginInventorySync(steamId: string) {
@@ -393,23 +384,14 @@ export function Inventory() {
       {isRemovingItemPatch(removeItemPatch) && (
         <RemoveItemPatch {...removeItemPatch} onClose={closeRemoveItemPatch} />
       )}
-      {isApplyingItemSticker(applyItemSticker) && stickerMode === "2d" && (
+      {isApplyingItemSticker(applyItemSticker) && (
         <ApplyItemSticker
           {...applyItemSticker}
           onClose={closeApplyItemSticker}
           onSwitchTo3D={() => {
-            // Navigate to new interactive 2D sticker editor
+            // Navigate to new interactive 3D sticker editor
             navigate(`/sticker-editor/${applyItemSticker.targetUid}`);
             closeApplyItemSticker();
-          }}
-        />
-      )}
-      {isApplyingItemSticker(applyItemSticker) && stickerMode === "3d" && (
-        <ApplyItemSticker3D
-          {...applyItemSticker}
-          onClose={closeApplyItemSticker}
-          onSwitchTo2D={() => {
-            setStickerMode("2d");
           }}
         />
       )}
