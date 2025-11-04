@@ -166,21 +166,13 @@ function StickerEditorContent({ uid }: { uid: number }) {
             {/* 3D Weapon Viewer */}
             <div className="rounded-lg border border-stone-700 bg-stone-900/50 p-6">
               <div className="h-96 w-full">
-                <ClientOnly fallback={
-                  <div className="w-full h-full flex items-center justify-center bg-stone-800 rounded">
-                    <p className="text-neutral-400">Loading 3D Viewer...</p>
-                  </div>
-                }>
-                  {() => (
-                    <SimpleWeapon3DViewer
-                      weaponName={economyItem.name}
-                      stickers={stickers3D}
-                      onSurfaceClick={handleSurfaceClick}
-                      enableClickToPlace={editingSlot !== null && stickers[editingSlot] !== undefined}
-                      className="w-full h-full"
-                    />
-                  )}
-                </ClientOnly>
+                <SimpleWeapon3DViewer
+                  weaponName={economyItem.name}
+                  stickers={stickers3D}
+                  onSurfaceClick={handleSurfaceClick}
+                  enableClickToPlace={editingSlot !== null && stickers[editingSlot] !== undefined}
+                  className="w-full h-full"
+                />
               </div>
               <p className="text-xs text-center text-neutral-500 mt-2">
                 🖱️ Drag to rotate | Scroll to zoom | Click weapon to place sticker
@@ -321,5 +313,16 @@ function StickerEditorContent({ uid }: { uid: number }) {
 
 export default function StickerEditor() {
   const { uid } = useLoaderData<typeof loader>();
-  return <StickerEditorContent uid={uid} />;
+
+  return (
+    <ClientOnly fallback={
+      <div className="min-h-screen bg-stone-800 text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl">Loading 3D Editor...</p>
+        </div>
+      </div>
+    }>
+      {() => <StickerEditorContent uid={uid} />}
+    </ClientOnly>
+  );
 }
