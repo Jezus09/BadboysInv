@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { data, useLoaderData, useActionData, Form } from "react-router";
-import * as THREE from "three";
 import StickerBrowser from "~/components/sticker-browser";
 import { requireUser } from "~/auth.server";
 import { getWeaponInstance, addWeaponSticker, removeWeaponSticker } from "~/models/sticker.server";
@@ -8,6 +7,9 @@ import type { Route } from "./+types/sticker-editor._index";
 
 // Example weapon model URL (replace with actual weapon model)
 const WEAPON_MODEL_URL = "https://models.readyplayer.me/64f1a5e1e5f4a0001a0e1a5e.glb"; // Placeholder
+
+// Client-side only flag
+const isClient = typeof window !== "undefined";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await requireUser(request);
@@ -90,24 +92,28 @@ export default function StickerEditor() {
   const actionData = useActionData<typeof action>();
 
   const [selectedSticker, setSelectedSticker] = useState<any>(null);
-  const [clickedPosition, setClickedPosition] = useState<{
-    point: THREE.Vector3;
-    normal: THREE.Vector3;
-  } | null>(null);
   const [stickers, setStickers] = useState<any[]>([]);
   const [nextSlot, setNextSlot] = useState(1);
   const [Weapon3DViewer, setWeapon3DViewer] = useState<any>(null);
+  const [THREE, setTHREE] = useState<any>(null);
 
-  // Load 3D viewer component only on client-side
+  // Load 3D viewer and THREE only on client-side
   useEffect(() => {
-    import("~/components/weapon-3d-viewer.client").then((mod) => {
-      setWeapon3DViewer(() => mod.default);
+    if (!isClient) return;
+
+    Promise.all([
+      import("~/components/weapon-3d-viewer.client"),
+      import("three")
+    ]).then(([viewerMod, threeMod]) => {
+      setWeapon3DViewer(() => viewerMod.default);
+      setTHREE(threeMod);
     });
   }, []);
 
-  const handleMeshClick = (point: THREE.Vector3, normal: THREE.Vector3) => {
+  const handleMeshClick = (point: any, normal: any) => {
+    if (!THREE) return;
+
     console.log("Mesh clicked:", { point, normal });
-    setClickedPosition({ point, normal });
 
     if (selectedSticker && nextSlot <= 5) {
       // Add sticker preview
