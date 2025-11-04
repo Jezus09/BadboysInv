@@ -38,12 +38,13 @@ export default function StickerEditor() {
   const actionData = useActionData<typeof action>();
   const [inventory] = useInventory();
 
-  const weaponItem = inventory.items.find((item) => item.uid === uid);
-
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
   const [stickers, setStickers] = useState<Record<number, { id: number; x: number; y: number; rotation: number; scale: number }>>({});
   const [draggingSlot, setDraggingSlot] = useState<number | null>(null);
   const weaponImageRef = useRef<HTMLDivElement>(null);
+
+  // Safely find weapon item
+  const weaponItem = inventory?.items?.find((item) => item.uid === uid);
 
   if (!weaponItem) {
     return (
@@ -56,7 +57,13 @@ export default function StickerEditor() {
   }
 
   const economyItem = CS2Economy.getById(weaponItem.id);
-  const ownedStickers = inventory.items.filter((item) => CS2Economy.getById(item.id).type === CS2ItemType.Sticker);
+  const ownedStickers = inventory?.items?.filter((item) => {
+    try {
+      return CS2Economy.getById(item.id).type === CS2ItemType.Sticker;
+    } catch {
+      return false;
+    }
+  }) || [];
 
   const handleStickerClick = (stickerId: number) => {
     if (editingSlot !== null) {
@@ -145,7 +152,7 @@ export default function StickerEditor() {
                 onMouseUp={() => setDraggingSlot(null)}
                 onMouseLeave={() => setDraggingSlot(null)}
               >
-                <ItemImage className="w-full pointer-events-none" item={weaponItem} />
+                <ItemImage className="w-full pointer-events-none" item={economyItem} />
 
                 {/* Stickers overlay */}
                 {Object.entries(stickers).map(([slotStr, sticker]) => {
