@@ -76,6 +76,17 @@ export function InventoryItemTile({
             ))}
           </div>
         )}
+        {inventoryItem?.keychains !== undefined && (
+          <div className="absolute top-0 left-0 flex items-center p-1">
+            {inventoryItem.someKeychains().map(([slot, { id }]) => (
+              <ItemImage
+                className="h-5"
+                item={CS2Economy.getById(id)}
+                key={slot}
+              />
+            ))}
+          </div>
+        )}
         {equipped !== undefined && (
           <div className="absolute top-0 right-0 flex items-center gap-1 p-2">
             {equipped.map((color, colorIndex) =>
