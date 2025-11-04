@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { data, useLoaderData, useActionData, Form, redirect } from "react-router";
 import { CS2Economy, CS2ItemType } from "@ianlucas/cs2-lib";
+import { ClientOnly } from "remix-utils/client-only";
 import { ItemImage } from "~/components/item-image";
 import { requireUser } from "~/auth.server";
 import { useInventory } from "~/components/app-context";
@@ -33,8 +34,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 }
 
-export default function StickerEditor() {
-  const { uid } = useLoaderData<typeof loader>();
+function StickerEditorContent({ uid }: { uid: number }) {
   const actionData = useActionData<typeof action>();
   const [inventory] = useInventory();
 
@@ -276,5 +276,21 @@ export default function StickerEditor() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StickerEditor() {
+  const { uid } = useLoaderData<typeof loader>();
+
+  return (
+    <ClientOnly fallback={
+      <div className="min-h-screen bg-stone-800 text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl">Loading...</p>
+        </div>
+      </div>
+    }>
+      {() => <StickerEditorContent uid={uid} />}
+    </ClientOnly>
   );
 }
