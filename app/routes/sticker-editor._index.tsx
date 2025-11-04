@@ -106,7 +106,15 @@ export default function StickerEditor() {
   });
 
   // Get weapon item from economy
-  const weaponItem = CS2Economy.get((item) => item.id === weaponInstance.weaponDefIndex)?.[0];
+  // AK-47 weapon ID is 7, but we need to find it in the economy
+  const weaponItem = CS2Economy.get((item) => {
+    // Try to find by name first
+    if (weaponInstance.weaponName) {
+      return item.name === weaponInstance.weaponName;
+    }
+    // Fallback to ID
+    return item.id === weaponInstance.weaponDefIndex;
+  })?.[0];
 
   const handleSelectSticker = (sticker: any) => {
     if (editingSlot !== null) {
@@ -225,7 +233,14 @@ export default function StickerEditor() {
           {/* Weapon Image with Stickers Overlay */}
           <div className="rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm overflow-hidden p-6">
             <div className="relative max-w-[512px] mx-auto">
-              {weaponItem && <ItemImage className="w-full" item={weaponItem} />}
+              {/* Weapon Image Placeholder */}
+              <div className="w-full aspect-[512/384] bg-gradient-to-br from-stone-800 to-stone-900 rounded-lg flex items-center justify-center border border-stone-700">
+                <div className="text-center">
+                  <div className="text-6xl mb-2">🔫</div>
+                  <p className="text-xl font-bold">{weaponInstance.weaponName}</p>
+                  <p className="text-sm text-neutral-400 mt-1">Weapon preview will show here</p>
+                </div>
+              </div>
 
               {/* Sticker Slots */}
               <div className="mt-4 grid grid-cols-5 gap-2">
@@ -280,9 +295,6 @@ export default function StickerEditor() {
                 item={selectedSticker}
                 value={stickerAttributes}
                 onChange={setStickerAttributes}
-                forItem={weaponItem}
-                slot={editingSlot}
-                stickers={stickers}
               />
 
               <div className="flex gap-2 mt-4">
