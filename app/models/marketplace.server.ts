@@ -6,6 +6,7 @@
 import { prisma } from "~/db.server";
 import { Decimal } from "@prisma/client/runtime/library";
 import { parseInventory } from "~/utils/inventory";
+import { invalidateCachedInventory } from "~/redis.server";
 
 export async function getActiveMarketplaceListings() {
   const listings = await prisma.marketplaceListing.findMany({
@@ -122,13 +123,18 @@ export async function cancelListing(listingId: string, userId: string) {
     throw new Error("Listing is not active");
   }
 
-  return await prisma.marketplaceListing.update({
+  const result = await prisma.marketplaceListing.update({
     where: { id: listingId },
     data: {
       status: "CANCELLED",
       updatedAt: new Date()
     }
   });
+
+  // Invalidate cache after cancelling listing
+  await invalidateCachedInventory(userId);
+
+  return result;
 }
 
 export async function purchaseListing(listingId: string, buyerId: string) {
@@ -239,7 +245,7 @@ export async function purchaseListing(listingId: string, buyerId: string) {
   console.log("New buyer inventory UIDs:", Object.keys(newBuyerInventory.items));
 
   // Execute transaction
-  return await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // Update listing status
     await tx.marketplaceListing.update({
       where: { id: listingId },
@@ -322,6 +328,15 @@ export async function purchaseListing(listingId: string, buyerId: string) {
     console.log("=== MARKETPLACE PURCHASE COMPLETED SUCCESSFULLY ===");
     return listing;
   });
+
+  // Invalidate cache for both buyer and seller AFTER transaction completes
+  console.log("Invalidating inventory cache for buyer:", buyerId);
+  await invalidateCachedInventory(buyerId);
+
+  console.log("Invalidating inventory cache for seller:", listing.userId);
+  await invalidateCachedInventory(listing.userId);
+
+  return result;
 }
 
 export async function getListing(listingId: string) {
