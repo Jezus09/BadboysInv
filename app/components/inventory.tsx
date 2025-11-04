@@ -398,8 +398,9 @@ export function Inventory() {
           {...applyItemSticker}
           onClose={closeApplyItemSticker}
           onSwitchTo3D={() => {
-            // Navigate to new sticker editor instead of old 3D mode
-            window.location.href = "/sticker-editor";
+            // Navigate to new interactive 2D sticker editor
+            navigate(`/sticker-editor/${applyItemSticker.targetUid}`);
+            closeApplyItemSticker();
           }}
         />
       )}
