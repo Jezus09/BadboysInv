@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { data, useLoaderData, useActionData, Form, redirect } from "react-router";
+import { data, useLoaderData, Form, redirect } from "react-router";
 import { CS2Economy, CS2ItemType } from "@ianlucas/cs2-lib";
 import { ClientOnly } from "remix-utils/client-only";
 import { ItemImage } from "~/components/item-image";
 import { requireUser } from "~/auth.server";
 import { useInventory } from "~/components/app-context";
 import type { Route } from "./+types/sticker-editor.$uid._index";
-import SimpleWeapon3DViewer from "~/components/simple-weapon-3d-viewer";
+import WeaponViewer3DSimple from "~/components/weapon-3d-viewer-simple";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const user = await requireUser(request);
@@ -16,6 +16,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     throw redirect("/");
   }
 
+  // We'll use client-side inventory from AppContext instead of fetching here
   return data({ user, uid });
 }
 
@@ -35,42 +36,48 @@ export async function action({ request }: Route.ActionArgs) {
   }
 }
 
-function StickerEditorContent({ uid }: { uid: number }) {
-  const actionData = useActionData<typeof action>();
+function StickerEditorContent() {
+  const { uid } = useLoaderData<typeof loader>();
   const [inventory] = useInventory();
-
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
-  const [stickers, setStickers] = useState<Record<number, {
-    id: number;
-    imageUrl: string;
-    x: number;
-    y: number;
-    z: number;
-    rotation: number;
-    scale: number;
-  }>>({});
+  const [stickers, setStickers] = useState<
+    Record<
+      number,
+      {
+        id: number;
+        imageUrl: string;
+        position: [number, number, number];
+        rotation: number;
+        scale: number;
+      }
+    >
+  >({});
 
-  // Safely find weapon item
+  // Find weapon item
   const weaponItem = inventory?.items?.find((item) => item.uid === uid);
 
   if (!weaponItem) {
     return (
       <div className="min-h-screen bg-stone-800 text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl">Weapon not found</p>
+          <p className="text-xl">Weapon not found (UID: {uid})</p>
+          <a href="/" className="text-blue-400 hover:underline mt-4 block">
+            ← Back to inventory
+          </a>
         </div>
       </div>
     );
   }
 
   const economyItem = CS2Economy.getById(weaponItem.id);
-  const ownedStickers = inventory?.items?.filter((item) => {
-    try {
-      return CS2Economy.getById(item.id).type === CS2ItemType.Sticker;
-    } catch {
-      return false;
-    }
-  }) || [];
+  const ownedStickers =
+    inventory?.items?.filter((item) => {
+      try {
+        return CS2Economy.getById(item.id).type === CS2ItemType.Sticker;
+      } catch {
+        return false;
+      }
+    }) || [];
 
   const handleStickerClick = (stickerId: number, imageUrl: string) => {
     if (editingSlot !== null) {
@@ -79,28 +86,12 @@ function StickerEditorContent({ uid }: { uid: number }) {
         [editingSlot]: {
           id: stickerId,
           imageUrl,
-          x: 0,
-          y: 0,
-          z: 0.2,
+          position: [0, 0, 0.16], // On front of box
           rotation: 0,
-          scale: 1.0
+          scale: 0.3,
         },
       });
     }
-  };
-
-  const handleSurfaceClick = (position: [number, number, number]) => {
-    if (editingSlot === null || !stickers[editingSlot]) return;
-
-    setStickers({
-      ...stickers,
-      [editingSlot]: {
-        ...stickers[editingSlot],
-        x: position[0],
-        y: position[1],
-        z: position[2]
-      }
-    });
   };
 
   const handleRemoveSticker = (slot: number) => {
@@ -112,21 +103,28 @@ function StickerEditorContent({ uid }: { uid: number }) {
 
   // Convert stickers to 3D viewer format
   const stickers3D = Object.entries(stickers).map(([slotStr, sticker]) => ({
-    id: sticker.id,
+    id: parseInt(slotStr),
     imageUrl: sticker.imageUrl,
-    position: [sticker.x, sticker.y, sticker.z] as [number, number, number],
+    position: sticker.position,
     rotation: sticker.rotation,
     scale: sticker.scale,
-    slot: parseInt(slotStr)
   }));
 
   return (
     <div className="min-h-screen bg-stone-800 text-white">
       <div className="mx-auto max-w-7xl px-4 py-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold font-display">3D Sticker Editor</h1>
-          <p className="text-sm text-neutral-400 mt-1">{economyItem.name}</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold font-display">3D Sticker Editor</h1>
+            <p className="text-sm text-neutral-400 mt-1">{economyItem.name}</p>
+          </div>
+          <a
+            href="/"
+            className="px-4 py-2 bg-stone-700 hover:bg-stone-600 rounded text-sm"
+          >
+            ← Back
+          </a>
         </div>
 
         <div className="grid lg:grid-cols-[300px_1fr] gap-6">
@@ -134,7 +132,9 @@ function StickerEditorContent({ uid }: { uid: number }) {
           <div className="rounded-lg border border-stone-700 bg-stone-900/50 p-4">
             <h2 className="text-lg font-bold mb-3">Your Stickers</h2>
             {editingSlot !== null && (
-              <p className="text-xs text-blue-400 mb-3">📍 Select sticker for Slot {editingSlot + 1}</p>
+              <p className="text-xs text-blue-400 mb-3">
+                📍 Select sticker for Slot {editingSlot + 1}
+              </p>
             )}
             {editingSlot === null && (
               <p className="text-xs text-neutral-500 mb-3">Click a slot below first</p>
@@ -157,7 +157,9 @@ function StickerEditorContent({ uid }: { uid: number }) {
               })}
             </div>
             {ownedStickers.length === 0 && (
-              <p className="text-sm text-neutral-500 text-center py-8">No stickers owned</p>
+              <p className="text-sm text-neutral-500 text-center py-8">
+                No stickers owned
+              </p>
             )}
           </div>
 
@@ -165,17 +167,19 @@ function StickerEditorContent({ uid }: { uid: number }) {
           <div className="space-y-4">
             {/* 3D Weapon Viewer */}
             <div className="rounded-lg border border-stone-700 bg-stone-900/50 p-6">
-              <div className="h-96 w-full">
-                <SimpleWeapon3DViewer
-                  weaponName={economyItem.name}
-                  stickers={stickers3D}
-                  onSurfaceClick={handleSurfaceClick}
-                  enableClickToPlace={editingSlot !== null && stickers[editingSlot] !== undefined}
-                  className="w-full h-full"
-                />
+              <div className="h-96 w-full bg-stone-800 rounded">
+                <ClientOnly
+                  fallback={
+                    <div className="w-full h-full flex items-center justify-center">
+                      <p className="text-neutral-400">Loading 3D Viewer...</p>
+                    </div>
+                  }
+                >
+                  {() => <WeaponViewer3DSimple stickers={stickers3D} />}
+                </ClientOnly>
               </div>
               <p className="text-xs text-center text-neutral-500 mt-2">
-                🖱️ Drag to rotate | Scroll to zoom | Click weapon to place sticker
+                🖱️ Drag to rotate | Scroll to zoom
               </p>
             </div>
 
@@ -191,11 +195,17 @@ function StickerEditorContent({ uid }: { uid: number }) {
                       key={slot}
                       onClick={() => setEditingSlot(slot)}
                       className={`aspect-square rounded border-2 transition ${
-                        isEditing ? "border-blue-500 bg-blue-500/20" : "border-stone-700 bg-stone-800"
+                        isEditing
+                          ? "border-blue-500 bg-blue-500/20"
+                          : "border-stone-700 bg-stone-800"
                       }`}
                     >
                       {sticker ? (
-                        <img src={sticker.imageUrl} alt="sticker" className="w-full p-2" />
+                        <img
+                          src={sticker.imageUrl}
+                          alt="sticker"
+                          className="w-full p-2"
+                        />
                       ) : (
                         <span className="text-neutral-500 text-sm">{slot + 1}</span>
                       )}
@@ -208,44 +218,60 @@ function StickerEditorContent({ uid }: { uid: number }) {
             {/* Controls */}
             {editingSlot !== null && stickers[editingSlot] && (
               <div className="rounded-lg border border-stone-700 bg-stone-900/50 p-4">
-                <h3 className="text-base font-bold mb-3">Slot {editingSlot + 1} Controls</h3>
+                <h3 className="text-base font-bold mb-3">
+                  Slot {editingSlot + 1} Controls
+                </h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm">Position X: {stickers[editingSlot].x.toFixed(2)}</label>
+                    <label className="text-sm">
+                      Position X: {stickers[editingSlot].position[0].toFixed(2)}
+                    </label>
                     <input
                       type="range"
                       min="-1.5"
                       max="1.5"
                       step="0.01"
-                      value={stickers[editingSlot].x}
-                      onChange={(e) =>
+                      value={stickers[editingSlot].position[0]}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
                         setStickers({
                           ...stickers,
-                          [editingSlot]: { ...stickers[editingSlot], x: parseFloat(e.target.value) },
-                        })
-                      }
+                          [editingSlot]: {
+                            ...stickers[editingSlot],
+                            position: [val, stickers[editingSlot].position[1], stickers[editingSlot].position[2]],
+                          },
+                        });
+                      }}
                       className="w-full"
                     />
                   </div>
                   <div>
-                    <label className="text-sm">Position Y: {stickers[editingSlot].y.toFixed(2)}</label>
+                    <label className="text-sm">
+                      Position Y: {stickers[editingSlot].position[1].toFixed(2)}
+                    </label>
                     <input
                       type="range"
                       min="-0.3"
                       max="0.3"
                       step="0.01"
-                      value={stickers[editingSlot].y}
-                      onChange={(e) =>
+                      value={stickers[editingSlot].position[1]}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
                         setStickers({
                           ...stickers,
-                          [editingSlot]: { ...stickers[editingSlot], y: parseFloat(e.target.value) },
-                        })
-                      }
+                          [editingSlot]: {
+                            ...stickers[editingSlot],
+                            position: [stickers[editingSlot].position[0], val, stickers[editingSlot].position[2]],
+                          },
+                        });
+                      }}
                       className="w-full"
                     />
                   </div>
                   <div>
-                    <label className="text-sm">Rotation: {stickers[editingSlot].rotation}°</label>
+                    <label className="text-sm">
+                      Rotation: {stickers[editingSlot].rotation}°
+                    </label>
                     <input
                       type="range"
                       min="0"
@@ -254,24 +280,32 @@ function StickerEditorContent({ uid }: { uid: number }) {
                       onChange={(e) =>
                         setStickers({
                           ...stickers,
-                          [editingSlot]: { ...stickers[editingSlot], rotation: parseInt(e.target.value) },
+                          [editingSlot]: {
+                            ...stickers[editingSlot],
+                            rotation: parseInt(e.target.value),
+                          },
                         })
                       }
                       className="w-full"
                     />
                   </div>
                   <div>
-                    <label className="text-sm">Scale: {stickers[editingSlot].scale.toFixed(1)}x</label>
+                    <label className="text-sm">
+                      Scale: {stickers[editingSlot].scale.toFixed(1)}x
+                    </label>
                     <input
                       type="range"
-                      min="0.5"
-                      max="2"
+                      min="0.1"
+                      max="0.8"
                       step="0.1"
                       value={stickers[editingSlot].scale}
                       onChange={(e) =>
                         setStickers({
                           ...stickers,
-                          [editingSlot]: { ...stickers[editingSlot], scale: parseFloat(e.target.value) },
+                          [editingSlot]: {
+                            ...stickers[editingSlot],
+                            scale: parseFloat(e.target.value),
+                          },
                         })
                       }
                       className="w-full"
@@ -294,15 +328,12 @@ function StickerEditorContent({ uid }: { uid: number }) {
                 <input type="hidden" name="stickers" value={JSON.stringify(stickers)} />
                 <button
                   type="submit"
-                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded font-bold"
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={Object.keys(stickers).length === 0}
                 >
-                  Save ({Object.keys(stickers).length}/5)
+                  Save Stickers ({Object.keys(stickers).length}/5)
                 </button>
               </Form>
-              {actionData?.success && (
-                <p className="text-green-400 text-sm mt-2">✓ Saved!</p>
-              )}
             </div>
           </div>
         </div>
@@ -312,17 +343,15 @@ function StickerEditorContent({ uid }: { uid: number }) {
 }
 
 export default function StickerEditor() {
-  const { uid } = useLoaderData<typeof loader>();
-
   return (
     <ClientOnly fallback={
       <div className="min-h-screen bg-stone-800 text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl">Loading 3D Editor...</p>
+          <p className="text-xl">Loading 3D Sticker Editor...</p>
         </div>
       </div>
     }>
-      {() => <StickerEditorContent uid={uid} />}
+      {() => <StickerEditorContent />}
     </ClientOnly>
   );
 }
