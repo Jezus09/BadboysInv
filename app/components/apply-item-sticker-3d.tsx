@@ -36,9 +36,18 @@ export function ApplyItemSticker3D({
   const [stickerPosition, setStickerPosition] = useState({ x: 0, y: 0, z: 0.01 });
   const [stickerRotation, setStickerRotation] = useState(0);
   const [stickerScale, setStickerScale] = useState(1.0);
+  const [placementMode, setPlacementMode] = useState<"manual" | "click">("click");
 
   const stickerItem = useInventoryItem(stickerUid);
   const targetItem = useInventoryItem(targetUid);
+
+  function handleSurfaceClick(position: [number, number, number], surfaceName: string) {
+    if (selectedSlot === undefined) return;
+
+    // Update sticker position to clicked location
+    setStickerPosition({ x: position[0], y: position[1], z: position[2] });
+    playSound("sticker_apply");
+  }
 
   function handleApplySticker() {
     if (selectedSlot !== undefined) {
@@ -85,10 +94,36 @@ export function ApplyItemSticker3D({
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               {/* Left: 3D Viewer */}
               <div className="lg:col-span-2">
+                {/* Placement Mode Toggle */}
+                <div className="mb-2 flex gap-2">
+                  <button
+                    onClick={() => setPlacementMode("click")}
+                    className={`flex-1 rounded px-3 py-2 text-sm font-bold transition-colors ${
+                      placementMode === "click"
+                        ? "bg-purple-600 text-white"
+                        : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                    }`}
+                  >
+                    🖱️ Click to Place
+                  </button>
+                  <button
+                    onClick={() => setPlacementMode("manual")}
+                    className={`flex-1 rounded px-3 py-2 text-sm font-bold transition-colors ${
+                      placementMode === "manual"
+                        ? "bg-purple-600 text-white"
+                        : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
+                    }`}
+                  >
+                    🎚️ Manual Adjust
+                  </button>
+                </div>
+
                 <div className="aspect-video w-full overflow-hidden rounded-lg border border-neutral-700">
                   <WeaponViewer3D
                     weaponId={targetItem.id}
                     className="h-full w-full"
+                    enableClickToPlace={placementMode === "click" && selectedSlot !== undefined}
+                    onSurfaceClick={handleSurfaceClick}
                     stickers={
                       selectedSlot !== undefined
                         ? [
@@ -107,45 +142,68 @@ export function ApplyItemSticker3D({
 
                 {/* Sticker Controls */}
                 <div className="mt-4 rounded-lg border border-neutral-700 bg-black/30 p-4">
-                  <h3 className="mb-3 text-sm font-bold uppercase text-neutral-300">
-                    Sticker Transform
-                  </h3>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase text-neutral-300">
+                      Sticker Transform
+                    </h3>
+                    {selectedSlot === undefined && (
+                      <p className="text-xs text-yellow-400">Select a slot first →</p>
+                    )}
+                  </div>
 
                   {/* Position X */}
-                  <div className="mb-3">
-                    <label className="mb-1 block text-xs text-neutral-400">
-                      Position X: {stickerPosition.x.toFixed(2)}
-                    </label>
-                    <input
-                      type="range"
-                      min="-1"
-                      max="1"
-                      step="0.01"
-                      value={stickerPosition.x}
-                      onChange={(e) =>
-                        setStickerPosition({ ...stickerPosition, x: parseFloat(e.target.value) })
-                      }
-                      className="w-full"
-                    />
-                  </div>
+                  {placementMode === "manual" && (
+                    <>
+                      <div className="mb-3">
+                        <label className="mb-1 block text-xs text-neutral-400">
+                          Position X: {stickerPosition.x.toFixed(2)}
+                        </label>
+                        <input
+                          type="range"
+                          min="-1"
+                          max="1"
+                          step="0.01"
+                          value={stickerPosition.x}
+                          onChange={(e) =>
+                            setStickerPosition({ ...stickerPosition, x: parseFloat(e.target.value) })
+                          }
+                          className="w-full"
+                          disabled={selectedSlot === undefined}
+                        />
+                      </div>
 
-                  {/* Position Y */}
-                  <div className="mb-3">
-                    <label className="mb-1 block text-xs text-neutral-400">
-                      Position Y: {stickerPosition.y.toFixed(2)}
-                    </label>
-                    <input
-                      type="range"
-                      min="-1"
-                      max="1"
-                      step="0.01"
-                      value={stickerPosition.y}
-                      onChange={(e) =>
-                        setStickerPosition({ ...stickerPosition, y: parseFloat(e.target.value) })
-                      }
-                      className="w-full"
-                    />
-                  </div>
+                      {/* Position Y */}
+                      <div className="mb-3">
+                        <label className="mb-1 block text-xs text-neutral-400">
+                          Position Y: {stickerPosition.y.toFixed(2)}
+                        </label>
+                        <input
+                          type="range"
+                          min="-1"
+                          max="1"
+                          step="0.01"
+                          value={stickerPosition.y}
+                          onChange={(e) =>
+                            setStickerPosition({ ...stickerPosition, y: parseFloat(e.target.value) })
+                          }
+                          className="w-full"
+                          disabled={selectedSlot === undefined}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {placementMode === "click" && (
+                    <div className="mb-3 rounded border border-purple-500/30 bg-purple-900/20 p-3">
+                      <p className="text-xs text-purple-200">
+                        <strong>💡 Tip:</strong> Click anywhere on the weapon surface to position your sticker!
+                      </p>
+                      <p className="mt-2 text-[10px] text-neutral-400">
+                        Current position: X:{stickerPosition.x.toFixed(2)} Y:{stickerPosition.y.toFixed(2)} Z:
+                        {stickerPosition.z.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Rotation */}
                   <div className="mb-3">
@@ -160,6 +218,7 @@ export function ApplyItemSticker3D({
                       value={stickerRotation}
                       onChange={(e) => setStickerRotation(parseInt(e.target.value))}
                       className="w-full"
+                      disabled={selectedSlot === undefined}
                     />
                   </div>
 
@@ -176,6 +235,7 @@ export function ApplyItemSticker3D({
                       value={stickerScale}
                       onChange={(e) => setStickerScale(parseFloat(e.target.value))}
                       className="w-full"
+                      disabled={selectedSlot === undefined}
                     />
                   </div>
 
