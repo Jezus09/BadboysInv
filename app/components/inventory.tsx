@@ -388,11 +388,6 @@ export function Inventory() {
         <ApplyItemSticker
           {...applyItemSticker}
           onClose={closeApplyItemSticker}
-          onSwitchTo3D={() => {
-            // Navigate to new interactive 3D sticker editor
-            navigate(`/sticker-editor/${applyItemSticker.targetUid}`);
-            closeApplyItemSticker();
-          }}
         />
       )}
       {isScrapingItemSticker(scrapeItemSticker) && (
