@@ -98,21 +98,20 @@ export default function StickerEditor() {
 
   const economyItem = CS2Economy.getById(weaponItem.id);
 
-  const handleSelectSticker = (sticker: any) => {
+  const handleSelectSticker = (inventoryItem: any) => {
     if (editingSlot !== null) {
       // Add sticker at center
-      const stickerId = typeof sticker.id === 'string' ? parseInt(sticker.id) : sticker.id;
       setStickers({
         ...stickers,
         [editingSlot]: {
-          id: stickerId,
+          id: inventoryItem.id,
           x: 0.5,
           y: 0.5,
           rotation: 0,
           scale: 1.0,
         },
       });
-      setSelectedSticker(sticker);
+      setSelectedSticker(inventoryItem);
       setShowStickerBrowser(false);
       setEditingSlot(null);
     }
@@ -224,7 +223,7 @@ export default function StickerEditor() {
                       <button
                         key={item.uid}
                         onClick={() => {
-                          handleSelectSticker({ id: item.id, name: economyItem.name, image: economyItem.image });
+                          handleSelectSticker(economyItem);
                         }}
                         className={`
                           relative p-2 rounded-lg border-2 transition-all aspect-square
@@ -274,7 +273,7 @@ export default function StickerEditor() {
                         key={item.uid}
                         onClick={() => {
                           if (editingSlot !== null) {
-                            handleSelectSticker({ id: item.id, name: economyItem.name, image: economyItem.image });
+                            handleSelectSticker(economyItem);
                           }
                         }}
                         disabled={editingSlot === null}
