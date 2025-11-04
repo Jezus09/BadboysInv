@@ -27,6 +27,7 @@ import {
 } from "./app-context";
 import { ApplyItemPatch } from "./apply-item-patch";
 import { ApplyItemSticker } from "./apply-item-sticker";
+import { ApplyItemSticker3D } from "./apply-item-sticker-3d";
 import { useApplyItemPatch } from "./hooks/use-apply-item-patch";
 import { useListenAppEvent } from "./hooks/use-listen-app-event";
 import { useRemoveItemPatch } from "./hooks/use-remove-item-patch";
@@ -163,6 +164,10 @@ export function Inventory() {
     useInspectItem();
 
   const [sellMarketplaceItem, setSellMarketplaceItem] = useState<typeof items[0] | null>(null);
+  const [applyItemSticker3D, setApplyItemSticker3D] = useState<{
+    targetUid: number;
+    stickerUid: number;
+  } | null>(null);
 
   // Helper to trigger plugin inventory sync
   async function triggerPluginInventorySync(steamId: string) {
@@ -331,6 +336,9 @@ export function Inventory() {
                 : {
                     onApplyPatch: handleApplyItemPatch,
                     onApplySticker: handleApplyItemSticker,
+                    onApplySticker3D: (targetUid: number, stickerUid: number) => {
+                      setApplyItemSticker3D({ targetUid, stickerUid });
+                    },
                     onDepositToStorageUnit: handleDepositToStorageUnit,
                     onEdit: handleEdit,
                     onEquip: handleEquip,
@@ -388,6 +396,12 @@ export function Inventory() {
         <ApplyItemSticker
           {...applyItemSticker}
           onClose={closeApplyItemSticker}
+        />
+      )}
+      {applyItemSticker3D && (
+        <ApplyItemSticker3D
+          {...applyItemSticker3D}
+          onClose={() => setApplyItemSticker3D(null)}
         />
       )}
       {isScrapingItemSticker(scrapeItemSticker) && (

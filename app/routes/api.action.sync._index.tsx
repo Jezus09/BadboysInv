@@ -96,7 +96,11 @@ const actionShape = z
       type: z.literal(SyncAction.ApplyItemSticker),
       slot: nonNegativeInt,
       stickerUid: nonNegativeInt,
-      targetUid: nonNegativeInt
+      targetUid: nonNegativeInt,
+      // 3D transform data (optional, for 3D mode)
+      x: z.number().optional(),
+      y: z.number().optional(),
+      rotation: z.number().optional()
     })
   )
   .or(
@@ -395,10 +399,14 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
             break;
           case SyncAction.ApplyItemSticker:
             await inventoryItemAllowApplySticker.for(userId).truthy();
+            // Support 3D transform data (x, y, rotation) for 3D sticker placement
             inventory.applyItemSticker(
               action.targetUid,
               action.stickerUid,
-              action.slot
+              action.slot,
+              action.x,
+              action.y,
+              action.rotation
             );
             break;
           case SyncAction.Equip:

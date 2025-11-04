@@ -40,6 +40,7 @@ export function InventoryItem({
   item,
   onApplyPatch,
   onApplySticker,
+  onApplySticker3D,
   onClick,
   onDepositToStorageUnit,
   onEdit,
@@ -65,6 +66,7 @@ export function InventoryItem({
   isOnMarketplace?: boolean;
   onApplyPatch?: (uid: number) => void;
   onApplySticker?: (uid: number) => void;
+  onApplySticker3D?: (targetUid: number, stickerUid: number) => void;
   onClick?: (uid: number) => void;
   onDepositToStorageUnit?: (uid: number) => void;
   onEdit?: (uid: number) => void;

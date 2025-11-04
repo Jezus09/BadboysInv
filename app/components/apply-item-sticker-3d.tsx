@@ -56,9 +56,22 @@ export function ApplyItemSticker3D({
           type: SyncAction.ApplyItemSticker,
           targetUid,
           slot: selectedSlot,
-          stickerUid
+          stickerUid,
+          // 3D transform data
+          x: stickerPosition.x,
+          y: stickerPosition.y,
+          rotation: stickerRotation
         });
-        setInventory(inventory.applyItemSticker(targetUid, stickerUid, selectedSlot));
+        setInventory(
+          inventory.applyItemSticker(
+            targetUid,
+            stickerUid,
+            selectedSlot,
+            stickerPosition.x,
+            stickerPosition.y,
+            stickerRotation
+          )
+        );
         playSound("sticker_apply_confirm");
         onClose();
       } else {
