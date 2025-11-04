@@ -36,21 +36,16 @@ function WeaponBox({ stickers }: { stickers: StickerData[] }) {
 }
 
 function StickerDecal({ sticker }: { sticker: StickerData }) {
-  try {
-    const texture = useTexture(sticker.imageUrl);
+  const texture = useTexture(sticker.imageUrl);
 
-    return (
-      <Decal
-        position={sticker.position}
-        rotation={[0, 0, (sticker.rotation * Math.PI) / 180]}
-        scale={sticker.scale}
-        map={texture}
-      />
-    );
-  } catch (error) {
-    console.error("Failed to load sticker texture:", error);
-    return null;
-  }
+  return (
+    <Decal
+      position={sticker.position}
+      rotation={[0, 0, (sticker.rotation * Math.PI) / 180]}
+      scale={sticker.scale}
+      map={texture}
+    />
+  );
 }
 
 export default function WeaponViewer3DSimple({ stickers, onSurfaceClick }: WeaponViewerProps) {
