@@ -85,6 +85,14 @@ const actionShape = z
   )
   .or(
     z.object({
+      type: z.literal(SyncAction.ApplyItemKeychain),
+      keychainUid: nonNegativeInt,
+      slot: nonNegativeInt,
+      targetUid: nonNegativeInt
+    })
+  )
+  .or(
+    z.object({
       type: z.literal(SyncAction.ApplyItemPatch),
       patchUid: nonNegativeInt,
       slot: nonNegativeInt,
@@ -388,6 +396,31 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
               action.itemId,
               action.nameTag
             );
+            break;
+          case SyncAction.ApplyItemKeychain:
+            // Since there's no applyItemKeychain method, we use edit()
+            const targetItem = inventory.get(action.targetUid);
+            const keychainItem = inventory.get(action.keychainUid);
+
+            // Build new keychains map
+            const newKeychains: Record<number, { id: number; seed?: number }> = {};
+
+            // Copy existing keychains
+            targetItem.allKeychains().forEach(([slot, keychain]) => {
+              if (keychain !== undefined) {
+                newKeychains[slot] = keychain;
+              }
+            });
+
+            // Add new keychain
+            newKeychains[action.slot] = {
+              id: keychainItem.id,
+              seed: Math.floor(Math.random() * 100000)
+            };
+
+            // Apply the keychain and remove the keychain item
+            inventory.edit(action.targetUid, { keychains: newKeychains });
+            inventory.remove(action.keychainUid);
             break;
           case SyncAction.ApplyItemPatch:
             await inventoryItemAllowApplyPatch.for(userId).truthy();

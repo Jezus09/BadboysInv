@@ -7,6 +7,8 @@
 export const english = {
 
   APIPageHeader: "API for programmers",
+  ApplyKeychainUse: /* csgo_english.txt */"Apply Keychain",
+  ApplyKeychainWarn: /* csgo_english.txt */"A keychain can only be applied once",
   ApplyPatchUse: /* csgo_english.txt */"Apply Patch",
   ApplyPatchWarn: /* csgo_english.txt */"A patch can only be applied once",
   ApplyStickerCancel: /* csgo_english.txt */"Cancel",
@@ -88,6 +90,7 @@ export const english = {
   HeaderSignOutLabel: "Sign out",
   HeaderSignedInAsLabel: "Signed in as",
   InspectClose: /* csgo_english.txt */"Close",
+  InventoryApplyKeychain: /* csgo_english.txt */"Apply Keychain",
   InventoryApplyPatch: /* csgo_english.txt */"Apply Patch",
   InventoryApplySticker: /* csgo_english.txt */"Apply Sticker",
   InventoryFilterAgents: /* csgo_english.txt */"Agents",

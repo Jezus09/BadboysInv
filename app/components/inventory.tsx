@@ -25,8 +25,10 @@ import {
   useTranslate,
   useUser
 } from "./app-context";
+import { ApplyItemKeychain } from "./apply-item-keychain";
 import { ApplyItemPatch } from "./apply-item-patch";
 import { ApplyItemSticker } from "./apply-item-sticker";
+import { useApplyItemKeychain } from "./hooks/use-apply-item-keychain";
 import { useApplyItemPatch } from "./hooks/use-apply-item-patch";
 import { useListenAppEvent } from "./hooks/use-listen-app-event";
 import { useRemoveItemPatch } from "./hooks/use-remove-item-patch";
@@ -91,14 +93,9 @@ export function Inventory() {
   const ownApplicablePatches =
     items.filter(({ item }) => item.isPatch()).length > 0;
 
-  // Debug: Log patch system status
-  useEffect(() => {
-    const patches = items.filter(({ item }) => item.isPatch());
-    const agents = items.filter(({ item }) => item.hasPatches());
-    console.log("[PATCH DEBUG] Patches owned:", patches.length, patches.map(p => p.item.name));
-    console.log("[PATCH DEBUG] Agents (patchable items):", agents.length, agents.map(a => a.item.name));
-    console.log("[PATCH DEBUG] ownApplicablePatches:", ownApplicablePatches);
-  }, [items, ownApplicablePatches]);
+  // Show "Apply Keychain" if user owns ANY keychain (charms for weapons)
+  const ownApplicableKeychains =
+    items.filter(({ item }) => item.isKeychain()).length > 0;
 
   const {
     closeUnlockCase,
@@ -144,6 +141,14 @@ export function Inventory() {
     isRemovingItemPatch,
     removeItemPatch
   } = useRemoveItemPatch();
+
+  const {
+    applyItemKeychain,
+    closeApplyItemKeychain,
+    handleApplyItemKeychain,
+    handleApplyItemKeychainSelect,
+    isApplyingItemKeychain
+  } = useApplyItemKeychain();
 
   const {
     applyItemSticker,
@@ -268,6 +273,7 @@ export function Inventory() {
 
   function dismissSelectItem() {
     setItemSelector(undefined);
+    closeApplyItemKeychain();
     closeApplyItemPatch();
     closeApplyItemSticker();
     closeInspectItem();
@@ -294,6 +300,9 @@ export function Inventory() {
         case "rename-item":
           setItemSelector(undefined);
           return handleRenameItemSelect(uid);
+        case "apply-item-keychain":
+          setItemSelector(undefined);
+          return handleApplyItemKeychainSelect(uid);
         case "apply-item-patch":
           setItemSelector(undefined);
           return handleApplyItemPatchSelect(uid);
@@ -339,6 +348,7 @@ export function Inventory() {
                       : handleSelectItem
                   }
                 : {
+                    onApplyKeychain: handleApplyItemKeychain,
                     onApplyPatch: handleApplyItemPatch,
                     onApplySticker: handleApplyItemSticker,
                     onDepositToStorageUnit: handleDepositToStorageUnit,
@@ -356,6 +366,7 @@ export function Inventory() {
                     onSwapItemsStatTrak: handleSwapItemsStatTrak,
                     onUnequip: handleUnequip,
                     onUnlockContainer: handleUnlockCase,
+                    ownApplicableKeychains,
                     ownApplicablePatches,
                     ownApplicableStickers
                   })}
@@ -387,6 +398,9 @@ export function Inventory() {
           {...renameStorageUnit}
           onClose={closeRenameStorageUnit}
         />
+      )}
+      {isApplyingItemKeychain(applyItemKeychain) && (
+        <ApplyItemKeychain {...applyItemKeychain} onClose={closeApplyItemKeychain} />
       )}
       {isApplyingItemPatch(applyItemPatch) && (
         <ApplyItemPatch {...applyItemPatch} onClose={closeApplyItemPatch} />

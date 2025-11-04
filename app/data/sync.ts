@@ -11,6 +11,7 @@ export const SyncAction = {
   AddFromShop: "add-from-shop",
   AddWithNametag: "add-with-nametag",
   AddWithSticker: "add-with-sticker",
+  ApplyItemKeychain: "apply-item-keychain",
   ApplyItemPatch: "apply-item-patch",
   ApplyItemSticker: "apply-item-sticker",
   DepositToStorageUnit: "deposit-to-storage-unit",

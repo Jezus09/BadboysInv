@@ -6,6 +6,7 @@
 import { FloatingFocusManager } from "@floating-ui/react";
 import {
   CS2_INVENTORY_EQUIPPABLE_ITEMS,
+  CS2_MAX_KEYCHAINS,
   CS2_MAX_PATCHES,
   CS2Team,
   CS2TeamValues
@@ -38,6 +39,7 @@ export function InventoryItem({
   equipped,
   isOnMarketplace,
   item,
+  onApplyKeychain,
   onApplyPatch,
   onApplySticker,
   onClick,
@@ -56,6 +58,7 @@ export function InventoryItem({
   onSwapItemsStatTrak,
   onUnequip,
   onUnlockContainer,
+  ownApplicableKeychains,
   ownApplicablePatches,
   ownApplicableStickers,
   uid
@@ -63,6 +66,7 @@ export function InventoryItem({
   disableContextMenu?: boolean;
   disableHover?: boolean;
   isOnMarketplace?: boolean;
+  onApplyKeychain?: (uid: number) => void;
   onApplyPatch?: (uid: number) => void;
   onApplySticker?: (uid: number) => void;
   onClick?: (uid: number) => void;
@@ -81,6 +85,7 @@ export function InventoryItem({
   onSwapItemsStatTrak?: (uid: number) => void;
   onUnequip?: (uid: number, team?: CS2TeamValues) => void;
   onUnlockContainer?: (uid: number) => void;
+  ownApplicableKeychains?: boolean;
   ownApplicablePatches?: boolean;
   ownApplicableStickers?: boolean;
 }) {
@@ -145,24 +150,15 @@ export function InventoryItem({
 
   const canSwapStatTrak = item.isStatTrakSwapTool();
   const canRename = item.isNameTag();
+  const canApplyKeychain =
+    ownApplicableKeychains &&
+    ((item.hasKeychains() && item.getKeychainsCount() < CS2_MAX_KEYCHAINS) ||
+      item.isKeychain());
   const canApplyPatch =
     inventoryItemAllowApplyPatch &&
     ownApplicablePatches &&
     ((item.hasPatches() && item.getPatchesCount() < CS2_MAX_PATCHES) ||
       item.isPatch());
-
-  // Debug: Log canApplyPatch conditions
-  if (item.isPatch() || item.hasPatches()) {
-    console.log(`[PATCH DEBUG] Item: ${item.name} (${item.type})`, {
-      isPatch: item.isPatch(),
-      hasPatches: item.hasPatches(),
-      patchCount: item.hasPatches() ? item.getPatchesCount() : 'N/A',
-      maxPatches: CS2_MAX_PATCHES,
-      inventoryItemAllowApplyPatch,
-      ownApplicablePatches,
-      canApplyPatch
-    });
-  }
   const canRemovePatch =
     inventoryItemAllowRemovePatch &&
     item.hasPatches() &&
@@ -327,6 +323,11 @@ export function InventoryItem({
                     condition: canScrapeSticker,
                     label: translate("InventoryItemScrapeSticker"),
                     onClick: close(() => onScrapeSticker?.(uid))
+                  },
+                  {
+                    condition: canApplyKeychain,
+                    label: translate("InventoryApplyKeychain"),
+                    onClick: close(() => onApplyKeychain?.(uid))
                   },
                   {
                     condition: canApplyPatch,
