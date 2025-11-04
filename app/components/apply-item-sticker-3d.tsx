@@ -86,7 +86,23 @@ export function ApplyItemSticker3D({
               {/* Left: 3D Viewer */}
               <div className="lg:col-span-2">
                 <div className="aspect-video w-full overflow-hidden rounded-lg border border-neutral-700">
-                  <WeaponViewer3D weaponId={targetItem.id} className="h-full w-full" />
+                  <WeaponViewer3D
+                    weaponId={targetItem.id}
+                    className="h-full w-full"
+                    stickers={
+                      selectedSlot !== undefined
+                        ? [
+                            {
+                              id: stickerItem.id,
+                              slot: selectedSlot,
+                              position: [stickerPosition.x, stickerPosition.y, stickerPosition.z],
+                              rotation: stickerRotation,
+                              scale: stickerScale
+                            }
+                          ]
+                        : []
+                    }
+                  />
                 </div>
 
                 {/* Sticker Controls */}
