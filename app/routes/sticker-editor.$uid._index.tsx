@@ -6,7 +6,7 @@ import { ItemImage } from "~/components/item-image";
 import { requireUser } from "~/auth.server";
 import { useInventory } from "~/components/app-context";
 import type { Route } from "./+types/sticker-editor.$uid._index";
-import SimpleWeapon3DViewer from "~/components/simple-weapon-3d-viewer.client";
+import SimpleWeapon3DViewer from "~/components/simple-weapon-3d-viewer";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const user = await requireUser(request);
