@@ -1,12 +1,8 @@
 /**
- * 3D Weapon Viewer with Sticker Support
- * Uses React Three Fiber for 3D rendering
- * Cache-busting rebuild: v2.0
+ * Simple 3D Weapon Viewer - Client Side Only
+ * Completely rewritten to fix bundling issues
  */
-import { Canvas, useLoader } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
-import { Suspense, useRef } from "react";
-import * as THREE from "three";
+import { useEffect, useRef, useState } from "react";
 
 interface StickerData {
   id: number;
@@ -25,94 +21,6 @@ interface SimpleWeapon3DViewerProps {
   className?: string;
 }
 
-function StickerMesh({ sticker }: { sticker: StickerData }) {
-  try {
-    // Use useLoader for proper texture loading with caching
-    const texture = useLoader(THREE.TextureLoader, sticker.imageUrl);
-
-    return (
-      <mesh
-        position={sticker.position}
-        rotation={[0, 0, sticker.rotation * (Math.PI / 180)]}
-      >
-        <planeGeometry args={[0.3 * sticker.scale, 0.3 * sticker.scale]} />
-        <meshBasicMaterial
-          map={texture}
-          transparent
-          opacity={1}
-          side={THREE.DoubleSide}
-          depthTest={true}
-          depthWrite={false}
-        />
-      </mesh>
-    );
-  } catch (error) {
-    console.error("Failed to load sticker texture:", sticker.imageUrl, error);
-    // Return a fallback plane with solid color
-    return (
-      <mesh
-        position={sticker.position}
-        rotation={[0, 0, sticker.rotation * (Math.PI / 180)]}
-      >
-        <planeGeometry args={[0.3 * sticker.scale, 0.3 * sticker.scale]} />
-        <meshBasicMaterial
-          color="#ff0000"
-          transparent
-          opacity={0.5}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-    );
-  }
-}
-
-function WeaponBox({
-  stickers = [],
-  onSurfaceClick,
-  enableClickToPlace
-}: {
-  stickers: StickerData[];
-  onSurfaceClick?: (position: [number, number, number], surfaceName: string) => void;
-  enableClickToPlace?: boolean;
-}) {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  const handleClick = (event: any) => {
-    if (!enableClickToPlace || !onSurfaceClick) return;
-
-    event.stopPropagation();
-    const point = event.point;
-    const position: [number, number, number] = [point.x, point.y, point.z];
-    onSurfaceClick(position, "weapon_surface");
-  };
-
-  return (
-    <group>
-      {/* Main weapon body - elongated box to simulate weapon shape */}
-      <mesh ref={meshRef} onClick={handleClick} position={[0, 0, 0]}>
-        <boxGeometry args={[3, 0.5, 0.3]} />
-        <meshStandardMaterial color="#2a2a2a" metalness={0.6} roughness={0.4} />
-      </mesh>
-
-      {/* Stickers as decals on the weapon */}
-      <Suspense fallback={null}>
-        {stickers.map((sticker) => (
-          <StickerMesh key={sticker.slot} sticker={sticker} />
-        ))}
-      </Suspense>
-    </group>
-  );
-}
-
-function LoadingFallback() {
-  return (
-    <mesh>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#666" />
-    </mesh>
-  );
-}
-
 export default function SimpleWeapon3DViewer({
   weaponName,
   stickers = [],
@@ -120,35 +28,208 @@ export default function SimpleWeapon3DViewer({
   enableClickToPlace = false,
   className = "",
 }: SimpleWeapon3DViewerProps) {
-  return (
-    <div className={`w-full h-full ${className}`}>
-      <Canvas
-        gl={{ preserveDrawingBuffer: true }}
-        onCreated={({ gl }) => {
-          gl.setClearColor("#1c1917", 1);
-        }}
-      >
-        <PerspectiveCamera makeDefault position={[0, 1, 4]} fov={50} />
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[5, 5, 5]} intensity={1} />
-        <directionalLight position={[-5, -5, -5]} intensity={0.5} />
+  useEffect(() => {
+    // Dynamic import to ensure client-side only execution
+    let cleanup: (() => void) | undefined;
 
-        <Suspense fallback={<LoadingFallback />}>
-          <WeaponBox
-            stickers={stickers}
-            onSurfaceClick={onSurfaceClick}
-            enableClickToPlace={enableClickToPlace}
-          />
-        </Suspense>
+    const initThreeJS = async () => {
+      try {
+        // Check if we're in browser
+        if (typeof window === 'undefined') {
+          return;
+        }
 
-        <OrbitControls
-          enablePan={false}
-          minDistance={2}
-          maxDistance={8}
-          makeDefault
-        />
-      </Canvas>
-    </div>
-  );
+        const THREE = await import('three');
+        const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js');
+
+        if (!containerRef.current) return;
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1c1917);
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(
+          50,
+          containerRef.current.clientWidth / containerRef.current.clientHeight,
+          0.1,
+          1000
+        );
+        camera.position.set(0, 1, 4);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        containerRef.current.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight1 = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight1.position.set(5, 5, 5);
+        scene.add(directionalLight1);
+
+        const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight2.position.set(-5, -5, -5);
+        scene.add(directionalLight2);
+
+        // Weapon (simple box for now)
+        const weaponGeometry = new THREE.BoxGeometry(3, 0.5, 0.3);
+        const weaponMaterial = new THREE.MeshStandardMaterial({
+          color: 0x2a2a2a,
+          metalness: 0.6,
+          roughness: 0.4,
+        });
+        const weaponMesh = new THREE.Mesh(weaponGeometry, weaponMaterial);
+        scene.add(weaponMesh);
+
+        // Raycaster for click detection
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // Click handler
+        const handleClick = (event: MouseEvent) => {
+          if (!enableClickToPlace || !onSurfaceClick || !containerRef.current) return;
+
+          const rect = containerRef.current.getBoundingClientRect();
+          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObject(weaponMesh);
+
+          if (intersects.length > 0) {
+            const point = intersects[0].point;
+            onSurfaceClick([point.x, point.y, point.z], 'weapon_surface');
+          }
+        };
+
+        renderer.domElement.addEventListener('click', handleClick);
+
+        // Stickers
+        const stickerMeshes: THREE.Mesh[] = [];
+        const textureLoader = new THREE.TextureLoader();
+
+        const loadStickers = async () => {
+          for (const sticker of stickers) {
+            try {
+              const texture = await new Promise<THREE.Texture>((resolve, reject) => {
+                textureLoader.load(
+                  sticker.imageUrl,
+                  resolve,
+                  undefined,
+                  reject
+                );
+              });
+
+              const stickerGeometry = new THREE.PlaneGeometry(
+                0.3 * sticker.scale,
+                0.3 * sticker.scale
+              );
+              const stickerMaterial = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                opacity: 1,
+                side: THREE.DoubleSide,
+                depthTest: true,
+                depthWrite: false,
+              });
+              const stickerMesh = new THREE.Mesh(stickerGeometry, stickerMaterial);
+              stickerMesh.position.set(...sticker.position);
+              stickerMesh.rotation.z = sticker.rotation * (Math.PI / 180);
+              scene.add(stickerMesh);
+              stickerMeshes.push(stickerMesh);
+            } catch (err) {
+              console.error('Failed to load sticker:', sticker.imageUrl, err);
+            }
+          }
+        };
+
+        loadStickers();
+
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enablePan = false;
+        controls.minDistance = 2;
+        controls.maxDistance = 8;
+
+        // Animation loop
+        const animate = () => {
+          requestAnimationFrame(animate);
+          controls.update();
+          renderer.render(scene, camera);
+        };
+        animate();
+
+        // Handle resize
+        const handleResize = () => {
+          if (!containerRef.current) return;
+          camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        };
+        window.addEventListener('resize', handleResize);
+
+        setIsLoading(false);
+
+        // Cleanup function
+        cleanup = () => {
+          window.removeEventListener('resize', handleResize);
+          renderer.domElement.removeEventListener('click', handleClick);
+          controls.dispose();
+          renderer.dispose();
+          weaponGeometry.dispose();
+          weaponMaterial.dispose();
+          stickerMeshes.forEach(mesh => {
+            mesh.geometry.dispose();
+            if (mesh.material instanceof THREE.Material) {
+              mesh.material.dispose();
+            }
+          });
+          if (containerRef.current && renderer.domElement.parentElement) {
+            containerRef.current.removeChild(renderer.domElement);
+          }
+        };
+      } catch (err) {
+        console.error('Three.js initialization error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize 3D viewer');
+        setIsLoading(false);
+      }
+    };
+
+    initThreeJS();
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [stickers, onSurfaceClick, enableClickToPlace]);
+
+  if (error) {
+    return (
+      <div className={`w-full h-full flex items-center justify-center bg-stone-900 rounded ${className}`}>
+        <div className="text-center text-red-400">
+          <p className="text-sm">3D Viewer Error</p>
+          <p className="text-xs mt-1">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className={`w-full h-full flex items-center justify-center bg-stone-900 rounded ${className}`}>
+        <div className="text-center text-neutral-400">
+          <p className="text-sm">Loading 3D Viewer...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <div ref={containerRef} className={`w-full h-full ${className}`} />;
 }
