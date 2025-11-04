@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, PerspectiveCamera, Environment } from "@react-three/drei";
+import { OrbitControls, useGLTF, PerspectiveCamera } from "@react-three/drei";
 import { Suspense, useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
@@ -173,7 +173,6 @@ export default function Weapon3DViewer({
             stickers={stickers}
             onMeshClick={onMeshClick}
           />
-          <Environment preset="studio" />
         </Suspense>
 
         <OrbitControls
