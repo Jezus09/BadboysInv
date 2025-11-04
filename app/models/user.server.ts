@@ -379,7 +379,7 @@ export async function notifyPluginMarketplaceListing(data: {
         ItemName: data.itemName,
         Rarity: data.rarity,
         StatTrak: data.statTrak,
-        Price: data.price
+        Price: Number(data.price)
       })
     });
 
@@ -425,7 +425,7 @@ export async function notifyPluginMarketplacePurchase(data: {
         ItemName: data.itemName,
         Rarity: data.rarity,
         StatTrak: data.statTrak,
-        Price: data.price
+        Price: Number(data.price)
       })
     });
 
