@@ -22,11 +22,13 @@ import { WeaponViewer3D } from "./weapon-viewer-3d";
 export function ApplyItemSticker3D({
   onClose,
   targetUid,
-  stickerUid
+  stickerUid,
+  onSwitchTo2D
 }: {
   onClose: () => void;
   targetUid: number;
   stickerUid: number;
+  onSwitchTo2D?: () => void;
 }) {
   const [inventory, setInventory] = useInventory();
   const sync = useSync();
@@ -342,7 +344,16 @@ export function ApplyItemSticker3D({
 
             {/* Footer Actions */}
             <UseItemFooter
-              left={<></>}
+              left={
+                onSwitchTo2D !== undefined ? (
+                  <ModalButton
+                    onClick={onSwitchTo2D}
+                    variant="secondary"
+                  >
+                    📋 Switch to 2D Mode
+                  </ModalButton>
+                ) : undefined
+              }
               right={
                 <>
                   <ModalButton

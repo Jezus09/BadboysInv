@@ -24,11 +24,13 @@ import { UseItemHeader } from "./use-item-header";
 export function ApplyItemSticker({
   onClose,
   targetUid,
-  stickerUid
+  stickerUid,
+  onSwitchTo3D
 }: {
   onClose: () => void;
   targetUid: number;
   stickerUid: number;
+  onSwitchTo3D?: () => void;
 }) {
   const [inventory, setInventory] = useInventory();
   const translate = useTranslate();
@@ -107,6 +109,16 @@ export function ApplyItemSticker({
               )}
             </div>
             <UseItemFooter
+              left={
+                onSwitchTo3D !== undefined ? (
+                  <ModalButton
+                    onClick={onSwitchTo3D}
+                    variant="secondary"
+                  >
+                    🎮 Switch to 3D Mode
+                  </ModalButton>
+                ) : undefined
+              }
               right={
                 <>
                   <ModalButton

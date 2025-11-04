@@ -164,10 +164,14 @@ export function Inventory() {
     useInspectItem();
 
   const [sellMarketplaceItem, setSellMarketplaceItem] = useState<typeof items[0] | null>(null);
-  const [applyItemSticker3D, setApplyItemSticker3D] = useState<{
-    targetUid: number;
-    stickerUid: number;
-  } | null>(null);
+  const [stickerMode, setStickerMode] = useState<"2d" | "3d">("2d");
+
+  // Reset sticker mode when modal closes
+  useEffect(() => {
+    if (!isApplyingItemSticker(applyItemSticker)) {
+      setStickerMode("2d");
+    }
+  }, [applyItemSticker, isApplyingItemSticker]);
 
   // Helper to trigger plugin inventory sync
   async function triggerPluginInventorySync(steamId: string) {
@@ -336,9 +340,6 @@ export function Inventory() {
                 : {
                     onApplyPatch: handleApplyItemPatch,
                     onApplySticker: handleApplyItemSticker,
-                    onApplySticker3D: (targetUid: number, stickerUid: number) => {
-                      setApplyItemSticker3D({ targetUid, stickerUid });
-                    },
                     onDepositToStorageUnit: handleDepositToStorageUnit,
                     onEdit: handleEdit,
                     onEquip: handleEquip,
@@ -392,16 +393,22 @@ export function Inventory() {
       {isRemovingItemPatch(removeItemPatch) && (
         <RemoveItemPatch {...removeItemPatch} onClose={closeRemoveItemPatch} />
       )}
-      {isApplyingItemSticker(applyItemSticker) && (
+      {isApplyingItemSticker(applyItemSticker) && stickerMode === "2d" && (
         <ApplyItemSticker
           {...applyItemSticker}
           onClose={closeApplyItemSticker}
+          onSwitchTo3D={() => {
+            setStickerMode("3d");
+          }}
         />
       )}
-      {applyItemSticker3D && (
+      {isApplyingItemSticker(applyItemSticker) && stickerMode === "3d" && (
         <ApplyItemSticker3D
-          {...applyItemSticker3D}
-          onClose={() => setApplyItemSticker3D(null)}
+          {...applyItemSticker}
+          onClose={closeApplyItemSticker}
+          onSwitchTo2D={() => {
+            setStickerMode("2d");
+          }}
         />
       )}
       {isScrapingItemSticker(scrapeItemSticker) && (
