@@ -1,6 +1,6 @@
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useRef } from "react";
 import * as THREE from "three";
 
 interface StickerData {
@@ -18,6 +18,47 @@ interface SimpleWeapon3DViewerProps {
   onSurfaceClick?: (position: [number, number, number], surfaceName: string) => void;
   enableClickToPlace?: boolean;
   className?: string;
+}
+
+function StickerMesh({ sticker }: { sticker: StickerData }) {
+  try {
+    // Use useLoader for proper texture loading with caching
+    const texture = useLoader(THREE.TextureLoader, sticker.imageUrl);
+
+    return (
+      <mesh
+        position={sticker.position}
+        rotation={[0, 0, sticker.rotation * (Math.PI / 180)]}
+      >
+        <planeGeometry args={[0.3 * sticker.scale, 0.3 * sticker.scale]} />
+        <meshBasicMaterial
+          map={texture}
+          transparent
+          opacity={1}
+          side={THREE.DoubleSide}
+          depthTest={true}
+          depthWrite={false}
+        />
+      </mesh>
+    );
+  } catch (error) {
+    console.error("Failed to load sticker texture:", sticker.imageUrl, error);
+    // Return a fallback plane with solid color
+    return (
+      <mesh
+        position={sticker.position}
+        rotation={[0, 0, sticker.rotation * (Math.PI / 180)]}
+      >
+        <planeGeometry args={[0.3 * sticker.scale, 0.3 * sticker.scale]} />
+        <meshBasicMaterial
+          color="#ff0000"
+          transparent
+          opacity={0.5}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    );
+  }
 }
 
 function WeaponBox({
@@ -49,21 +90,11 @@ function WeaponBox({
       </mesh>
 
       {/* Stickers as decals on the weapon */}
-      {stickers.map((sticker, index) => (
-        <mesh key={index} position={sticker.position} rotation={[0, 0, sticker.rotation * (Math.PI / 180)]}>
-          <planeGeometry args={[0.3 * sticker.scale, 0.3 * sticker.scale]} />
-          <meshBasicMaterial
-            transparent
-            opacity={1}
-            side={THREE.DoubleSide}
-          >
-            <primitive
-              attach="map"
-              object={new THREE.TextureLoader().load(sticker.imageUrl)}
-            />
-          </meshBasicMaterial>
-        </mesh>
-      ))}
+      <Suspense fallback={null}>
+        {stickers.map((sticker) => (
+          <StickerMesh key={sticker.slot} sticker={sticker} />
+        ))}
+      </Suspense>
     </group>
   );
 }
@@ -86,7 +117,12 @@ export default function SimpleWeapon3DViewer({
 }: SimpleWeapon3DViewerProps) {
   return (
     <div className={`w-full h-full ${className}`}>
-      <Canvas>
+      <Canvas
+        gl={{ preserveDrawingBuffer: true }}
+        onCreated={({ gl }) => {
+          gl.setClearColor("#1c1917", 1);
+        }}
+      >
         <PerspectiveCamera makeDefault position={[0, 1, 4]} fov={50} />
 
         <ambientLight intensity={0.6} />
@@ -105,6 +141,7 @@ export default function SimpleWeapon3DViewer({
           enablePan={false}
           minDistance={2}
           maxDistance={8}
+          makeDefault
         />
       </Canvas>
     </div>
