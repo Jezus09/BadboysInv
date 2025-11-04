@@ -1,16 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { data, useLoaderData, useActionData, Form } from "react-router";
-import { ClientOnly } from "remix-utils/client-only";
+import { CS2Economy } from "@ianlucas/cs2-lib";
 import StickerBrowser from "~/components/sticker-browser";
+import { AppliedStickerEditor } from "~/components/applied-sticker-editor";
+import { ItemImage } from "~/components/item-image";
 import { requireUser } from "~/auth.server";
 import { getWeaponInstance, addWeaponSticker, removeWeaponSticker } from "~/models/sticker.server";
 import type { Route } from "./+types/sticker-editor._index";
-
-// Example weapon model URL (replace with actual weapon model)
-const WEAPON_MODEL_URL = "https://models.readyplayer.me/64f1a5e1e5f4a0001a0e1a5e.glb"; // Placeholder
-
-// Client-side only flag
-const isClient = typeof window !== "undefined";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await requireUser(request);
@@ -29,7 +25,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     stickers: [],
   };
 
-  return data({ user, weaponInstance, modelUrl: WEAPON_MODEL_URL });
+  return data({ user, weaponInstance });
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -42,25 +38,22 @@ export async function action({ request }: Route.ActionArgs) {
       const weaponId = formData.get("weaponId") as string;
       const stickerId = formData.get("stickerId") as string;
       const slot = parseInt(formData.get("slot") as string, 10);
-      const positionX = parseFloat(formData.get("positionX") as string);
-      const positionY = parseFloat(formData.get("positionY") as string);
-      const positionZ = parseFloat(formData.get("positionZ") as string);
-      const rotationX = parseFloat(formData.get("rotationX") as string) || 0;
-      const rotationY = parseFloat(formData.get("rotationY") as string) || 0;
-      const rotationZ = parseFloat(formData.get("rotationZ") as string) || 0;
-      const scale = parseFloat(formData.get("scale") as string) || 1.0;
+      const x = parseFloat(formData.get("x") as string) || 0;
+      const y = parseFloat(formData.get("y") as string) || 0;
+      const rotation = parseFloat(formData.get("rotation") as string) || 0;
+      const wear = parseFloat(formData.get("wear") as string) || 0;
 
       const weaponSticker = await addWeaponSticker({
         weaponId,
         stickerId,
         slot,
-        positionX,
-        positionY,
-        positionZ,
-        rotationX,
-        rotationY,
-        rotationZ,
-        scale,
+        positionX: x,
+        positionY: y,
+        positionZ: 0,
+        rotationX: 0,
+        rotationY: 0,
+        rotationZ: rotation,
+        scale: 1.0,
       });
 
       return data({ success: true, weaponSticker });
@@ -89,26 +82,83 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function StickerEditor() {
-  const { user, weaponInstance, modelUrl } = useLoaderData<typeof loader>();
+  const { user, weaponInstance } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
 
   const [selectedSticker, setSelectedSticker] = useState<any>(null);
-  const [stickers, setStickers] = useState<Array<{
-    stickerId: string;
-    imageUrl: string;
-    slot: number;
-    positionX: number;
-    positionY: number;
-    positionZ: number;
-    rotation: number;
-    scale: number;
-  }>>([]);
-  const [nextSlot, setNextSlot] = useState(1);
   const [showStickerBrowser, setShowStickerBrowser] = useState(false);
+  const [editingSlot, setEditingSlot] = useState<number | null>(null);
+
+  // Sticker state for all 5 slots
+  const [stickers, setStickers] = useState<Record<number, {
+    id: string;
+    x: number;
+    y: number;
+    rotation: number;
+    wear: number;
+  }>>({});
+
+  const [stickerAttributes, setStickerAttributes] = useState({
+    x: 0,
+    y: 0,
+    rotation: 0,
+    wear: 0,
+  });
+
+  // Get weapon item from economy
+  const weaponItem = CS2Economy.get((item) => item.id === weaponInstance.weaponDefIndex)?.[0];
+
+  const handleSelectSticker = (sticker: any) => {
+    if (editingSlot !== null) {
+      setSelectedSticker(sticker);
+      setShowStickerBrowser(false);
+    }
+  };
+
+  const handleApplySticker = () => {
+    if (editingSlot !== null && selectedSticker) {
+      setStickers({
+        ...stickers,
+        [editingSlot]: {
+          id: selectedSticker.id,
+          x: stickerAttributes.x,
+          y: stickerAttributes.y,
+          rotation: stickerAttributes.rotation,
+          wear: stickerAttributes.wear,
+        },
+      });
+      setEditingSlot(null);
+      setSelectedSticker(null);
+      setStickerAttributes({ x: 0, y: 0, rotation: 0, wear: 0 });
+    }
+  };
 
   const handleRemoveSticker = (slot: number) => {
-    setStickers(stickers.filter((s) => s.slot !== slot));
+    const updated = { ...stickers };
+    delete updated[slot];
+    setStickers(updated);
   };
+
+  const handleSlotClick = (slot: number) => {
+    if (stickers[slot]) {
+      // Edit existing sticker
+      const sticker = stickers[slot];
+      setSelectedSticker(CS2Economy.getById(parseInt(sticker.id)));
+      setStickerAttributes({
+        x: sticker.x,
+        y: sticker.y,
+        rotation: sticker.rotation,
+        wear: sticker.wear,
+      });
+      setEditingSlot(slot);
+    } else {
+      // Add new sticker
+      setEditingSlot(slot);
+      setShowStickerBrowser(true);
+    }
+  };
+
+  const stickerCount = Object.keys(stickers).length;
 
   return (
     <div className="min-h-screen bg-stone-800 text-white">
@@ -119,18 +169,18 @@ export default function StickerEditor() {
             <div className="flex items-center justify-between border-b border-stone-700 p-4">
               <h2 className="text-xl font-bold">Select Sticker</h2>
               <button
-                onClick={() => setShowStickerBrowser(false)}
+                onClick={() => {
+                  setShowStickerBrowser(false);
+                  setEditingSlot(null);
+                }}
                 className="rounded-lg bg-stone-700 px-4 py-2 hover:bg-stone-600 transition"
               >
-                Close
+                Cancel
               </button>
             </div>
             <div className="flex-1 overflow-hidden">
               <StickerBrowser
-                onSelectSticker={(sticker) => {
-                  setSelectedSticker(sticker);
-                  setShowStickerBrowser(false);
-                }}
+                onSelectSticker={handleSelectSticker}
                 selectedStickerId={selectedSticker?.id}
               />
             </div>
@@ -143,13 +193,13 @@ export default function StickerEditor() {
         <div className="hidden lg:block lg:w-80 xl:w-96">
           <div className="sticky top-24 rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm overflow-hidden">
             <StickerBrowser
-              onSelectSticker={setSelectedSticker}
+              onSelectSticker={handleSelectSticker}
               selectedStickerId={selectedSticker?.id}
             />
           </div>
         </div>
 
-        {/* Right Panel: 3D Viewer + Controls */}
+        {/* Right Panel: Weapon Display + Controls */}
         <div className="flex-1 space-y-4">
           {/* Weapon Info Card */}
           <div className="rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm p-4 lg:p-6">
@@ -165,152 +215,119 @@ export default function StickerEditor() {
               <button
                 onClick={() => setShowStickerBrowser(true)}
                 className="lg:hidden rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium transition"
+                disabled={editingSlot === null}
               >
-                Browse Stickers
+                {editingSlot !== null ? "Browse Stickers" : "Select a slot first"}
               </button>
             </div>
           </div>
 
-          {/* 3D Viewer */}
-          <div className="rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm overflow-hidden">
-            <div className="relative aspect-video lg:aspect-[16/10]">
-              <ClientOnly fallback={
-                <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 flex items-center justify-center">
-                  <div className="text-center max-w-lg px-6">
-                    <div className="text-5xl lg:text-6xl mb-4">🎨</div>
-                    <h2 className="text-xl lg:text-2xl font-bold mb-2 font-display">Loading 3D Viewer...</h2>
-                    <p className="text-neutral-400 text-sm lg:text-base">
-                      Preparing interactive weapon customization
-                    </p>
-                  </div>
-                </div>
-              }>
-                {() => {
-                  const WeaponViewer3D = require("~/components/weapon-viewer-3d").WeaponViewer3D;
+          {/* Weapon Image with Stickers Overlay */}
+          <div className="rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm overflow-hidden p-6">
+            <div className="relative max-w-[512px] mx-auto">
+              {weaponItem && <ItemImage className="w-full" item={weaponItem} />}
+
+              {/* Sticker Slots */}
+              <div className="mt-4 grid grid-cols-5 gap-2">
+                {[0, 1, 2, 3, 4].map((slot) => {
+                  const sticker = stickers[slot];
+                  const stickerItem = sticker ? CS2Economy.getById(parseInt(sticker.id)) : null;
+                  const isEditing = editingSlot === slot;
+
                   return (
-                    <WeaponViewer3D
-                      weaponId={weaponInstance.weaponDefIndex}
-                      className="w-full h-full"
-                      stickers={stickers.map((s) => ({
-                        id: parseInt(s.stickerId || "0"),
-                        slot: s.slot,
-                        position: [s.positionX || 0, s.positionY || 0, s.positionZ || 0],
-                        rotation: s.rotation || 0,
-                        scale: s.scale || 1.0,
-                      }))}
-                      onSurfaceClick={(position, surfaceName) => {
-                        if (selectedSticker && stickers.length < 5) {
-                          // Add sticker at clicked position
-                          const newSticker = {
-                            stickerId: selectedSticker.id,
-                            imageUrl: selectedSticker.image,
-                            slot: nextSlot,
-                            positionX: position[0],
-                            positionY: position[1],
-                            positionZ: position[2],
-                            rotation: 0,
-                            scale: 1.0,
-                          };
-                          setStickers([...stickers, newSticker]);
-                          setNextSlot(nextSlot + 1);
-                        }
-                      }}
-                      enableClickToPlace={!!selectedSticker && stickers.length < 5}
-                    />
+                    <button
+                      key={slot}
+                      onClick={() => handleSlotClick(slot)}
+                      className={`
+                        aspect-square rounded-lg border-2 transition-all
+                        ${isEditing ? "border-blue-500 bg-blue-500/20" : "border-stone-700 hover:border-stone-600"}
+                        ${stickerItem ? "bg-stone-800/50" : "bg-stone-900"}
+                      `}
+                    >
+                      {stickerItem ? (
+                        <ItemImage className="w-full p-2" item={stickerItem} />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-xs text-neutral-500">
+                          {slot + 1}
+                        </div>
+                      )}
+                    </button>
                   );
-                }}
-              </ClientOnly>
+                })}
+              </div>
 
-              {/* Selected Sticker Info Overlay */}
-              {selectedSticker && stickers.length < 5 && (
-                <div className="absolute top-4 left-4 right-4 lg:left-auto lg:right-4 lg:max-w-xs">
-                  <div className="p-3 lg:p-4 bg-blue-500/20 border border-blue-500/40 rounded-lg backdrop-blur-sm">
-                    <p className="text-xs lg:text-sm text-blue-300 mb-2 font-bold">✨ Click weapon to place:</p>
-                    <div className="flex items-center gap-3">
-                      <img src={selectedSticker.image} alt={selectedSticker.name} className="w-8 h-8 lg:w-10 lg:h-10 bg-stone-900/50 rounded p-1" />
-                      <p className="font-medium text-xs lg:text-sm text-white">{selectedSticker.name.replace("Sticker | ", "")}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Full Slots Warning */}
-              {stickers.length >= 5 && (
-                <div className="absolute top-4 left-4 right-4 lg:left-auto lg:right-4 lg:max-w-xs">
-                  <div className="p-3 bg-red-500/20 border border-red-500/40 rounded-lg backdrop-blur-sm">
-                    <p className="text-xs lg:text-sm text-red-300 font-bold">⚠️ Maximum 5 stickers reached</p>
-                  </div>
+              {editingSlot !== null && (
+                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <p className="text-sm text-blue-300 mb-2">
+                    {stickers[editingSlot] ? `✏️ Editing slot ${editingSlot + 1}` : `➕ Adding sticker to slot ${editingSlot + 1}`}
+                  </p>
+                  {!selectedSticker && (
+                    <p className="text-xs text-neutral-400">
+                      Select a sticker from the browser to continue
+                    </p>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Applied Stickers Panel */}
+          {/* Sticker Editor (shown when a sticker is selected) */}
+          {editingSlot !== null && selectedSticker && (
+            <div className="rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm p-4 lg:p-6">
+              <h3 className="text-lg font-bold mb-4 font-display">Sticker Position & Attributes</h3>
+
+              <AppliedStickerEditor
+                item={selectedSticker}
+                value={stickerAttributes}
+                onChange={setStickerAttributes}
+                forItem={weaponItem}
+                slot={editingSlot}
+                stickers={stickers}
+              />
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={handleApplySticker}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition"
+                >
+                  {stickers[editingSlot] ? "Update Sticker" : "Apply Sticker"}
+                </button>
+                {stickers[editingSlot] && (
+                  <button
+                    onClick={() => handleRemoveSticker(editingSlot)}
+                    className="px-4 py-2 bg-red-600/90 hover:bg-red-600 rounded-lg font-medium transition"
+                  >
+                    Remove
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setEditingSlot(null);
+                    setSelectedSticker(null);
+                  }}
+                  className="px-4 py-2 bg-stone-700 hover:bg-stone-600 rounded-lg font-medium transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Save Button */}
           <div className="rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm p-4 lg:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base lg:text-lg font-semibold font-display">
-                Applied Stickers ({stickers.length}/5)
+                Applied Stickers ({stickerCount}/5)
               </h3>
-              {stickers.length > 0 && (
-                <button
-                  onClick={() => {
-                    setStickers([]);
-                    setNextSlot(1);
-                  }}
-                  className="px-3 py-1.5 lg:px-4 lg:py-2 bg-red-600/90 hover:bg-red-600 rounded-lg text-xs lg:text-sm font-medium transition"
-                >
-                  Clear All
-                </button>
-              )}
             </div>
 
-            {/* Sticker List */}
-            {stickers.length === 0 ? (
-              <div className="text-center py-8 text-neutral-500">
-                <p className="text-sm">No stickers applied yet</p>
-                <p className="text-xs mt-1">Select a sticker from the browser to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {stickers.map((sticker, index) => (
-                  <div
-                    key={`${sticker.slot}-${index}`}
-                    className="flex items-center justify-between bg-stone-800/50 p-3 rounded-lg hover:bg-stone-800 transition"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-stone-900 rounded flex items-center justify-center border border-stone-700">
-                        <img
-                          src={sticker.imageUrl}
-                          alt={`Slot ${sticker.slot}`}
-                          className="max-w-full max-h-full p-1"
-                        />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm lg:text-base">Slot {sticker.slot}</p>
-                        <p className="text-xs text-neutral-400">
-                          Pos: ({sticker.positionX.toFixed(2)}, {sticker.positionY.toFixed(2)})
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveSticker(sticker.slot)}
-                      className="px-3 py-1.5 bg-red-600/90 hover:bg-red-600 rounded text-xs lg:text-sm transition"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Save Button */}
-            <Form method="post" className="mt-4">
+            <Form method="post">
               <input type="hidden" name="action" value="save_stickers" />
               <input type="hidden" name="weaponId" value={weaponInstance.id} />
               <input type="hidden" name="stickers" value={JSON.stringify(stickers)} />
               <button
                 type="submit"
-                disabled={stickers.length === 0}
+                disabled={stickerCount === 0}
                 className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-stone-700 disabled:cursor-not-allowed disabled:text-neutral-500 rounded-lg font-semibold transition text-sm lg:text-base"
               >
                 Save Stickers to Weapon
