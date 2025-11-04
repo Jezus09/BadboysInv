@@ -191,6 +191,7 @@ export function Inventory() {
   }
 
   // Load marketplace listings to show badges
+  // Reload when inventory changes (craft/unlock case adds new items with new UIDs)
   useEffect(() => {
     async function loadMarketplaceListings() {
       try {
@@ -212,7 +213,7 @@ export function Inventory() {
     if (user) {
       loadMarketplaceListings();
     }
-  }, [user]);
+  }, [user, inventory]); // Added inventory dependency
 
   function handleEquip(uid: number, team?: CS2TeamValues) {
     playSound(
