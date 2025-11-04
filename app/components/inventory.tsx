@@ -87,9 +87,9 @@ export function Inventory() {
     items.filter(({ item }) => item.isSticker()).length > 0 &&
     items.filter(({ item }) => item.hasStickers()).length > 0;
 
+  // Fixed: Show "Apply Patch" if user owns ANY patch (not just if they have compatible weapons)
   const ownApplicablePatches =
-    items.filter(({ item }) => item.isPatch()).length > 0 &&
-    items.filter(({ item }) => item.hasPatches()).length > 0;
+    items.filter(({ item }) => item.isPatch()).length > 0;
 
   const {
     closeUnlockCase,
