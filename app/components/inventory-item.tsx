@@ -150,6 +150,19 @@ export function InventoryItem({
     ownApplicablePatches &&
     ((item.hasPatches() && item.getPatchesCount() < CS2_MAX_PATCHES) ||
       item.isPatch());
+
+  // Debug: Log canApplyPatch conditions
+  if (item.isPatch() || item.hasPatches()) {
+    console.log(`[PATCH DEBUG] Item: ${item.name} (${item.type})`, {
+      isPatch: item.isPatch(),
+      hasPatches: item.hasPatches(),
+      patchCount: item.hasPatches() ? item.getPatchesCount() : 'N/A',
+      maxPatches: CS2_MAX_PATCHES,
+      inventoryItemAllowApplyPatch,
+      ownApplicablePatches,
+      canApplyPatch
+    });
+  }
   const canRemovePatch =
     inventoryItemAllowRemovePatch &&
     item.hasPatches() &&

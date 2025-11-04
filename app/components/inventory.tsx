@@ -91,6 +91,15 @@ export function Inventory() {
   const ownApplicablePatches =
     items.filter(({ item }) => item.isPatch()).length > 0;
 
+  // Debug: Log patch system status
+  useEffect(() => {
+    const patches = items.filter(({ item }) => item.isPatch());
+    const agents = items.filter(({ item }) => item.hasPatches());
+    console.log("[PATCH DEBUG] Patches owned:", patches.length, patches.map(p => p.item.name));
+    console.log("[PATCH DEBUG] Agents (patchable items):", agents.length, agents.map(a => a.item.name));
+    console.log("[PATCH DEBUG] ownApplicablePatches:", ownApplicablePatches);
+  }, [items, ownApplicablePatches]);
+
   const {
     closeUnlockCase,
     handleUnlockCase,
