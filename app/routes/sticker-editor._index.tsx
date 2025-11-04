@@ -94,43 +94,6 @@ export default function StickerEditor() {
   const [selectedSticker, setSelectedSticker] = useState<any>(null);
   const [stickers, setStickers] = useState<any[]>([]);
   const [nextSlot, setNextSlot] = useState(1);
-  const [Weapon3DViewer, setWeapon3DViewer] = useState<any>(null);
-  const [THREE, setTHREE] = useState<any>(null);
-
-  // Load 3D viewer and THREE only on client-side
-  useEffect(() => {
-    if (!isClient) return;
-
-    Promise.all([
-      import("~/components/weapon-3d-viewer.client"),
-      import("three")
-    ]).then(([viewerMod, threeMod]) => {
-      setWeapon3DViewer(() => viewerMod.default);
-      setTHREE(threeMod);
-    });
-  }, []);
-
-  const handleMeshClick = (point: any, normal: any) => {
-    if (!THREE) return;
-
-    console.log("Mesh clicked:", { point, normal });
-
-    if (selectedSticker && nextSlot <= 5) {
-      // Add sticker preview
-      const rotation = new THREE.Euler().setFromVector3(normal);
-      const newSticker = {
-        id: `temp-${Date.now()}`,
-        imageUrl: selectedSticker.image,
-        position: [point.x, point.y, point.z] as [number, number, number],
-        rotation: [rotation.x, rotation.y, rotation.z] as [number, number, number],
-        scale: 0.1,
-        slot: nextSlot,
-      };
-
-      setStickers([...stickers, newSticker]);
-      setNextSlot(nextSlot + 1);
-    }
-  };
 
   const handleRemoveSticker = (slot: number) => {
     setStickers(stickers.filter((s) => s.slot !== slot));
@@ -156,28 +119,27 @@ export default function StickerEditor() {
           </p>
         </div>
 
-        {/* 3D Viewer */}
-        <div className="flex-1 relative">
-          {!Weapon3DViewer ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              <span className="ml-3">Loading 3D viewer...</span>
-            </div>
-          ) : (
-            <Weapon3DViewer
-              modelUrl={modelUrl}
-              stickers={stickers}
-              onMeshClick={handleMeshClick}
-            />
-          )}
-
-          {/* Instructions Overlay */}
-          {selectedSticker && (
-            <div className="absolute top-4 left-4 bg-blue-500/90 text-white px-4 py-2 rounded-lg shadow-lg">
-              <p className="font-medium">Click on the weapon to place sticker</p>
-              <p className="text-sm">Selected: {selectedSticker.name}</p>
-            </div>
-          )}
+        {/* 3D Viewer - Coming Soon */}
+        <div className="flex-1 relative bg-gray-800 flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <div className="text-6xl mb-4">🎨</div>
+            <h2 className="text-2xl font-bold mb-2">3D Weapon Viewer</h2>
+            <p className="text-gray-400 mb-4">
+              Interactive 3D weapon customization is coming soon!
+            </p>
+            <p className="text-sm text-gray-500">
+              Current weapon: <span className="text-white font-medium">{weaponInstance.weaponName}</span>
+            </p>
+            {selectedSticker && (
+              <div className="mt-6 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <p className="text-sm text-blue-300">Selected sticker:</p>
+                <div className="flex items-center justify-center gap-3 mt-2">
+                  <img src={selectedSticker.image} alt={selectedSticker.name} className="w-12 h-12" />
+                  <p className="font-medium">{selectedSticker.name}</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Bottom Controls */}
