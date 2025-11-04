@@ -398,7 +398,8 @@ export function Inventory() {
           {...applyItemSticker}
           onClose={closeApplyItemSticker}
           onSwitchTo3D={() => {
-            setStickerMode("3d");
+            // Navigate to new sticker editor instead of old 3D mode
+            window.location.href = "/sticker-editor";
           }}
         />
       )}

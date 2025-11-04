@@ -100,7 +100,7 @@ export default function StickerEditor() {
 
   // Load 3D viewer component only on client-side
   useEffect(() => {
-    import("~/components/weapon-3d-viewer").then((mod) => {
+    import("~/components/weapon-3d-viewer.client").then((mod) => {
       setWeapon3DViewer(() => mod.default);
     });
   }, []);

@@ -1,12 +1,8 @@
-import { Canvas, useThree, extend } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { useGLTF, PerspectiveCamera } from "@react-three/drei";
 import { Suspense, useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
-import { OrbitControls as OrbitControlsImpl } from "three/examples/jsm/controls/OrbitControls.js";
-
-// Extend Three.js with OrbitControls
-extend({ OrbitControls: OrbitControlsImpl });
 
 interface WeaponModelProps {
   modelUrl: string;
@@ -108,7 +104,7 @@ function WeaponModel({ modelUrl, stickers = [], onMeshClick }: WeaponModelProps)
   }, [scene, stickers]);
 
   // Handle click events for sticker placement
-  const handleClick = (event: THREE.Event) => {
+  const handleClick = (event: any) => {
     if (!onMeshClick) return;
 
     event.stopPropagation();
@@ -142,28 +138,66 @@ function LoadingFallback() {
   );
 }
 
+// Simple camera controls without OrbitControls
 function CameraControls() {
   const { camera, gl } = useThree();
-  const controlsRef = useRef<any>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [rotation, setRotation] = useState({ x: 0, y: 0 });
+  const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (controlsRef.current) {
-      controlsRef.current.update();
-    }
-  });
+    const canvas = gl.domElement;
 
-  return (
-    // @ts-ignore - OrbitControls extended type
-    <orbitControls
-      ref={controlsRef}
-      args={[camera, gl.domElement]}
-      enablePan={true}
-      enableZoom={true}
-      enableRotate={true}
-      minDistance={1}
-      maxDistance={10}
-    />
-  );
+    const handleMouseDown = (e: MouseEvent) => {
+      setIsDragging(true);
+      setLastMouse({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const deltaX = e.clientX - lastMouse.x;
+      const deltaY = e.clientY - lastMouse.y;
+
+      setRotation((prev) => ({
+        x: prev.x + deltaY * 0.01,
+        y: prev.y + deltaX * 0.01,
+      }));
+
+      setLastMouse({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY * 0.01;
+      camera.position.z = Math.max(1, Math.min(10, camera.position.z + delta));
+    };
+
+    canvas.addEventListener("mousedown", handleMouseDown);
+    canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mouseup", handleMouseUp);
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      canvas.removeEventListener("mousedown", handleMouseDown);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("mouseup", handleMouseUp);
+      canvas.removeEventListener("wheel", handleWheel);
+    };
+  }, [isDragging, lastMouse, camera, gl]);
+
+  useEffect(() => {
+    camera.position.x = Math.sin(rotation.y) * 5;
+    camera.position.y = Math.sin(rotation.x) * 5;
+    camera.position.z = Math.cos(rotation.y) * 5;
+    camera.lookAt(0, 0, 0);
+  }, [rotation, camera]);
+
+  return null;
 }
 
 interface Weapon3DViewerProps {
@@ -189,7 +223,7 @@ export default function Weapon3DViewer({
   return (
     <div className={`w-full h-full ${className}`}>
       <Canvas>
-        <PerspectiveCamera makeDefault position={[2, 1, 2]} fov={50} />
+        <PerspectiveCamera makeDefault position={[2, 1, 5]} fov={50} />
 
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
