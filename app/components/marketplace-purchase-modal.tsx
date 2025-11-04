@@ -5,11 +5,15 @@
 
 import { useState } from "react";
 import { CS2Economy } from "@ianlucas/cs2-lib";
+import { createPortal } from "react-dom";
+import { ClientOnly } from "remix-utils/client-only";
 import { useUser } from "~/components/app-context";
 import { ItemImage } from "~/components/item-image";
 import { CurrencyDisplay } from "~/components/currency-display";
 import { ModalButton } from "~/components/modal-button";
 import { MarketplacePriceChart } from "~/components/marketplace-price-chart";
+import { Overlay } from "~/components/overlay";
+import { UseItemFooter } from "~/components/use-item-footer";
 import { wearToString } from "~/utils/economy";
 
 interface MarketplaceListing {
@@ -102,6 +106,7 @@ export function MarketplacePurchaseModal({
       if (data.success) {
         alert("Hirdetés visszavonva!");
         onClose();
+        window.location.reload();
       } else {
         setError(data.message || "Hiba történt a visszavonás során");
       }
@@ -113,137 +118,190 @@ export function MarketplacePurchaseModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="relative w-full max-w-md rounded-lg border border-neutral-700 bg-neutral-900 p-6 shadow-2xl">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-neutral-400 hover:text-white"
-        >
-          ✕
-        </button>
-
-        {/* Item Display */}
-        <div className="mb-6">
-          <div className="mb-4 flex justify-center">
-            <ItemImage
-              className="h-48 w-48 object-contain"
-              item={economyItem}
-            />
-          </div>
-
-          <h2 className="font-display mb-2 text-center text-xl font-bold text-white">
-            {economyItem.name}
-          </h2>
-
-          {item.wear !== undefined && (
-            <p className="text-center text-sm text-neutral-400">
-              {wearToString(item.wear)}
-            </p>
-          )}
-        </div>
-
-        {/* Seller Info */}
-        <div className="mb-4 rounded-lg border border-neutral-700 bg-black/30 p-4">
-          <div className="mb-2 flex items-center gap-3">
-            <img
-              src={listing.seller.avatar}
-              alt={listing.seller.name}
-              className="h-10 w-10 rounded-full border border-neutral-600"
-            />
-            <div>
-              <p className="text-xs text-neutral-400">
-                {isOwn ? "Te" : "Eladó"}
-              </p>
-              <p className="font-display font-medium text-white">
-                {listing.seller.name}
-              </p>
+    <ClientOnly
+      children={() =>
+        createPortal(
+          <Overlay className="m-auto lg:w-[800px]">
+            {/* Item Header with Rarity Border */}
+            <div className="flex items-center justify-center">
+              <div
+                className="flex items-center justify-center gap-2 border-b-4 px-1 pb-2"
+                style={{ borderColor: economyItem.rarity }}
+              >
+                {economyItem.category !== undefined && (
+                  <ItemImage
+                    className="h-16"
+                    item={economyItem}
+                    type="market"
+                  />
+                )}
+                <div className="font-display">
+                  <div className="text-3xl">{economyItem.name}</div>
+                  {item.wear !== undefined && (
+                    <div className="-mt-2 text-neutral-300">
+                      {wearToString(item.wear)}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Price */}
-        <div className="mb-4 rounded-lg border border-purple-500/30 bg-purple-900/20 p-4">
-          <p className="mb-2 text-center text-sm text-neutral-400">Ár</p>
-          <div className="flex justify-center">
-            <CurrencyDisplay
-              amount={listing.price}
-              className="text-2xl font-bold text-yellow-400"
-              showIcon={true}
-            />
-          </div>
-        </div>
-
-        {/* Price History Chart */}
-        <div className="mb-4 rounded-lg border border-neutral-700 bg-black/20 p-4">
-          <MarketplacePriceChart
-            itemId={item.id}
-            wear={item.wear}
-            className=""
-          />
-        </div>
-
-        {/* User Balance */}
-        {!isOwn && user && (
-          <div className="mb-4 rounded-lg border border-neutral-700 bg-black/20 p-4">
-            <p className="mb-2 text-center text-sm text-neutral-400">
-              Jelenlegi egyenleged
-            </p>
-            <div className="flex justify-center">
-              <CurrencyDisplay
-                amount={userBalance}
-                className="text-xl font-bold text-green-400"
-                showIcon={true}
-              />
+            {/* Item Image */}
+            <div className="text-center">
+              <div className="relative mx-auto inline-block">
+                <ItemImage
+                  className="m-auto my-8 max-w-[512px]"
+                  item={economyItem}
+                />
+                {/* Stickers Display */}
+                {item.stickers !== undefined &&
+                  Object.keys(item.stickers).length > 0 && (
+                    <div className="absolute bottom-0 left-0 flex items-center justify-center">
+                      {Object.entries(item.stickers).map(
+                        ([slot, sticker]: [string, any]) => (
+                          <span className="inline-block" key={slot}>
+                            <ItemImage
+                              className="w-[128px]"
+                              item={CS2Economy.getById(sticker.id)}
+                              style={{
+                                filter: `grayscale(${sticker.wear ?? 0})`,
+                                opacity: `${1 - (sticker.wear ?? 0)}`
+                              }}
+                            />
+                          </span>
+                        )
+                      )}
+                    </div>
+                  )}
+              </div>
             </div>
-            {!hasEnoughFunds && (
-              <p className="mt-2 text-center text-sm text-red-400">
-                Nincs elegendő pénzed!
-              </p>
+
+            {/* Info Grid */}
+            <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2">
+              {/* Left Column - Seller & Balance */}
+              <div className="space-y-4">
+                {/* Seller Info */}
+                <div className="rounded-lg border border-neutral-700 bg-black/30 p-4">
+                  <div className="mb-2 flex items-center gap-3">
+                    <img
+                      src={listing.seller.avatar}
+                      alt={listing.seller.name}
+                      className="h-12 w-12 rounded-full border-2 border-neutral-600"
+                    />
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                        {isOwn ? "Te" : "Eladó"}
+                      </p>
+                      <p className="font-display text-lg font-medium text-white">
+                        {listing.seller.name}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* User Balance */}
+                {!isOwn && user && (
+                  <div className="rounded-lg border border-neutral-700 bg-black/30 p-4">
+                    <p className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-neutral-400">
+                      Jelenlegi egyenleged
+                    </p>
+                    <div className="flex justify-center">
+                      <CurrencyDisplay
+                        amount={userBalance}
+                        className="text-2xl font-bold text-green-400"
+                        showIcon={true}
+                      />
+                    </div>
+                    {!hasEnoughFunds && (
+                      <p className="mt-2 text-center text-sm font-bold text-red-400">
+                        ⚠ Nincs elegendő pénzed!
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column - Price & Chart */}
+              <div className="space-y-4">
+                {/* Price */}
+                <div
+                  className="rounded-lg border-2 p-4"
+                  style={{
+                    borderColor: economyItem.rarity,
+                    background: `linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 100%)`
+                  }}
+                >
+                  <p className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-neutral-300">
+                    Ár
+                  </p>
+                  <div className="flex justify-center">
+                    <CurrencyDisplay
+                      amount={listing.price}
+                      className="text-3xl font-bold text-yellow-400"
+                      showIcon={true}
+                    />
+                  </div>
+                </div>
+
+                {/* Price History Chart */}
+                <div className="rounded-lg border border-neutral-700 bg-gradient-to-br from-neutral-900 to-neutral-800 p-4">
+                  <MarketplacePriceChart
+                    itemId={item.id}
+                    wear={item.wear}
+                    className=""
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mx-4 mb-4 rounded-lg border border-red-500/50 bg-red-900/30 p-3">
+                <p className="text-center text-sm font-bold text-red-400">
+                  ⚠ {error}
+                </p>
+              </div>
             )}
-          </div>
-        )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-900/20 p-3">
-            <p className="text-center text-sm text-red-400">{error}</p>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          {isOwn ? (
-            <>
-              <ModalButton
-                onClick={handleCancel}
-                disabled={loading}
-                variant="primary"
-                className="flex-1"
-              >
-                {loading ? "Betöltés..." : "Hirdetés visszavonása"}
-              </ModalButton>
-              <ModalButton onClick={onClose} variant="secondary">
-                Bezár
-              </ModalButton>
-            </>
-          ) : (
-            <>
-              <ModalButton
-                onClick={handlePurchase}
-                disabled={loading || !hasEnoughFunds}
-                variant="primary"
-                className="flex-1"
-              >
-                {loading ? "Vásárlás..." : "Megveszem"}
-              </ModalButton>
-              <ModalButton onClick={onClose} variant="secondary">
-                Mégse
-              </ModalButton>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+            {/* Footer Buttons */}
+            <UseItemFooter
+              left={<></>}
+              right={
+                <>
+                  {isOwn ? (
+                    <>
+                      <ModalButton
+                        onClick={handleCancel}
+                        disabled={loading}
+                        variant="primary"
+                      >
+                        {loading ? "Betöltés..." : "Hirdetés visszavonása"}
+                      </ModalButton>
+                      <ModalButton onClick={onClose} variant="secondary">
+                        Bezár
+                      </ModalButton>
+                    </>
+                  ) : (
+                    <>
+                      <ModalButton
+                        onClick={handlePurchase}
+                        disabled={loading || !hasEnoughFunds}
+                        variant="primary"
+                      >
+                        {loading ? "Vásárlás..." : "Megveszem"}
+                      </ModalButton>
+                      <ModalButton onClick={onClose} variant="secondary">
+                        Mégse
+                      </ModalButton>
+                    </>
+                  )}
+                </>
+              }
+            />
+          </Overlay>,
+          document.body
+        )
+      }
+    />
   );
 }
