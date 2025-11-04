@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { data, useLoaderData, useActionData, Form } from "react-router";
+import { ClientOnly } from "remix-utils/client-only";
 import StickerBrowser from "~/components/sticker-browser";
 import { requireUser } from "~/auth.server";
 import { getWeaponInstance, addWeaponSticker, removeWeaponSticker } from "~/models/sticker.server";
@@ -92,7 +93,16 @@ export default function StickerEditor() {
   const actionData = useActionData<typeof action>();
 
   const [selectedSticker, setSelectedSticker] = useState<any>(null);
-  const [stickers, setStickers] = useState<any[]>([]);
+  const [stickers, setStickers] = useState<Array<{
+    stickerId: string;
+    imageUrl: string;
+    slot: number;
+    positionX: number;
+    positionY: number;
+    positionZ: number;
+    rotation: number;
+    scale: number;
+  }>>([]);
   const [nextSlot, setNextSlot] = useState(1);
   const [showStickerBrowser, setShowStickerBrowser] = useState(false);
 
@@ -163,26 +173,75 @@ export default function StickerEditor() {
 
           {/* 3D Viewer */}
           <div className="rounded-lg border border-stone-700 bg-stone-900/50 backdrop-blur-sm overflow-hidden">
-            <div className="relative aspect-video lg:aspect-[16/10] bg-gradient-to-br from-stone-800 to-stone-900 flex items-center justify-center">
-              <div className="text-center max-w-lg px-6">
-                <div className="text-5xl lg:text-6xl mb-4">🎨</div>
-                <h2 className="text-xl lg:text-2xl font-bold mb-2 font-display">3D Weapon Viewer</h2>
-                <p className="text-neutral-400 text-sm lg:text-base mb-4">
-                  Interactive 3D weapon customization is coming soon!
-                </p>
-                <p className="text-xs lg:text-sm text-neutral-500">
-                  Current weapon: <span className="text-white font-medium">{weaponInstance.weaponName}</span>
-                </p>
-                {selectedSticker && (
-                  <div className="mt-6 p-4 bg-blue-500/20 border border-blue-500/40 rounded-lg backdrop-blur-sm">
-                    <p className="text-xs lg:text-sm text-blue-300 mb-2">Selected sticker:</p>
-                    <div className="flex items-center justify-center gap-3">
-                      <img src={selectedSticker.image} alt={selectedSticker.name} className="w-10 h-10 lg:w-12 lg:h-12" />
-                      <p className="font-medium text-sm lg:text-base">{selectedSticker.name.replace("Sticker | ", "")}</p>
+            <div className="relative aspect-video lg:aspect-[16/10]">
+              <ClientOnly fallback={
+                <div className="w-full h-full bg-gradient-to-br from-stone-800 to-stone-900 flex items-center justify-center">
+                  <div className="text-center max-w-lg px-6">
+                    <div className="text-5xl lg:text-6xl mb-4">🎨</div>
+                    <h2 className="text-xl lg:text-2xl font-bold mb-2 font-display">Loading 3D Viewer...</h2>
+                    <p className="text-neutral-400 text-sm lg:text-base">
+                      Preparing interactive weapon customization
+                    </p>
+                  </div>
+                </div>
+              }>
+                {() => {
+                  const WeaponViewer3D = require("~/components/weapon-viewer-3d").WeaponViewer3D;
+                  return (
+                    <WeaponViewer3D
+                      weaponId={weaponInstance.weaponDefIndex}
+                      className="w-full h-full"
+                      stickers={stickers.map((s) => ({
+                        id: parseInt(s.stickerId || "0"),
+                        slot: s.slot,
+                        position: [s.positionX || 0, s.positionY || 0, s.positionZ || 0],
+                        rotation: s.rotation || 0,
+                        scale: s.scale || 1.0,
+                      }))}
+                      onSurfaceClick={(position, surfaceName) => {
+                        if (selectedSticker && stickers.length < 5) {
+                          // Add sticker at clicked position
+                          const newSticker = {
+                            stickerId: selectedSticker.id,
+                            imageUrl: selectedSticker.image,
+                            slot: nextSlot,
+                            positionX: position[0],
+                            positionY: position[1],
+                            positionZ: position[2],
+                            rotation: 0,
+                            scale: 1.0,
+                          };
+                          setStickers([...stickers, newSticker]);
+                          setNextSlot(nextSlot + 1);
+                        }
+                      }}
+                      enableClickToPlace={!!selectedSticker && stickers.length < 5}
+                    />
+                  );
+                }}
+              </ClientOnly>
+
+              {/* Selected Sticker Info Overlay */}
+              {selectedSticker && stickers.length < 5 && (
+                <div className="absolute top-4 left-4 right-4 lg:left-auto lg:right-4 lg:max-w-xs">
+                  <div className="p-3 lg:p-4 bg-blue-500/20 border border-blue-500/40 rounded-lg backdrop-blur-sm">
+                    <p className="text-xs lg:text-sm text-blue-300 mb-2 font-bold">✨ Click weapon to place:</p>
+                    <div className="flex items-center gap-3">
+                      <img src={selectedSticker.image} alt={selectedSticker.name} className="w-8 h-8 lg:w-10 lg:h-10 bg-stone-900/50 rounded p-1" />
+                      <p className="font-medium text-xs lg:text-sm text-white">{selectedSticker.name.replace("Sticker | ", "")}</p>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Full Slots Warning */}
+              {stickers.length >= 5 && (
+                <div className="absolute top-4 left-4 right-4 lg:left-auto lg:right-4 lg:max-w-xs">
+                  <div className="p-3 bg-red-500/20 border border-red-500/40 rounded-lg backdrop-blur-sm">
+                    <p className="text-xs lg:text-sm text-red-300 font-bold">⚠️ Maximum 5 stickers reached</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -213,9 +272,9 @@ export default function StickerEditor() {
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {stickers.map((sticker) => (
+                {stickers.map((sticker, index) => (
                   <div
-                    key={sticker.slot}
+                    key={`${sticker.slot}-${index}`}
                     className="flex items-center justify-between bg-stone-800/50 p-3 rounded-lg hover:bg-stone-800 transition"
                   >
                     <div className="flex items-center gap-3">
@@ -223,13 +282,13 @@ export default function StickerEditor() {
                         <img
                           src={sticker.imageUrl}
                           alt={`Slot ${sticker.slot}`}
-                          className="max-w-full max-h-full"
+                          className="max-w-full max-h-full p-1"
                         />
                       </div>
                       <div>
                         <p className="font-medium text-sm lg:text-base">Slot {sticker.slot}</p>
                         <p className="text-xs text-neutral-400">
-                          Scale: {sticker.scale.toFixed(2)}
+                          Pos: ({sticker.positionX.toFixed(2)}, {sticker.positionY.toFixed(2)})
                         </p>
                       </div>
                     </div>
