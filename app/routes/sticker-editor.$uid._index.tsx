@@ -101,10 +101,11 @@ export default function StickerEditor() {
   const handleSelectSticker = (sticker: any) => {
     if (editingSlot !== null) {
       // Add sticker at center
+      const stickerId = typeof sticker.id === 'string' ? parseInt(sticker.id) : sticker.id;
       setStickers({
         ...stickers,
         [editingSlot]: {
-          id: parseInt(sticker.id.replace("sticker-", "")),
+          id: stickerId,
           x: 0.5,
           y: 0.5,
           rotation: 0,
@@ -223,7 +224,7 @@ export default function StickerEditor() {
                       <button
                         key={item.uid}
                         onClick={() => {
-                          handleSelectSticker({ id: item.id.toString(), ...economyItem });
+                          handleSelectSticker({ id: item.id, name: economyItem.name, image: economyItem.image });
                         }}
                         className={`
                           relative p-2 rounded-lg border-2 transition-all aspect-square
@@ -273,7 +274,7 @@ export default function StickerEditor() {
                         key={item.uid}
                         onClick={() => {
                           if (editingSlot !== null) {
-                            handleSelectSticker({ id: item.id.toString(), ...economyItem });
+                            handleSelectSticker({ id: item.id, name: economyItem.name, image: economyItem.image });
                           }
                         }}
                         disabled={editingSlot === null}
