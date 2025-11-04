@@ -38,7 +38,7 @@ export default function StickerEditor() {
   const actionData = useActionData<typeof action>();
   const [inventory] = useInventory();
 
-  const weaponItem = inventory.get(uid);
+  const weaponItem = inventory.items.find((item) => item.uid === uid);
 
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
   const [stickers, setStickers] = useState<Record<number, { id: number; x: number; y: number; rotation: number; scale: number }>>({});
