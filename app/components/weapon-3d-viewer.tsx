@@ -1,8 +1,12 @@
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, PerspectiveCamera } from "@react-three/drei";
+import { Canvas, useThree, extend } from "@react-three/fiber";
+import { useGLTF, PerspectiveCamera } from "@react-three/drei";
 import { Suspense, useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
+import { OrbitControls as OrbitControlsImpl } from "three/examples/jsm/controls/OrbitControls.js";
+
+// Extend Three.js with OrbitControls
+extend({ OrbitControls: OrbitControlsImpl });
 
 interface WeaponModelProps {
   modelUrl: string;
@@ -138,6 +142,30 @@ function LoadingFallback() {
   );
 }
 
+function CameraControls() {
+  const { camera, gl } = useThree();
+  const controlsRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.update();
+    }
+  });
+
+  return (
+    // @ts-ignore - OrbitControls extended type
+    <orbitControls
+      ref={controlsRef}
+      args={[camera, gl.domElement]}
+      enablePan={true}
+      enableZoom={true}
+      enableRotate={true}
+      minDistance={1}
+      maxDistance={10}
+    />
+  );
+}
+
 interface Weapon3DViewerProps {
   modelUrl: string;
   stickers?: Array<{
@@ -175,13 +203,7 @@ export default function Weapon3DViewer({
           />
         </Suspense>
 
-        <OrbitControls
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          minDistance={1}
-          maxDistance={10}
-        />
+        <CameraControls />
       </Canvas>
     </div>
   );
