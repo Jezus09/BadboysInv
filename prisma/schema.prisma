@@ -427,3 +427,86 @@ model MarketplaceAnnouncement {
   @@index([announced])
   @@index([createdAt])
 }
+
+// ============================================
+// 3D Sticker System
+// ============================================
+
+model Sticker {
+  id              String            @id // e.g. "sticker-75"
+  name            String            // e.g. "Sticker | Titan | Katowice 2014"
+  description     String?           @db.Text
+  rarityId        String?           // e.g. "rarity_rare"
+  rarityName      String?           // e.g. "High Grade"
+  rarityColor     String?           // e.g. "#4b69ff"
+  type            String?           // "Team", "Event", etc.
+  effect          String?           // "Foil", "Holo", "Gold", "Glitter", "Other"
+  tournamentId    Int?
+  tournamentName  String?
+  imageUrl        String            // Steam CDN URL
+  marketHashName  String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  weaponStickers  WeaponSticker[]
+
+  @@index([type])
+  @@index([effect])
+  @@index([tournamentId])
+}
+
+model UserWeaponInstance {
+  id              String            @id @default(cuid())
+  userId          String            // Owner's Steam ID
+  weaponDefIndex  Int               // CS2 weapon def_index
+  weaponName      String            // e.g. "AK-47 | Redline"
+  weaponId        String            // e.g. "weapon_ak47"
+  skinId          Int?              // Paint kit ID
+  wear            Float?            // 0.0 - 1.0
+  seed            Int?              // Pattern seed
+  itemUuid        String?           @unique // Link to ItemHistory
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  stickers        WeaponSticker[]
+
+  @@index([userId])
+  @@index([weaponId])
+  @@index([itemUuid])
+}
+
+model WeaponSticker {
+  id              String              @id @default(cuid())
+  weaponId        String              // UserWeaponInstance ID
+  stickerId       String              // Sticker ID
+  slot            Int                 // 1-5 (max 5 stickers per weapon)
+
+  // 3D Position (world coordinates on weapon mesh)
+  positionX       Float
+  positionY       Float
+  positionZ       Float
+
+  // 3D Rotation (Euler angles)
+  rotationX       Float               @default(0)
+  rotationY       Float               @default(0)
+  rotationZ       Float               @default(0)
+
+  // Scale
+  scale           Float               @default(1.0)
+
+  // Optional: Wear/scrape level (0-1, 0=pristine, 1=removed)
+  wear            Float               @default(0)
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  weapon          UserWeaponInstance  @relation(fields: [weaponId], references: [id], onDelete: Cascade)
+  sticker         Sticker             @relation(fields: [stickerId], references: [id])
+
+  @@unique([weaponId, slot])
+  @@index([weaponId])
+  @@index([stickerId])
+}
