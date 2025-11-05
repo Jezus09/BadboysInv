@@ -10,6 +10,7 @@ import { parseInventory } from "~/utils/inventory";
 import { ensureItemUuids } from "~/utils/inventory-post-process.server";
 import { inventoryMaxItems, inventoryStorageUnitMaxItems } from "./rule.server";
 import { getCachedInventory, setCachedInventory, invalidateCachedInventory } from "~/redis.server";
+import { rarityHexToName } from "~/utils/rarity.server";
 
 export async function getUserInventory(userId: string) {
   // Try cache first
@@ -315,6 +316,37 @@ export async function notifyPluginInventoryChange(steamId: string) {
 }
 
 /**
+ * Notify CS2 plugin to refresh player inventory
+ * This should be called after equip/unequip operations
+ */
+export async function notifyPluginRefreshInventory(steamId: string) {
+  const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log("[RefreshInventory] CS2_PLUGIN_WEBHOOK_URL not configured, skipping webhook");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${webhookUrl}/api/plugin/refresh-inventory`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        SteamId: steamId
+      })
+    });
+
+    if (response.ok) {
+      console.log(`[RefreshInventory] Successfully notified plugin to refresh inventory for SteamID: ${steamId}`);
+    } else {
+      console.error(`[RefreshInventory] Plugin webhook returned status ${response.status}`);
+    }
+  } catch (error) {
+    console.error("[RefreshInventory] Failed to notify plugin:", error);
+  }
+}
+
+/**
  * Notify CS2 plugin about case opening via webhook
  */
 export async function notifyCaseOpeningBroadcast(data: {
@@ -333,13 +365,16 @@ export async function notifyCaseOpeningBroadcast(data: {
   }
 
   try {
+    // Convert hex color rarity to human-readable name for plugin
+    const rarityName = rarityHexToName(data.rarity);
+
     const response = await fetch(`${webhookUrl}/api/plugin/case-opened`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         PlayerName: data.playerName,
         ItemName: data.itemName,
-        Rarity: data.rarity,
+        Rarity: rarityName,
         StatTrak: data.statTrak
       })
     });
@@ -376,13 +411,16 @@ export async function notifyPluginMarketplaceListing(data: {
   }
 
   try {
+    // Convert hex color rarity to human-readable name for plugin
+    const rarityName = rarityHexToName(data.rarity);
+
     const response = await fetch(`${webhookUrl}/api/plugin/marketplace-listing`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         PlayerName: data.playerName,
         ItemName: data.itemName,
-        Rarity: data.rarity,
+        Rarity: rarityName,
         StatTrak: data.statTrak,
         Price: Number(data.price)
       })
@@ -419,6 +457,9 @@ export async function notifyPluginMarketplacePurchase(data: {
   }
 
   try {
+    // Convert hex color rarity to human-readable name for plugin
+    const rarityName = rarityHexToName(data.rarity);
+
     const response = await fetch(`${webhookUrl}/api/plugin/marketplace-purchase`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -428,7 +469,7 @@ export async function notifyPluginMarketplacePurchase(data: {
         SellerId: data.sellerId,
         SellerName: data.sellerName,
         ItemName: data.itemName,
-        Rarity: data.rarity,
+        Rarity: rarityName,
         StatTrak: data.statTrak,
         Price: Number(data.price)
       })
