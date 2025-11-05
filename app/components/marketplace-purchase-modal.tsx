@@ -132,7 +132,6 @@ export function MarketplacePurchaseModal({
                   <ItemImage
                     className="h-16"
                     item={economyItem}
-                    type="market"
                   />
                 )}
                 <div className="font-display">
