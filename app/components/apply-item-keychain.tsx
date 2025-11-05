@@ -6,13 +6,14 @@
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CS2Economy } from "@ianlucas/cs2-lib";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ClientOnly } from "remix-utils/client-only";
 import { useInventoryItem } from "~/components/hooks/use-inventory-item";
 import { useNameItemString } from "~/components/hooks/use-name-item";
 import { useSync } from "~/components/hooks/use-sync";
 import { SyncAction } from "~/data/sync";
+import { sync as syncInstance } from "~/sync";
 import { playSound } from "~/utils/sound";
 import { useInventory, useTranslate } from "./app-context";
 import { ItemImage } from "./item-image";
@@ -36,11 +37,14 @@ export function ApplyItemKeychain({
   const nameItemString = useNameItemString();
 
   const [slot, setSlot] = useState<number>();
+  const [isSyncing, setIsSyncing] = useState(false);
   const keychainItem = useInventoryItem(keychainUid);
   const targetItem = useInventoryItem(targetUid);
 
-  function handleApplyKeychain() {
+  async function handleApplyKeychain() {
     if (slot !== undefined) {
+      setIsSyncing(true);
+
       // Get the keychain item to access its properties
       const keychain = inventory.get(keychainUid);
       const target = inventory.get(targetUid);
@@ -61,6 +65,7 @@ export function ApplyItemKeychain({
         seed: Math.floor(Math.random() * 100000) // Random seed for variation
       };
 
+      // Send sync request FIRST
       sync({
         type: SyncAction.ApplyItemKeychain,
         keychainUid,
@@ -68,7 +73,23 @@ export function ApplyItemKeychain({
         targetUid
       });
 
-      // Use edit() to apply the keychain since there's no applyItemKeychain method
+      // Wait for sync to complete before closing modal
+      await new Promise<void>((resolve) => {
+        const checkSyncIdle = () => {
+          if (!syncInstance.isSyncing && syncInstance.queue.length === 0) {
+            syncInstance.removeEventListener("syncidle", checkSyncIdle);
+            resolve();
+          }
+        };
+        syncInstance.addEventListener("syncidle", checkSyncIdle);
+        // Fallback timeout after 5 seconds
+        setTimeout(() => {
+          syncInstance.removeEventListener("syncidle", checkSyncIdle);
+          resolve();
+        }, 5000);
+      });
+
+      // Now update local inventory after sync is complete
       setInventory(
         inventory
           .edit(targetUid, { keychains: newKeychains })
@@ -76,6 +97,7 @@ export function ApplyItemKeychain({
       );
 
       playSound("inventory_new_item_accept");
+      setIsSyncing(false);
       onClose();
     }
   }
@@ -124,8 +146,8 @@ export function ApplyItemKeychain({
               right={
                 <>
                   <ModalButton
-                    children={translate("ApplyKeychainUse")}
-                    disabled={slot === undefined}
+                    children={isSyncing ? translate("InventorySyncing") || "Syncing..." : translate("ApplyKeychainUse")}
+                    disabled={slot === undefined || isSyncing}
                     onClick={handleApplyKeychain}
                     variant="primary"
                   />
@@ -133,6 +155,7 @@ export function ApplyItemKeychain({
                     children={translate("ApplyStickerCancel")}
                     onClick={onClose}
                     variant="secondary"
+                    disabled={isSyncing}
                   />
                 </>
               }
