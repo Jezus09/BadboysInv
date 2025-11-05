@@ -49,7 +49,7 @@ import {
   inventoryItemAllowRemovePatch,
   inventoryItemAllowScrapeSticker
 } from "~/models/rule.server";
-import { manipulateUserInventory } from "~/models/user.server";
+import { manipulateUserInventory, notifyPluginRefreshInventory } from "~/models/user.server";
 import { methodNotAllowed } from "~/responses.server";
 import { nonNegativeInt, teamShape } from "~/utils/shapes";
 import {
@@ -360,6 +360,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
     })
     .parse(await request.json());
   let addedFromCache = false;
+  let needsInventoryRefresh = false; // Track if we need to notify plugin to refresh
   const { syncedAt: responseSyncedAt } = await manipulateUserInventory({
     rawInventory,
     syncedAt,
@@ -421,6 +422,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
             // Apply the keychain and remove the keychain item
             inventory.edit(action.targetUid, { keychains: newKeychains });
             inventory.remove(action.keychainUid);
+            needsInventoryRefresh = true; // Keychain applied - refresh needed
             break;
           case SyncAction.ApplyItemPatch:
             await inventoryItemAllowApplyPatch.for(userId).truthy();
@@ -444,9 +446,11 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
             break;
           case SyncAction.Equip:
             inventory.equip(action.uid, action.team);
+            needsInventoryRefresh = true; // Item equipped - refresh needed
             break;
           case SyncAction.Unequip:
             inventory.unequip(action.uid, action.team);
+            needsInventoryRefresh = true; // Item unequipped - refresh needed
             break;
           case SyncAction.RenameItem:
             inventory.renameItem(
@@ -510,6 +514,14 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
       }
     }
   });
+
+  // Notify CS2 plugin to refresh inventory if equip/unequip/keychain operations were performed
+  if (needsInventoryRefresh) {
+    // Fire-and-forget: don't wait for webhook to complete
+    notifyPluginRefreshInventory(userId).catch((error) => {
+      console.error(`[Sync] Failed to notify plugin for inventory refresh: ${error}`);
+    });
+  }
 
   return Response.json({
     syncedAt: responseSyncedAt.getTime()
