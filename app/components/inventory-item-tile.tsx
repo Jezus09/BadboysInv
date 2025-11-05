@@ -77,10 +77,10 @@ export function InventoryItemTile({
           </div>
         )}
         {inventoryItem?.keychains !== undefined && (
-          <div className="absolute top-0 left-0 flex items-center gap-0.5 p-1 bg-black/30 rounded-br">
+          <div className="absolute bottom-0 right-0 flex items-center gap-0.5 p-1">
             {inventoryItem.someKeychains().map(([slot, { id }]) => (
               <ItemImage
-                className="h-6"
+                className="h-5"
                 item={CS2Economy.getById(id)}
                 key={slot}
               />

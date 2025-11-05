@@ -89,22 +89,28 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           });
         }
 
+        // Unequip item before listing (so it can't be used while on marketplace)
+        const itemData = { ...item };
+        if (itemData.equipped) delete itemData.equipped;
+        if (itemData.equippedCT) delete itemData.equippedCT;
+        if (itemData.equippedT) delete itemData.equippedT;
+
         // Create listing
         const listing = await createListing({
           userId,
           itemUid: params.itemUid,
-          itemData: JSON.stringify(item),
+          itemData: JSON.stringify(itemData),
           price: params.price
         });
 
         // Notify CS2 plugin
         const user = await requireUser(request);
-        const itemData = CS2Economy.getById(item.id);
+        const economyItem = CS2Economy.getById(item.id);
         await notifyPluginMarketplaceListing({
           playerName: user.name,
-          itemName: itemData.name,
-          rarity: itemData.rarity || "Common",
-          statTrak: item.stattrak || false,
+          itemName: economyItem.name,
+          rarity: economyItem.rarity || "Common",
+          statTrak: item.statTrak || false,
           price: params.price
         });
 
