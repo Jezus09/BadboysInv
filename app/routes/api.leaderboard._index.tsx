@@ -46,20 +46,22 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
       }
     });
 
-    // Map to frontend format
-    const players = playerStats.map(ps => ({
-      steam_id: ps.steamId,
-      player_name: ps.playerName,
-      rank_name: ps.rank.rankName,
-      rank_tag: ps.rank.rankTag,
-      rank_color: ps.rank.rankColor,
-      experience: ps.experience,
-      kills: ps.kills,
-      deaths: ps.deaths,
-      kd_ratio: ps.kdRatio,
-      headshot_percentage: ps.headshotPercentage,
-      playtime_hours: 0 // TODO: Add playtime tracking
-    }));
+    // Map to frontend format - filter out players without ranks
+    const players = playerStats
+      .filter(ps => ps.rank !== null)
+      .map(ps => ({
+        steam_id: ps.steamId,
+        player_name: ps.playerName,
+        rank_name: ps.rank!.rankName,
+        rank_tag: ps.rank!.rankTag,
+        rank_color: ps.rank!.rankColor,
+        experience: ps.experience,
+        kills: ps.kills,
+        deaths: ps.deaths,
+        kd_ratio: ps.kdRatio,
+        headshot_percentage: ps.headshotPercentage,
+        playtime_hours: 0 // TODO: Add playtime tracking
+      }));
 
     return data({
       success: true,
