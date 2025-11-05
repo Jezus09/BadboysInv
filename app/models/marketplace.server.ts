@@ -37,9 +37,7 @@ export async function getUserListings(userId: string) {
   return await prisma.marketplaceListing.findMany({
     where: {
       userId,
-      status: {
-        in: ["ACTIVE", "SOLD"]
-      }
+      status: "ACTIVE"
     },
     include: {
       seller: {
