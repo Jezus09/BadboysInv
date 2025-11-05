@@ -32,6 +32,10 @@ interface WeaponEconItem extends BaseEconItem {
     x?: number;
     y?: number;
   }[];
+  keychains: {
+    id: number;
+    seed: number;
+  }[];
   uid: number;
 }
 
@@ -117,6 +121,10 @@ export async function generate(
             seed: item.seed ?? CS2_MIN_SEED,
             stattrak: item.statTrak ?? -1,
             stickers: [],
+            keychains: item.someKeychains().map(([_, keychain]) => ({
+              id: keychain.id,
+              seed: keychain.seed ?? 0
+            })),
             uid: item.uid,
             wear: item.getWear()
           };
@@ -148,6 +156,10 @@ export async function generate(
               wear: sticker.wear ?? CS2_MIN_STICKER_WEAR,
               x: sticker.x,
               y: sticker.y
+            })),
+            keychains: item.someKeychains().map(([_, keychain]) => ({
+              id: keychain.id,
+              seed: keychain.seed ?? 0
             })),
             uid: item.uid,
             wear: item.getWear()
