@@ -27,6 +27,22 @@ export const baseInventoryItemProps = {
     .transform((nameTag) => CS2Economy.trimNametag(nameTag))
     .refine((nameTag) => CS2Economy.safeValidateNametag(nameTag)),
   patches: z.record(nonNegativeInt).optional(),
+  keychains: z
+    .record(
+      z.object({
+        id: nonNegativeInt,
+        seed: positiveInt.optional(),
+        x: z
+          .number()
+          .finite()
+          .optional(),
+        y: z
+          .number()
+          .finite()
+          .optional()
+      })
+    )
+    .optional(),
   seed: positiveInt.optional(),
   statTrak: z.literal(0).optional(),
   stickers: z
