@@ -121,23 +121,23 @@ export function MarketplacePurchaseModal({
     <ClientOnly
       children={() =>
         createPortal(
-          <Overlay className="m-auto lg:w-[800px]">
+          <Overlay className="m-auto w-full max-h-[90vh] overflow-y-auto px-2 lg:px-0 lg:w-[800px]">
             {/* Item Header with Rarity Border */}
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center px-2">
               <div
                 className="flex items-center justify-center gap-2 border-b-4 px-1 pb-2"
                 style={{ borderColor: economyItem.rarity }}
               >
                 {economyItem.category !== undefined && (
                   <ItemImage
-                    className="h-16"
+                    className="h-12 lg:h-16"
                     item={economyItem}
                   />
                 )}
                 <div className="font-display">
-                  <div className="text-3xl">{economyItem.name}</div>
+                  <div className="text-xl lg:text-3xl">{economyItem.name}</div>
                   {item.wear !== undefined && (
-                    <div className="-mt-2 text-neutral-300">
+                    <div className="-mt-1 lg:-mt-2 text-xs lg:text-base text-neutral-300">
                       {wearToString(item.wear)}
                     </div>
                   )}
@@ -149,7 +149,7 @@ export function MarketplacePurchaseModal({
             <div className="text-center">
               <div className="relative mx-auto inline-block">
                 <ItemImage
-                  className="m-auto my-8 max-w-[512px]"
+                  className="m-auto my-4 lg:my-8 max-w-[280px] lg:max-w-[512px]"
                   item={economyItem}
                 />
                 {/* Stickers Display */}
@@ -160,7 +160,7 @@ export function MarketplacePurchaseModal({
                         ([slot, sticker]: [string, any]) => (
                           <span className="inline-block" key={slot}>
                             <ItemImage
-                              className="w-[128px]"
+                              className="w-[64px] lg:w-[128px]"
                               item={CS2Economy.getById(sticker.id)}
                               style={{
                                 filter: `grayscale(${sticker.wear ?? 0})`,
@@ -176,22 +176,22 @@ export function MarketplacePurchaseModal({
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 lg:gap-4 px-2 lg:px-4 pb-4 lg:grid-cols-2">
               {/* Left Column - Seller & Balance */}
-              <div className="space-y-4">
+              <div className="space-y-3 lg:space-y-4">
                 {/* Seller Info */}
-                <div className="rounded-lg border border-neutral-700 bg-black/30 p-4">
-                  <div className="mb-2 flex items-center gap-3">
+                <div className="rounded-lg border border-neutral-700 bg-black/30 p-3 lg:p-4">
+                  <div className="mb-2 flex items-center gap-2 lg:gap-3">
                     <img
                       src={listing.seller.avatar}
                       alt={listing.seller.name}
-                      className="h-12 w-12 rounded-full border-2 border-neutral-600"
+                      className="h-10 w-10 lg:h-12 lg:w-12 rounded-full border-2 border-neutral-600"
                     />
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                      <p className="text-[10px] lg:text-xs font-bold uppercase tracking-wider text-neutral-400">
                         {isOwn ? "Te" : "Eladó"}
                       </p>
-                      <p className="font-display text-lg font-medium text-white">
+                      <p className="font-display text-base lg:text-lg font-medium text-white">
                         {listing.seller.name}
                       </p>
                     </div>
@@ -200,19 +200,19 @@ export function MarketplacePurchaseModal({
 
                 {/* User Balance */}
                 {!isOwn && user && (
-                  <div className="rounded-lg border border-neutral-700 bg-black/30 p-4">
-                    <p className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-neutral-400">
+                  <div className="rounded-lg border border-neutral-700 bg-black/30 p-3 lg:p-4">
+                    <p className="mb-2 text-center text-[10px] lg:text-xs font-bold uppercase tracking-wider text-neutral-400">
                       Jelenlegi egyenleged
                     </p>
                     <div className="flex justify-center">
                       <CurrencyDisplay
                         amount={userBalance}
-                        className="text-2xl font-bold text-green-400"
+                        className="text-xl lg:text-2xl font-bold text-green-400"
                         showIcon={true}
                       />
                     </div>
                     {!hasEnoughFunds && (
-                      <p className="mt-2 text-center text-sm font-bold text-red-400">
+                      <p className="mt-2 text-center text-xs lg:text-sm font-bold text-red-400">
                         ⚠ Nincs elegendő pénzed!
                       </p>
                     )}
@@ -221,29 +221,29 @@ export function MarketplacePurchaseModal({
               </div>
 
               {/* Right Column - Price & Chart */}
-              <div className="space-y-4">
+              <div className="space-y-3 lg:space-y-4">
                 {/* Price */}
                 <div
-                  className="rounded-lg border-2 p-4"
+                  className="rounded-lg border-2 p-3 lg:p-4"
                   style={{
                     borderColor: economyItem.rarity,
                     background: `linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 100%)`
                   }}
                 >
-                  <p className="mb-2 text-center text-xs font-bold uppercase tracking-wider text-neutral-300">
+                  <p className="mb-2 text-center text-[10px] lg:text-xs font-bold uppercase tracking-wider text-neutral-300">
                     Ár
                   </p>
                   <div className="flex justify-center">
                     <CurrencyDisplay
                       amount={listing.price}
-                      className="text-3xl font-bold text-yellow-400"
+                      className="text-2xl lg:text-3xl font-bold text-yellow-400"
                       showIcon={true}
                     />
                   </div>
                 </div>
 
                 {/* Price History Chart */}
-                <div className="rounded-lg border border-neutral-700 bg-gradient-to-br from-neutral-900 to-neutral-800 p-4">
+                <div className="rounded-lg border border-neutral-700 bg-gradient-to-br from-neutral-900 to-neutral-800 p-2 lg:p-4">
                   <MarketplacePriceChart
                     itemId={item.id}
                     wear={item.wear}
@@ -255,8 +255,8 @@ export function MarketplacePurchaseModal({
 
             {/* Error Message */}
             {error && (
-              <div className="mx-4 mb-4 rounded-lg border border-red-500/50 bg-red-900/30 p-3">
-                <p className="text-center text-sm font-bold text-red-400">
+              <div className="mx-2 lg:mx-4 mb-3 lg:mb-4 rounded-lg border border-red-500/50 bg-red-900/30 p-2 lg:p-3">
+                <p className="text-center text-xs lg:text-sm font-bold text-red-400">
                   ⚠ {error}
                 </p>
               </div>
@@ -266,17 +266,22 @@ export function MarketplacePurchaseModal({
             <UseItemFooter
               left={<></>}
               right={
-                <>
+                <div className="flex gap-2 w-full">
                   {isOwn ? (
                     <>
                       <ModalButton
                         onClick={handleCancel}
                         disabled={loading}
                         variant="primary"
+                        className="flex-1 text-sm lg:text-base py-2 lg:py-3"
                       >
-                        {loading ? "Betöltés..." : "Hirdetés visszavonása"}
+                        {loading ? "Betöltés..." : "Visszavonás"}
                       </ModalButton>
-                      <ModalButton onClick={onClose} variant="secondary">
+                      <ModalButton
+                        onClick={onClose}
+                        variant="secondary"
+                        className="flex-1 text-sm lg:text-base py-2 lg:py-3"
+                      >
                         Bezár
                       </ModalButton>
                     </>
@@ -286,15 +291,20 @@ export function MarketplacePurchaseModal({
                         onClick={handlePurchase}
                         disabled={loading || !hasEnoughFunds}
                         variant="primary"
+                        className="flex-1 text-sm lg:text-base py-2 lg:py-3"
                       >
                         {loading ? "Vásárlás..." : "Megveszem"}
                       </ModalButton>
-                      <ModalButton onClick={onClose} variant="secondary">
+                      <ModalButton
+                        onClick={onClose}
+                        variant="secondary"
+                        className="flex-1 text-sm lg:text-base py-2 lg:py-3"
+                      >
                         Mégse
                       </ModalButton>
                     </>
                   )}
-                </>
+                </div>
               }
             />
           </Overlay>,
