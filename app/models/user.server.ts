@@ -247,7 +247,8 @@ export async function manipulateUserInventory({
     console.log(`[InventoryLock] Inventory updated and lock released for user ${userId}`);
 
     return {
-      syncedAt: newSyncedAt
+      syncedAt: newSyncedAt,
+      inventoryWithUuids // Return the updated inventory to cache it immediately
     };
   }, {
     // Set transaction timeout to 10 seconds
@@ -256,10 +257,14 @@ export async function manipulateUserInventory({
     isolationLevel: Prisma.TransactionIsolationLevel.Serializable
   });
 
-  // Invalidate cache after successful transaction
-  await invalidateCachedInventory(userId);
+  // Immediately cache the new inventory to prevent race conditions
+  // This ensures that any concurrent request gets the fresh data instead of stale cache
+  await setCachedInventory(userId, result.inventoryWithUuids, 300);
+  console.log(`[InventoryLock] Updated inventory cached for user ${userId}`);
 
-  return result;
+  return {
+    syncedAt: result.syncedAt
+  };
 }
 
 export async function getUserBasicData(userId: string) {
