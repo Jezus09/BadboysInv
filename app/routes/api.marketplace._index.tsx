@@ -95,6 +95,11 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         if (itemData.equippedCT) delete itemData.equippedCT;
         if (itemData.equippedT) delete itemData.equippedT;
 
+        // Update the inventory to unequip the item
+        const updatedInventory = inventory.edit(params.itemUid, itemData);
+        const { updateUserInventory } = await import("~/models/user.server");
+        await updateUserInventory(userId, updatedInventory.stringify(), "MARKETPLACE");
+
         // Create listing
         const listing = await createListing({
           userId,
