@@ -71,9 +71,9 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
 
         // Get user's inventory
         const userInventory = await getUserInventory(userId);
-        const inventory = parseInventory(userInventory);
+        const inventoryData = parseInventory(userInventory);
 
-        if (!inventory) {
+        if (!inventoryData) {
           return data({
             success: false,
             message: "Inventory not found"
@@ -81,7 +81,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         }
 
         // Check if item exists in inventory
-        const item = inventory.items[params.itemUid];
+        const item = inventoryData.items[params.itemUid];
         if (!item) {
           return data({
             success: false,
@@ -96,9 +96,9 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
         if (itemData.equippedT) delete itemData.equippedT;
 
         // Update the inventory to unequip the item
-        const updatedInventory = inventory.edit(params.itemUid, itemData);
+        inventoryData.items[params.itemUid] = itemData;
         const { updateUserInventory } = await import("~/models/user.server");
-        await updateUserInventory(userId, updatedInventory.stringify(), "MARKETPLACE");
+        await updateUserInventory(userId, JSON.stringify(inventoryData), "MARKETPLACE");
 
         // Create listing
         const listing = await createListing({
