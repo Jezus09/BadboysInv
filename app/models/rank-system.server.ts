@@ -47,8 +47,8 @@ export async function getPlayerStats(steamId: string): Promise<PlayerStatsData |
       experience: stats.experience,
       kills: stats.kills,
       deaths: stats.deaths,
-      kdRatio: stats.kdRatio,
-      headshotPercentage: stats.headshotPercentage,
+      kdRatio: typeof stats.kdRatio === 'object' ? parseFloat(stats.kdRatio.toString()) : stats.kdRatio,
+      headshotPercentage: typeof stats.headshotPercentage === 'object' ? parseFloat(stats.headshotPercentage.toString()) : stats.headshotPercentage,
       minExperience: stats.rank.minExperience,
       maxExperience: stats.rank.maxExperience
     };
@@ -386,13 +386,22 @@ export async function givePlayerXP(steamId: string, xpAmount: number, adminSteam
  */
 export async function getAllPlayers(limit: number = 1000) {
   try {
-    return await prisma.playerStats.findMany({
+    const players = await prisma.playerStats.findMany({
       take: limit,
       orderBy: { experience: "desc" },
       include: {
         rank: true
       }
     });
+
+    // Convert Decimal types to numbers for JSON serialization
+    return players.map(player => ({
+      ...player,
+      kdRatio: typeof player.kdRatio === 'object' ? parseFloat(player.kdRatio.toString()) : player.kdRatio,
+      headshotPercentage: typeof player.headshotPercentage === 'object' ? parseFloat(player.headshotPercentage.toString()) : player.headshotPercentage,
+      accuracyPercentage: typeof player.accuracyPercentage === 'object' ? parseFloat(player.accuracyPercentage.toString()) : player.accuracyPercentage,
+      winPercentage: typeof player.winPercentage === 'object' ? parseFloat(player.winPercentage.toString()) : player.winPercentage
+    }));
   } catch (error) {
     console.error("[RankSystem] Error fetching players:", error);
     return [];
