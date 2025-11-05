@@ -91,6 +91,9 @@ export async function processInventoryWithUuids({
 /**
  * Simpler version: just ensure all items have UUIDs (don't re-key yet)
  * This is safer for gradual migration
+ *
+ * IMPORTANT: Only generates UUIDs for items from specific sources (CASE, SHOP, TRADE, MARKETPLACE)
+ * to avoid mass UUID generation on every inventory update
  */
 export async function ensureItemUuids({
   inventoryJson,
@@ -105,6 +108,14 @@ export async function ensureItemUuids({
     const inventory = JSON.parse(inventoryJson);
 
     if (!inventory.items) {
+      return inventoryJson;
+    }
+
+    // Only process UUIDs for specific sources where new items are created
+    // Skip DROP to avoid generating UUIDs for all existing items on every update
+    const shouldGenerateUuids = ["CASE", "SHOP", "TRADE", "MARKETPLACE", "CRAFT", "TRADEUP"].includes(source);
+
+    if (!shouldGenerateUuids) {
       return inventoryJson;
     }
 
