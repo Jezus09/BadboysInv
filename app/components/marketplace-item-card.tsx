@@ -58,7 +58,8 @@ export function MarketplaceItemCard({
     statTrak: item.statTrak,
     nameTag: item.nameTag,
     stickers: item.stickers || {},
-    patches: item.patches || {}
+    patches: item.patches || {},
+    keychains: item.keychains || {}
   });
 
   return (
@@ -103,6 +104,19 @@ export function MarketplaceItemCard({
                 <ItemImage
                   className="h-5"
                   item={CS2Economy.getById(patchId)}
+                  key={slot}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Keychains display */}
+          {item.keychains && Object.keys(item.keychains).length > 0 && (
+            <div className="absolute bottom-0 right-0 flex items-center p-1">
+              {Object.entries(item.keychains).map(([slot, keychain]: [string, any]) => (
+                <ItemImage
+                  className="h-5"
+                  item={CS2Economy.getById(keychain.id)}
                   key={slot}
                 />
               ))}
