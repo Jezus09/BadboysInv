@@ -20,6 +20,7 @@ import { ModalButton } from "./modal-button";
 import { Overlay } from "./overlay";
 import { UseItemFooter } from "./use-item-footer";
 import { UseItemHeader } from "./use-item-header";
+import { Sticker3DEditor } from "./sticker-3d-editor";
 
 export function ApplyItemSticker({
   onClose,
@@ -38,6 +39,7 @@ export function ApplyItemSticker({
   const nameItemString = useNameItemString();
 
   const [slot, setSlot] = useState<number>();
+  const [show3DEditor, setShow3DEditor] = useState(false);
   const stickerItem = useInventoryItem(stickerUid);
   const targetItem = useInventoryItem(targetUid);
 
@@ -69,8 +71,21 @@ export function ApplyItemSticker({
 
   return (
     <ClientOnly
-      children={() =>
-        createPortal(
+      children={() => {
+        // Show 3D Editor if enabled
+        if (show3DEditor) {
+          return createPortal(
+            <Sticker3DEditor
+              onClose={onClose}
+              targetUid={targetUid}
+              stickerUid={stickerUid}
+            />,
+            document.body
+          );
+        }
+
+        // Show traditional 2D selector
+        return createPortal(
           <Overlay>
             <UseItemHeader
               actionDesc={translate("ApplyStickerUseOn")}
@@ -81,8 +96,7 @@ export function ApplyItemSticker({
             <ItemImage className="m-auto max-w-[512px]" item={targetItem} />
             <div className="flex items-center justify-center">
               {targetItem.allStickers().map(([xslot, sticker]) =>
-                xslot === 4 ? undefined : sticker !== undefined ||
-                  xslot === slot ? (
+                sticker !== undefined || xslot === slot ? (
                   <ItemImage
                     key={xslot}
                     className="w-[168px]"
@@ -110,14 +124,12 @@ export function ApplyItemSticker({
             </div>
             <UseItemFooter
               left={
-                onSwitchTo3D !== undefined ? (
-                  <ModalButton
-                    onClick={onSwitchTo3D}
-                    variant="secondary"
-                  >
-                    🎮 Switch to 3D Mode
-                  </ModalButton>
-                ) : undefined
+                <ModalButton
+                  onClick={() => setShow3DEditor(true)}
+                  variant="secondary"
+                >
+                  🎮 Switch to 3D Mode
+                </ModalButton>
               }
               right={
                 <>
@@ -137,8 +149,8 @@ export function ApplyItemSticker({
             />
           </Overlay>,
           document.body
-        )
-      }
+        );
+      }}
     />
   );
 }

@@ -12,6 +12,10 @@ import { inventoryMaxItems, inventoryStorageUnitMaxItems } from "./rule.server";
 import { getCachedInventory, setCachedInventory, invalidateCachedInventory } from "~/redis.server";
 import { rarityHexToName } from "~/utils/rarity.server";
 
+// Batch sync: Map to track pending refresh timers by user ID
+const pendingRefreshTimers = new Map<string, NodeJS.Timeout>();
+const REFRESH_DEBOUNCE_MS = 3000; // 3 seconds
+
 export async function getUserInventory(userId: string) {
   // Try cache first
   const cached = await getCachedInventory(userId);
@@ -316,10 +320,9 @@ export async function notifyPluginInventoryChange(steamId: string) {
 }
 
 /**
- * Notify CS2 plugin to refresh player inventory
- * This should be called after equip/unequip operations
+ * Internal: Immediate refresh without debouncing
  */
-export async function notifyPluginRefreshInventory(steamId: string) {
+async function notifyPluginRefreshInventoryImmediate(steamId: string) {
   const webhookUrl = process.env.CS2_PLUGIN_WEBHOOK_URL;
 
   if (!webhookUrl) {
@@ -344,6 +347,44 @@ export async function notifyPluginRefreshInventory(steamId: string) {
   } catch (error) {
     console.error("[RefreshInventory] Failed to notify plugin:", error);
   }
+}
+
+/**
+ * Notify CS2 plugin to refresh player inventory with 3-second debouncing
+ * This batches multiple rapid changes and sends only one refresh after 3s of inactivity
+ * This should be called after equip/unequip/sticker operations
+ */
+export async function notifyPluginRefreshInventory(steamId: string) {
+  // Cancel any existing pending timer for this user
+  const existingTimer = pendingRefreshTimers.get(steamId);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    console.log(`[RefreshInventory] Debouncing refresh for SteamID: ${steamId}`);
+  }
+
+  // Schedule a new refresh after debounce delay
+  const timer = setTimeout(async () => {
+    pendingRefreshTimers.delete(steamId);
+    console.log(`[RefreshInventory] Executing batched refresh for SteamID: ${steamId}`);
+    await notifyPluginRefreshInventoryImmediate(steamId);
+  }, REFRESH_DEBOUNCE_MS);
+
+  pendingRefreshTimers.set(steamId, timer);
+}
+
+/**
+ * Force immediate refresh without debouncing (for critical operations)
+ */
+export async function notifyPluginRefreshInventoryNow(steamId: string) {
+  // Cancel any pending timer
+  const existingTimer = pendingRefreshTimers.get(steamId);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    pendingRefreshTimers.delete(steamId);
+  }
+
+  console.log(`[RefreshInventory] Immediate refresh requested for SteamID: ${steamId}`);
+  await notifyPluginRefreshInventoryImmediate(steamId);
 }
 
 /**

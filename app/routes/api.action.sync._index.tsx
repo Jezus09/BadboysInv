@@ -443,6 +443,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
               action.y,
               action.rotation
             );
+            needsInventoryRefresh = true; // Sticker applied - refresh needed for immediate in-game update
             break;
           case SyncAction.Equip:
             inventory.equip(action.uid, action.team);
@@ -469,6 +470,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
           case SyncAction.ScrapeItemSticker:
             await inventoryItemAllowScrapeSticker.for(userId).truthy();
             inventory.scrapeItemSticker(action.targetUid, action.slot);
+            needsInventoryRefresh = true; // Sticker scraped - refresh needed for in-game wear update
             break;
           case SyncAction.SwapItemsStatTrak:
             inventory.swapItemsStatTrak(
