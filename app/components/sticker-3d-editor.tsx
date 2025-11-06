@@ -213,27 +213,26 @@ function LoadedWeaponModel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gltf]);
 
-  // Load and apply weapon skin texture
+  // Apply weapon material (NO SKIN TEXTURE - just neutral material)
   useEffect(() => {
     if (!clonedScene) return;
 
     const econItem = CS2Economy.getById(weaponDefIndex);
-    console.log(`[WeaponModel] Loading weapon:`, {
+    console.log(`[WeaponModel] Applying neutral material to weapon:`, {
       weaponDefIndex,
       econItem: econItem ? {
         id: econItem.id,
         name: econItem.name,
-        type: econItem.type,
-        hasImage: !!econItem.image,
-        imageUrl: econItem.image
+        type: econItem.type
       } : null
     });
 
-    if (econItem) {
-      // Use getImage() method which handles baseUrl prefix
+    // DISABLED: CS2 skin texture loading (Sketchfab models have incompatible UV mapping)
+    // Instead, we use a neutral PBR material that looks good with any model
+    if (false && econItem) { // Disabled block
       const imageUrl = econItem.getImage();
       const textureLoader = new THREE.TextureLoader();
-      console.log(`[WeaponModel] Loading texture from: ${imageUrl}`);
+      console.log(`[WeaponModel] (DISABLED) Would load texture from: ${imageUrl}`);
 
       textureLoader.load(
         imageUrl,
@@ -369,9 +368,40 @@ function LoadedWeaponModel({
           console.error("[WeaponModel] ❌ Failed to load skin texture", error);
         }
       );
-    } else {
-      console.warn("[WeaponModel] ⚠️ No image available for weapon", weaponDefIndex);
-    }
+    } // End of disabled CS2 skin texture block
+
+    // Apply neutral material to all meshes (ENABLED - this is what we use now)
+    let meshCount = 0;
+    let materialCount = 0;
+
+    clonedScene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        meshCount++;
+
+        // Create a neutral, professional-looking PBR material
+        const neutralMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(0x444444), // Dark grey (professional look)
+          metalness: 0.6, // Slightly metallic
+          roughness: 0.4, // Smooth but not mirror-like
+          emissive: new THREE.Color(0x111111), // Slight glow
+          emissiveIntensity: 0.1
+        });
+
+        // Apply to all materials in the mesh
+        if (Array.isArray(child.material)) {
+          child.material.forEach((mat, idx) => {
+            materialCount++;
+            // Replace with neutral material
+            child.material[idx] = neutralMaterial.clone();
+          });
+        } else {
+          materialCount++;
+          child.material = neutralMaterial;
+        }
+      }
+    });
+
+    console.log(`[WeaponModel] ✅ Applied neutral material to ${meshCount} meshes, ${materialCount} materials`);
   }, [clonedScene, weaponDefIndex]);
 
   if (!clonedScene) return null;
