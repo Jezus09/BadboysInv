@@ -860,19 +860,19 @@ function Scene3D({
 
   return (
     <>
-      {/* Camera setup - CS2 style: close-up, side view */}
+      {/* Camera setup - CS2 style: side view with proper distance */}
       <PerspectiveCamera
         makeDefault
-        position={[1.5, 0.3, 0.8]}
-        fov={50}
+        position={[3, 0.5, 1.5]}  // Further back from weapon
+        fov={40}  // Narrower FOV for less distortion
       />
       <OrbitControls
         enablePan={false}  // Disable panning - CS2 style
         enableZoom={true}
         enableRotate={true}
-        minDistance={0.8}
-        maxDistance={3}
-        target={[0, 0.2, 0]}  // Focus on weapon center
+        minDistance={2}  // Can't get too close
+        maxDistance={8}  // Can zoom out more
+        target={[0, 0, 0]}  // Focus on weapon center
       />
 
       {/* Lighting - Enhanced for better texture visibility */}
