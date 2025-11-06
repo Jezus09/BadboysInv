@@ -21,6 +21,7 @@ import {
   getWeaponModelFilename,
   loadStickerTexture,
   getStickerImageUrl,
+  getWeaponStickerPreset,
 } from "~/utils/model-loader";
 
 interface StickerTransform {
@@ -808,10 +809,15 @@ export function Sticker3DEditor({
 
     // Initialize sticker transform if not exists
     if (!stickers.has(slot)) {
+      // Get weapon-specific preset position for better initial placement
+      const preset = getWeaponStickerPreset(targetItem.id);
+
+      console.log(`[3D Editor] Using weapon preset for ${targetItem.id}:`, preset);
+
       setStickers(new Map(stickers).set(slot, {
-        position: [0, 0, 0.1],
-        rotation: [0, 0, 0],
-        scale: 1.0,
+        position: [...preset.position],
+        rotation: [...preset.rotation],
+        scale: preset.scale,
         wear: 0
       }));
     }

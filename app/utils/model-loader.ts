@@ -29,6 +29,68 @@ const textureLoader = new THREE.TextureLoader();
 const gltfLoader = new GLTFLoader();
 
 /**
+ * Default sticker positions per weapon type
+ * These positions are optimized for each weapon model to ensure stickers
+ * are visible and properly placed on the weapon's surface
+ */
+export interface StickerPreset {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: number;
+}
+
+export const WEAPON_STICKER_PRESETS: Record<number, StickerPreset> = {
+  // AK-47 - sticker on the receiver (right side)
+  7: {
+    position: [0.4, 0.15, 0.3],   // X: right side, Y: slightly up, Z: on the body
+    rotation: [0, Math.PI / 2, 0], // Face forward
+    scale: 1.2
+  },
+  // AWP - sticker on the scope area
+  9: {
+    position: [0.3, 0.2, 0.5],
+    rotation: [0, Math.PI / 2, 0],
+    scale: 1.0
+  },
+  // M4A4 - sticker on the receiver
+  16: {
+    position: [0.35, 0.12, 0.4],
+    rotation: [0, Math.PI / 2, 0],
+    scale: 1.1
+  },
+  // M4A1-S - sticker on the receiver
+  60: {
+    position: [0.35, 0.12, 0.4],
+    rotation: [0, Math.PI / 2, 0],
+    scale: 1.1
+  },
+  // Desert Eagle - sticker on the slide
+  1: {
+    position: [0.15, 0.1, 0.15],
+    rotation: [0, Math.PI / 2, 0],
+    scale: 0.8
+  },
+  // Glock-18 - sticker on the slide
+  4: {
+    position: [0.15, 0.08, 0.15],
+    rotation: [0, Math.PI / 2, 0],
+    scale: 0.7
+  },
+  // USP-S - sticker on the slide
+  61: {
+    position: [0.15, 0.08, 0.15],
+    rotation: [0, Math.PI / 2, 0],
+    scale: 0.75
+  },
+  // Default preset for weapons without specific configuration
+  0: {
+    position: [0.3, 0.1, 0.25],
+    rotation: [0, Math.PI / 2, 0],
+    scale: 1.0
+  }
+};
+
+/**
  * CS2 weapon definition index to model filename mapping
  * Maps CS2 defindex to GLB model filename
  */
@@ -71,6 +133,29 @@ export const WEAPON_MODEL_MAP: Record<number, string> = {
   500: "knife_default_ct.glb",
   503: "knife_default_t.glb",
 };
+
+/**
+ * Get weapon-specific sticker preset position
+ * @param weaponDefIndex CS2 weapon definition index
+ * @returns StickerPreset with position, rotation, scale
+ */
+export function getWeaponStickerPreset(weaponDefIndex: number): StickerPreset {
+  // Try weapon-specific preset first
+  if (WEAPON_STICKER_PRESETS[weaponDefIndex]) {
+    return WEAPON_STICKER_PRESETS[weaponDefIndex];
+  }
+
+  // Try base weapon defindex (for weapon skins)
+  const econItem = CS2Economy.getById(weaponDefIndex);
+  if (econItem && econItem.type === "weapon" && econItem.def) {
+    if (WEAPON_STICKER_PRESETS[econItem.def]) {
+      return WEAPON_STICKER_PRESETS[econItem.def];
+    }
+  }
+
+  // Return default preset
+  return WEAPON_STICKER_PRESETS[0];
+}
 
 /**
  * Get weapon model filename from CS2 economy item
