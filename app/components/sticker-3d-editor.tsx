@@ -232,7 +232,41 @@ function LoadedWeaponModel({
         imageUrl,
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
-          texture.flipY = false; // GLTF models don't need Y-flip
+
+          // Fix texture mapping for CS2 weapon skins
+          // CS2 skin textures need proper UV mapping configuration
+          texture.flipY = true; // CS2 textures need Y-flip for correct orientation
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+
+          // Apply weapon-specific texture transformations
+          // These values fix UV mapping issues for different weapon models
+          const weaponTextureConfig: Record<number, { offset?: [number, number]; repeat?: [number, number]; rotation?: number }> = {
+            7: { // AK-47
+              offset: [0, 0],
+              repeat: [1, 1],
+              rotation: 0
+            },
+            // Add more weapon-specific configs here as needed
+          };
+
+          const baseWeaponDef = econItem.def || weaponDefIndex;
+          const config = weaponTextureConfig[baseWeaponDef];
+
+          if (config) {
+            if (config.offset) {
+              texture.offset.set(config.offset[0], config.offset[1]);
+              console.log(`[WeaponModel] Applied offset [${config.offset[0]}, ${config.offset[1]}] for weapon ${baseWeaponDef}`);
+            }
+            if (config.repeat) {
+              texture.repeat.set(config.repeat[0], config.repeat[1]);
+              console.log(`[WeaponModel] Applied repeat [${config.repeat[0]}, ${config.repeat[1]}] for weapon ${baseWeaponDef}`);
+            }
+            if (config.rotation !== undefined) {
+              texture.rotation = config.rotation;
+              console.log(`[WeaponModel] Applied rotation ${config.rotation} for weapon ${baseWeaponDef}`);
+            }
+          }
 
           let meshCount = 0;
           let materialCount = 0;
