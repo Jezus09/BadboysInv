@@ -247,23 +247,21 @@ function LoadedWeaponModel({
       } : null
     });
 
-    // DISABLED: CS2 skin texture loading (Sketchfab models have incompatible UV mapping)
-    // Instead, we use a neutral PBR material that looks good with any model
-    if (false && econItem) { // Disabled block
+    // CS2 skin texture loading (Official CS2 OBJ models have proper UV mapping)
+    if (econItem) { // Enabled for official models
       const imageUrl = econItem.getImage();
       const textureLoader = new THREE.TextureLoader();
-      console.log(`[WeaponModel] (DISABLED) Would load texture from: ${imageUrl}`);
+      console.log(`[WeaponModel] Loading texture from: ${imageUrl}`);
 
       textureLoader.load(
         imageUrl,
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
 
-          // CRITICAL: GLTF models have their own UV mapping embedded
-          // DO NOT flip or wrap the texture - use it as-is
-          texture.flipY = false; // GLTF models already have correct orientation
-          texture.wrapS = THREE.ClampToEdgeWrapping; // Don't repeat/tile
-          texture.wrapT = THREE.ClampToEdgeWrapping; // Don't repeat/tile
+          // OBJ models need flipY for correct UV orientation
+          texture.flipY = true; // OBJ format requires Y-flip
+          texture.wrapS = THREE.RepeatWrapping; // Allow repeating
+          texture.wrapT = THREE.RepeatWrapping; // Allow repeating
 
           // Set proper min/mag filters for sharpness
           texture.minFilter = THREE.LinearMipMapLinearFilter;
