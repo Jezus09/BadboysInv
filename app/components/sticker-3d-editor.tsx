@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Canvas, useLoader } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, useGLTF } from "@react-three/drei";
 import { Suspense, useState, useEffect, useRef, Component, ReactNode } from "react";
 import * as THREE from "three";
@@ -42,30 +42,43 @@ interface Sticker3DEditorProps {
  */
 class ThreeErrorBoundary extends Component<
   { children: ReactNode; fallback?: ReactNode },
-  { hasError: boolean }
+  { hasError: boolean; errorMessage: string }
 > {
   constructor(props: { children: ReactNode; fallback?: ReactNode }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorMessage: '' };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, errorMessage: error?.message || error?.toString() || 'Unknown error' };
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error("[3D Editor] Error caught by boundary:", error, errorInfo);
+    console.error("[3D Editor] ❌❌❌ ERROR CAUGHT BY BOUNDARY ❌❌❌");
+    console.error("[3D Editor] Error:", error);
+    console.error("[3D Editor] Error message:", error?.message);
+    console.error("[3D Editor] Error stack:", error?.stack);
+    console.error("[3D Editor] Error info:", errorInfo);
+    console.error("[3D Editor] ❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌");
   }
 
   render() {
     if (this.state.hasError) {
       return (
         this.props.fallback || (
-          <div className="flex items-center justify-center h-full text-neutral-400">
-            <div className="text-center">
+          <div className="flex items-center justify-center h-full text-neutral-400 p-4">
+            <div className="text-center max-w-lg">
               <div className="text-4xl mb-2">⚠️</div>
-              <div>3D mode unavailable</div>
-              <div className="text-xs mt-2">Check browser console for details</div>
+              <div className="text-lg font-bold mb-2">3D mode unavailable</div>
+              <div className="text-xs mt-2 p-3 bg-red-900/50 border border-red-500 rounded">
+                <div className="font-bold text-red-300 mb-1">Error:</div>
+                <div className="text-red-200 font-mono text-left break-words">
+                  {this.state.errorMessage}
+                </div>
+              </div>
+              <div className="text-xs mt-2 text-gray-400">
+                Check browser console for full details
+              </div>
             </div>
           </div>
         )
