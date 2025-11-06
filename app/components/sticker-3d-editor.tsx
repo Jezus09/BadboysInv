@@ -222,12 +222,14 @@ function LoadedWeaponModel({
       } : null
     });
 
-    if (econItem && econItem.image) {
+    if (econItem) {
+      // Use getImage() method which handles baseUrl prefix
+      const imageUrl = econItem.getImage();
       const textureLoader = new THREE.TextureLoader();
-      console.log(`[WeaponModel] Loading texture from: ${econItem.image}`);
+      console.log(`[WeaponModel] Loading texture from: ${imageUrl}`);
 
       textureLoader.load(
-        econItem.image,
+        imageUrl,
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
           texture.flipY = false; // GLTF models don't need Y-flip
