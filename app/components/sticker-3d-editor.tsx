@@ -142,8 +142,12 @@ function ControlPanel({
 
   if (selectedSlot === null || !transform) {
     return (
-      <div className="text-center text-neutral-400 py-4">
-        Select a sticker slot to edit
+      <div className="p-4 sm:p-6 bg-neutral-800 rounded-lg">
+        <div className="text-center text-neutral-400 text-sm sm:text-base py-4 sm:py-8">
+          <div className="text-2xl sm:text-4xl mb-2">👆</div>
+          <div className="font-medium">Select a slot above (0-4)</div>
+          <div className="text-xs sm:text-sm mt-1">Choose where to place your sticker</div>
+        </div>
       </div>
     );
   }
@@ -161,14 +165,19 @@ function ControlPanel({
   };
 
   return (
-    <div className="space-y-3 p-4 bg-neutral-800 rounded-lg">
-      <div className="text-sm font-bold text-neutral-200 mb-2">
+    <div className="space-y-2 sm:space-y-3 p-2 sm:p-4 bg-neutral-800 rounded-lg">
+      <div className="text-xs sm:text-sm font-bold text-neutral-200 mb-1 sm:mb-2">
         Slot {selectedSlot} Controls
       </div>
 
       {/* Position Controls */}
-      <div className="space-y-2">
-        <label className="text-xs text-neutral-400">Position X</label>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <label className="text-xs sm:text-sm text-neutral-400 font-medium">Position X</label>
+          <span className="text-xs sm:text-sm text-neutral-300 font-bold min-w-[3rem] text-right">
+            {transform.position[0].toFixed(2)}
+          </span>
+        </div>
         <input
           type="range"
           min="-2"
@@ -176,13 +185,17 @@ function ControlPanel({
           step="0.01"
           value={transform.position[0]}
           onChange={(e) => handlePositionChange(0, parseFloat(e.target.value))}
-          className="w-full"
+          className="w-full h-8 sm:h-6"
         />
-        <span className="text-xs text-neutral-300">{transform.position[0].toFixed(2)}</span>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-xs text-neutral-400">Position Y</label>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <label className="text-xs sm:text-sm text-neutral-400 font-medium">Position Y</label>
+          <span className="text-xs sm:text-sm text-neutral-300 font-bold min-w-[3rem] text-right">
+            {transform.position[1].toFixed(2)}
+          </span>
+        </div>
         <input
           type="range"
           min="-1"
@@ -190,13 +203,17 @@ function ControlPanel({
           step="0.01"
           value={transform.position[1]}
           onChange={(e) => handlePositionChange(1, parseFloat(e.target.value))}
-          className="w-full"
+          className="w-full h-8 sm:h-6"
         />
-        <span className="text-xs text-neutral-300">{transform.position[1].toFixed(2)}</span>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-xs text-neutral-400">Position Z</label>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <label className="text-xs sm:text-sm text-neutral-400 font-medium">Position Z</label>
+          <span className="text-xs sm:text-sm text-neutral-300 font-bold min-w-[3rem] text-right">
+            {transform.position[2].toFixed(2)}
+          </span>
+        </div>
         <input
           type="range"
           min="-1"
@@ -204,14 +221,21 @@ function ControlPanel({
           step="0.01"
           value={transform.position[2]}
           onChange={(e) => handlePositionChange(2, parseFloat(e.target.value))}
-          className="w-full"
+          className="w-full h-8 sm:h-6"
         />
-        <span className="text-xs text-neutral-300">{transform.position[2].toFixed(2)}</span>
       </div>
 
+      {/* Divider */}
+      <div className="border-t border-neutral-700 my-2 sm:my-3"></div>
+
       {/* Rotation Controls */}
-      <div className="space-y-2">
-        <label className="text-xs text-neutral-400">Rotation X (°)</label>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <label className="text-xs sm:text-sm text-neutral-400 font-medium">Rotation X</label>
+          <span className="text-xs sm:text-sm text-neutral-300 font-bold min-w-[3rem] text-right">
+            {((transform.rotation[0] * 180) / Math.PI).toFixed(0)}°
+          </span>
+        </div>
         <input
           type="range"
           min="0"
@@ -219,15 +243,17 @@ function ControlPanel({
           step="1"
           value={(transform.rotation[0] * 180) / Math.PI}
           onChange={(e) => handleRotationChange(0, parseFloat(e.target.value))}
-          className="w-full"
+          className="w-full h-8 sm:h-6"
         />
-        <span className="text-xs text-neutral-300">
-          {((transform.rotation[0] * 180) / Math.PI).toFixed(0)}°
-        </span>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-xs text-neutral-400">Rotation Y (°)</label>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <label className="text-xs sm:text-sm text-neutral-400 font-medium">Rotation Y</label>
+          <span className="text-xs sm:text-sm text-neutral-300 font-bold min-w-[3rem] text-right">
+            {((transform.rotation[1] * 180) / Math.PI).toFixed(0)}°
+          </span>
+        </div>
         <input
           type="range"
           min="0"
@@ -235,15 +261,17 @@ function ControlPanel({
           step="1"
           value={(transform.rotation[1] * 180) / Math.PI}
           onChange={(e) => handleRotationChange(1, parseFloat(e.target.value))}
-          className="w-full"
+          className="w-full h-8 sm:h-6"
         />
-        <span className="text-xs text-neutral-300">
-          {((transform.rotation[1] * 180) / Math.PI).toFixed(0)}°
-        </span>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-xs text-neutral-400">Rotation Z (°)</label>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <label className="text-xs sm:text-sm text-neutral-400 font-medium">Rotation Z</label>
+          <span className="text-xs sm:text-sm text-neutral-300 font-bold min-w-[3rem] text-right">
+            {((transform.rotation[2] * 180) / Math.PI).toFixed(0)}°
+          </span>
+        </div>
         <input
           type="range"
           min="0"
@@ -251,16 +279,21 @@ function ControlPanel({
           step="1"
           value={(transform.rotation[2] * 180) / Math.PI}
           onChange={(e) => handleRotationChange(2, parseFloat(e.target.value))}
-          className="w-full"
+          className="w-full h-8 sm:h-6"
         />
-        <span className="text-xs text-neutral-300">
-          {((transform.rotation[2] * 180) / Math.PI).toFixed(0)}°
-        </span>
       </div>
 
+      {/* Divider */}
+      <div className="border-t border-neutral-700 my-2 sm:my-3"></div>
+
       {/* Scale Control */}
-      <div className="space-y-2">
-        <label className="text-xs text-neutral-400">Scale</label>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <label className="text-xs sm:text-sm text-neutral-400 font-medium">Scale</label>
+          <span className="text-xs sm:text-sm text-neutral-300 font-bold min-w-[3rem] text-right">
+            {transform.scale.toFixed(1)}x
+          </span>
+        </div>
         <input
           type="range"
           min="0.5"
@@ -268,14 +301,18 @@ function ControlPanel({
           step="0.1"
           value={transform.scale}
           onChange={(e) => onChange({ ...transform, scale: parseFloat(e.target.value) })}
-          className="w-full"
+          className="w-full h-8 sm:h-6"
         />
-        <span className="text-xs text-neutral-300">{transform.scale.toFixed(1)}x</span>
       </div>
 
       {/* Wear Control */}
-      <div className="space-y-2">
-        <label className="text-xs text-neutral-400">Wear/Scrape</label>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center">
+          <label className="text-xs sm:text-sm text-neutral-400 font-medium">Wear/Scrape</label>
+          <span className="text-xs sm:text-sm text-neutral-300 font-bold min-w-[3rem] text-right">
+            {(transform.wear * 100).toFixed(0)}%
+          </span>
+        </div>
         <input
           type="range"
           min="0"
@@ -283,9 +320,8 @@ function ControlPanel({
           step="0.01"
           value={transform.wear}
           onChange={(e) => onChange({ ...transform, wear: parseFloat(e.target.value) })}
-          className="w-full"
+          className="w-full h-8 sm:h-6"
         />
-        <span className="text-xs text-neutral-300">{(transform.wear * 100).toFixed(0)}%</span>
       </div>
     </div>
   );
@@ -362,8 +398,8 @@ export function Sticker3DEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="w-full max-w-6xl h-[90vh] bg-neutral-900 rounded-lg overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4">
+      <div className="w-full max-w-6xl h-full sm:h-[90vh] bg-neutral-900 rounded-lg overflow-hidden flex flex-col">
         {/* Header */}
         <UseItemHeader
           actionDesc={translate("ApplyStickerUseOn")}
@@ -373,9 +409,9 @@ export function Sticker3DEditor({
         />
 
         {/* Main Content: 3D View + Controls */}
-        <div className="flex-1 flex gap-4 p-4 overflow-hidden">
-          {/* 3D Canvas */}
-          <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-hidden">
+          {/* 3D Canvas - mobile: smaller height, desktop: full */}
+          <div className="h-64 sm:h-80 lg:h-auto lg:flex-1 bg-neutral-800 rounded-lg overflow-hidden">
             <Canvas shadows>
               <Suspense fallback={null}>
                 <Scene3D
@@ -388,23 +424,23 @@ export function Sticker3DEditor({
             </Canvas>
           </div>
 
-          {/* Control Panel */}
-          <div className="w-80 overflow-y-auto">
+          {/* Control Panel - mobile: scrollable, desktop: fixed width */}
+          <div className="flex-1 lg:w-80 lg:flex-none overflow-y-auto">
             {/* Slot Selector */}
-            <div className="mb-4 p-4 bg-neutral-800 rounded-lg">
-              <div className="text-sm font-bold text-neutral-200 mb-2">
+            <div className="mb-2 sm:mb-4 p-2 sm:p-4 bg-neutral-800 rounded-lg">
+              <div className="text-xs sm:text-sm font-bold text-neutral-200 mb-2">
                 Select Slot (0-4)
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2">
                 {[0, 1, 2, 3, 4].map((slot) => (
                   <button
                     key={slot}
                     onClick={() => handleSlotSelect(slot)}
                     className={`
-                      flex-1 py-2 rounded transition
+                      flex-1 py-2 sm:py-3 rounded transition text-sm sm:text-base font-bold
                       ${selectedSlot === slot
                         ? 'bg-blue-600 text-white'
-                        : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+                        : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600 active:bg-neutral-600'
                       }
                     `}
                   >
@@ -423,24 +459,24 @@ export function Sticker3DEditor({
           </div>
         </div>
 
-        {/* Footer */}
-        <UseItemFooter
-          right={
-            <>
-              <ModalButton
-                children="Apply Sticker"
-                disabled={selectedSlot === null}
-                onClick={handleApply}
-                variant="primary"
-              />
-              <ModalButton
-                children="Cancel"
-                onClick={onClose}
-                variant="secondary"
-              />
-            </>
-          }
-        />
+        {/* Footer - mobile: stacked buttons, desktop: horizontal */}
+        <div className="p-2 sm:p-4 border-t border-neutral-700">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-end">
+            <ModalButton
+              children="Apply Sticker"
+              disabled={selectedSlot === null}
+              onClick={handleApply}
+              variant="primary"
+              className="w-full sm:w-auto"
+            />
+            <ModalButton
+              children="Cancel"
+              onClick={onClose}
+              variant="secondary"
+              className="w-full sm:w-auto"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
