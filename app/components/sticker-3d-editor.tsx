@@ -3,10 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
-import { Suspense, useState } from "react";
+import { Canvas, useLoader } from "@react-three/fiber";
+import { OrbitControls, PerspectiveCamera, useGLTF } from "@react-three/drei";
+import { Suspense, useState, useEffect, useRef } from "react";
 import * as THREE from "three";
+import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
 import { useNameItemString } from "~/components/hooks/use-name-item";
 import { useSync } from "~/components/hooks/use-sync";
 import { SyncAction } from "~/data/sync";
@@ -16,6 +17,11 @@ import { ModalButton } from "./modal-button";
 import { UseItemFooter } from "./use-item-footer";
 import { UseItemHeader } from "./use-item-header";
 import { CS2Economy } from "@ianlucas/cs2-lib";
+import {
+  getWeaponModelFilename,
+  loadStickerTexture,
+  getStickerImageUrl,
+} from "~/utils/model-loader";
 
 interface StickerTransform {
   position: [number, number, number];
@@ -32,51 +38,198 @@ interface Sticker3DEditorProps {
 
 /**
  * 3D Weapon Model Component
- * TODO: Load actual weapon GLTF models from /public/models/weapons/
+ * Loads actual weapon GLTF models from /public/models/weapons/
  */
-function WeaponModel({ weaponName }: { weaponName: string }) {
-  // Placeholder: Simple box representing the weapon
-  // In production, this should load the actual GLTF model
+function WeaponModel({
+  weaponDefIndex,
+  onModelLoad
+}: {
+  weaponDefIndex: number;
+  onModelLoad?: (mesh: THREE.Mesh | null) => void;
+}) {
+  const meshRef = useRef<THREE.Group>(null);
+  const [fallbackMode, setFallbackMode] = useState(false);
+
+  // Get the model filename
+  const modelFilename = getWeaponModelFilename(weaponDefIndex);
+  const modelPath = modelFilename ? `/models/weapons/${modelFilename}` : null;
+
+  // Try to load the GLTF model
+  useEffect(() => {
+    if (!modelPath) {
+      setFallbackMode(true);
+      return;
+    }
+
+    // Load model using useGLTF pattern
+    let mounted = true;
+
+    fetch(modelPath, { method: 'HEAD' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Model not found');
+        }
+        // Model exists, will be loaded by useGLTF
+      })
+      .catch(() => {
+        if (mounted) {
+          console.log(`[WeaponModel] Model not found: ${modelPath}, using fallback`);
+          setFallbackMode(true);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [modelPath]);
+
+  // Notify parent of mesh reference for decal placement
+  useEffect(() => {
+    if (meshRef.current && onModelLoad) {
+      // Find the first mesh in the group
+      const mesh = meshRef.current.children.find(
+        (child) => child instanceof THREE.Mesh
+      ) as THREE.Mesh | undefined;
+
+      onModelLoad(mesh || null);
+    }
+  }, [onModelLoad, fallbackMode]);
+
+  // Fallback mode: simple box geometry
+  if (fallbackMode || !modelPath) {
+    return (
+      <mesh
+        ref={meshRef as any}
+        rotation={[0, Math.PI / 4, 0]}
+        onClick={() => {
+          if (meshRef.current && onModelLoad) {
+            const mesh = meshRef.current as any as THREE.Mesh;
+            onModelLoad(mesh);
+          }
+        }}
+      >
+        <boxGeometry args={[2, 0.3, 0.1]} />
+        <meshStandardMaterial color="#444444" metalness={0.8} roughness={0.2} />
+      </mesh>
+    );
+  }
+
+  // Real GLTF model mode
+  return <LoadedWeaponModel modelPath={modelPath} meshRef={meshRef} onModelLoad={onModelLoad} />;
+}
+
+/**
+ * Actual GLTF model loader component
+ */
+function LoadedWeaponModel({
+  modelPath,
+  meshRef,
+  onModelLoad
+}: {
+  modelPath: string;
+  meshRef: React.RefObject<THREE.Group>;
+  onModelLoad?: (mesh: THREE.Mesh | null) => void;
+}) {
+  const gltf = useGLTF(modelPath);
+
+  useEffect(() => {
+    if (gltf.scene && onModelLoad) {
+      // Find the first mesh in the scene
+      const mesh = gltf.scene.children.find(
+        (child) => child instanceof THREE.Mesh
+      ) as THREE.Mesh | undefined;
+
+      onModelLoad(mesh || null);
+    }
+  }, [gltf, onModelLoad]);
+
   return (
-    <mesh rotation={[0, Math.PI / 4, 0]}>
-      <boxGeometry args={[2, 0.3, 0.1]} />
-      <meshStandardMaterial color="#444444" metalness={0.8} roughness={0.2} />
-    </mesh>
+    <primitive
+      ref={meshRef}
+      object={gltf.scene.clone()}
+      rotation={[0, Math.PI / 4, 0]}
+      scale={1}
+    />
   );
 }
 
 /**
  * Sticker Preview Component
- * Renders a sticker decal on the weapon
+ * Renders a sticker decal on the weapon using DecalGeometry
  */
 function StickerDecal({
   transform,
-  texture,
-  onPointerDown
+  stickerTexture,
+  targetMesh,
+  onPointerDown,
+  useDecal = false
 }: {
   transform: StickerTransform;
-  texture?: THREE.Texture;
+  stickerTexture?: THREE.Texture;
+  targetMesh?: THREE.Mesh | null;
   onPointerDown?: () => void;
+  useDecal?: boolean;
 }) {
   const { position, rotation, scale, wear } = transform;
+  const meshRef = useRef<THREE.Mesh>(null);
 
+  // Create material
+  const material = new THREE.MeshPhongMaterial({
+    map: stickerTexture,
+    transparent: true,
+    opacity: 1 - wear,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -4,
+    side: THREE.DoubleSide,
+  });
+
+  // If we have a target mesh and decal mode is enabled, use DecalGeometry
+  if (useDecal && targetMesh) {
+    // Create DecalGeometry
+    const decalPosition = new THREE.Vector3(...position);
+    const decalOrientation = new THREE.Euler(...rotation);
+    const decalSize = new THREE.Vector3(0.3 * scale, 0.3 * scale, 0.1);
+
+    try {
+      const decalGeometry = new DecalGeometry(
+        targetMesh,
+        decalPosition,
+        decalOrientation,
+        decalSize
+      );
+
+      return (
+        <mesh
+          ref={meshRef}
+          geometry={decalGeometry}
+          material={material}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onPointerDown?.();
+          }}
+        />
+      );
+    } catch (error) {
+      console.warn("[StickerDecal] DecalGeometry failed, falling back to plane", error);
+      // Fall through to plane mode
+    }
+  }
+
+  // Fallback: Simple plane geometry (when no target mesh or decal mode disabled)
   return (
     <mesh
+      ref={meshRef}
       position={position}
       rotation={rotation}
       scale={scale}
+      material={material}
       onPointerDown={(e) => {
         e.stopPropagation();
         onPointerDown?.();
       }}
     >
       <planeGeometry args={[0.3, 0.3]} />
-      <meshBasicMaterial
-        color="#ffffff"
-        transparent
-        opacity={1 - wear}
-        side={THREE.DoubleSide}
-      />
     </mesh>
   );
 }
@@ -85,16 +238,35 @@ function StickerDecal({
  * 3D Scene Component
  */
 function Scene3D({
-  weaponName,
+  weaponDefIndex,
+  stickerItemId,
   stickers,
   selectedSlot,
   onStickerSelect
 }: {
-  weaponName: string;
+  weaponDefIndex: number;
+  stickerItemId: number;
   stickers: Map<number, StickerTransform>;
   selectedSlot: number | null;
   onStickerSelect: (slot: number) => void;
 }) {
+  const [weaponMesh, setWeaponMesh] = useState<THREE.Mesh | null>(null);
+  const [stickerTexture, setStickerTexture] = useState<THREE.Texture | null>(null);
+
+  // Load sticker texture
+  useEffect(() => {
+    const stickerUrl = getStickerImageUrl(stickerItemId);
+
+    loadStickerTexture(stickerUrl)
+      .then((texture) => {
+        setStickerTexture(texture);
+      })
+      .catch((error) => {
+        console.warn("[Scene3D] Failed to load sticker texture, using fallback", error);
+        setStickerTexture(null);
+      });
+  }, [stickerItemId]);
+
   return (
     <>
       <PerspectiveCamera makeDefault position={[0, 1, 3]} />
@@ -112,13 +284,19 @@ function Scene3D({
       <pointLight position={[-5, 5, 5]} intensity={0.5} />
 
       {/* Weapon Model */}
-      <WeaponModel weaponName={weaponName} />
+      <WeaponModel
+        weaponDefIndex={weaponDefIndex}
+        onModelLoad={(mesh) => setWeaponMesh(mesh)}
+      />
 
       {/* Stickers */}
       {Array.from(stickers.entries()).map(([slot, transform]) => (
         <StickerDecal
           key={slot}
           transform={transform}
+          stickerTexture={stickerTexture || undefined}
+          targetMesh={weaponMesh}
+          useDecal={!!weaponMesh} // Use decal mode if we have a weapon mesh
           onPointerDown={() => onStickerSelect(slot)}
         />
       ))}
@@ -415,7 +593,8 @@ export function Sticker3DEditor({
             <Canvas shadows>
               <Suspense fallback={null}>
                 <Scene3D
-                  weaponName={targetItem.name}
+                  weaponDefIndex={targetItem.id}
+                  stickerItemId={stickerItem.id}
                   stickers={stickers}
                   selectedSlot={selectedSlot}
                   onStickerSelect={handleSlotSelect}

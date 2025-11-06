@@ -1,0 +1,172 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Ian Lucas. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+/**
+ * Cache for loaded GLTF models to avoid redundant network requests
+ */
+const modelCache = new Map<string, THREE.Group>();
+
+/**
+ * Cache for loaded textures
+ */
+const textureCache = new Map<string, THREE.Texture>();
+
+/**
+ * Texture loader instance
+ */
+const textureLoader = new THREE.TextureLoader();
+
+/**
+ * GLTF loader instance
+ */
+const gltfLoader = new GLTFLoader();
+
+/**
+ * CS2 weapon definition index to model filename mapping
+ * Maps CS2 defindex to GLB model filename
+ */
+export const WEAPON_MODEL_MAP: Record<number, string> = {
+  // Pistols
+  1: "deagle.glb",           // Desert Eagle
+  2: "elite.glb",            // Dual Berettas
+  3: "fiveseven.glb",        // Five-SeveN
+  4: "glock.glb",            // Glock-18
+  7: "ak47.glb",             // AK-47
+  8: "aug.glb",              // AUG
+  9: "awp.glb",              // AWP
+  10: "famas.glb",           // FAMAS
+  11: "g3sg1.glb",           // G3SG1
+  13: "galilar.glb",         // Galil AR
+  14: "m249.glb",            // M249
+  16: "m4a4.glb",            // M4A4
+  17: "mac10.glb",           // MAC-10
+  19: "p90.glb",             // P90
+  24: "ump45.glb",           // UMP-45
+  25: "xm1014.glb",          // XM1014
+  26: "bizon.glb",           // PP-Bizon
+  27: "mag7.glb",            // MAG-7
+  28: "negev.glb",           // Negev
+  29: "sawedoff.glb",        // Sawed-Off
+  30: "tec9.glb",            // Tec-9
+  32: "hkp2000.glb",         // P2000
+  33: "mp7.glb",             // MP7
+  34: "mp9.glb",             // MP9
+  35: "nova.glb",            // Nova
+  36: "p250.glb",            // P250
+  38: "scar20.glb",          // SCAR-20
+  39: "sg556.glb",           // SG 553
+  40: "ssg08.glb",           // SSG 08
+  60: "m4a1s.glb",           // M4A1-S
+  61: "usps.glb",            // USP-S
+  63: "cz75a.glb",           // CZ75-Auto
+  64: "revolver.glb",        // R8 Revolver
+  // Knives
+  500: "knife_default_ct.glb",
+  503: "knife_default_t.glb",
+};
+
+/**
+ * Get weapon model filename from CS2 economy item
+ * @param itemId CS2 economy item ID
+ * @returns Model filename or null if not found
+ */
+export function getWeaponModelFilename(itemId: number): string | null {
+  return WEAPON_MODEL_MAP[itemId] || null;
+}
+
+/**
+ * Load a weapon GLTF model
+ * @param modelPath Path to the GLB file (e.g., "/models/weapons/ak47.glb")
+ * @returns Promise<THREE.Group> The loaded model
+ */
+export async function loadWeaponModel(modelPath: string): Promise<THREE.Group> {
+  // Check cache first
+  if (modelCache.has(modelPath)) {
+    const cached = modelCache.get(modelPath)!;
+    return cached.clone(); // Return a clone to avoid shared state
+  }
+
+  return new Promise((resolve, reject) => {
+    gltfLoader.load(
+      modelPath,
+      (gltf) => {
+        const model = gltf.scene;
+        modelCache.set(modelPath, model);
+        resolve(model.clone());
+      },
+      undefined,
+      (error) => {
+        console.error(`[ModelLoader] Failed to load model: ${modelPath}`, error);
+        reject(error);
+      }
+    );
+  });
+}
+
+/**
+ * Load a sticker texture from URL
+ * @param stickerUrl URL to the sticker PNG image
+ * @returns Promise<THREE.Texture> The loaded texture
+ */
+export async function loadStickerTexture(stickerUrl: string): Promise<THREE.Texture> {
+  // Check cache first
+  if (textureCache.has(stickerUrl)) {
+    return textureCache.get(stickerUrl)!;
+  }
+
+  return new Promise((resolve, reject) => {
+    textureLoader.load(
+      stickerUrl,
+      (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        textureCache.set(stickerUrl, texture);
+        resolve(texture);
+      },
+      undefined,
+      (error) => {
+        console.error(`[ModelLoader] Failed to load texture: ${stickerUrl}`, error);
+        reject(error);
+      }
+    );
+  });
+}
+
+/**
+ * Get sticker image URL from CS2 sticker ID
+ * Uses the ByMykel CSGO-API CDN
+ * @param stickerId CS2 sticker item ID
+ * @returns Sticker image URL
+ */
+export function getStickerImageUrl(stickerId: number): string {
+  // This is a simplified mapping - in production, you'd fetch from the API
+  // For now, we'll use a pattern based on the sticker ID
+  const CDN_BASE = "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/stickers";
+
+  // TODO: Implement proper API integration to get actual sticker filename
+  // For now, return a placeholder that follows the CDN pattern
+  return `${CDN_BASE}/default/sticker_${stickerId}.png`;
+}
+
+/**
+ * Clear all caches (useful for development/testing)
+ */
+export function clearModelCaches() {
+  modelCache.clear();
+  textureCache.clear();
+  console.log("[ModelLoader] Caches cleared");
+}
+
+/**
+ * Get cache statistics
+ */
+export function getCacheStats() {
+  return {
+    models: modelCache.size,
+    textures: textureCache.size,
+  };
+}
