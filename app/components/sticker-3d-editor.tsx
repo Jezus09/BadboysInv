@@ -247,18 +247,18 @@ function LoadedWeaponModel({
       } : null
     });
 
-    // CS2 skin texture loading - DISABLED
-    // NOTE: econItem.getImage() returns 2D inventory icons (not 3D UV textures!)
-    // These perspective icons cannot be properly mapped to 3D models
-    // Workshop OBJ models are designed for custom textures, not in-game skins
-    if (false && econItem) { // DISABLED - inventory icons don't work as 3D textures
-      const imageUrl = econItem.getImage();
-      const textureLoader = new THREE.TextureLoader();
-      console.log(`[WeaponModel] Loading texture from: ${imageUrl}`);
+    // CS2 skin texture loading using getTextureImage() for proper UV mapping
+    if (econItem) {
+      // Use getTextureImage() which returns the actual texture map (not inventory icon!)
+      const textureUrl = econItem.getTextureImage();
 
-      textureLoader.load(
-        imageUrl,
-        (texture) => {
+      if (textureUrl) {
+        const textureLoader = new THREE.TextureLoader();
+        console.log(`[WeaponModel] Loading texture from: ${textureUrl}`);
+
+        textureLoader.load(
+          textureUrl,
+          (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
 
           // Official CS2 OBJ models - OBJ format needs Y-flip!
@@ -389,40 +389,42 @@ function LoadedWeaponModel({
           console.error("[WeaponModel] ❌ Failed to load skin texture", error);
         }
       );
-    } // End of disabled CS2 skin texture block
+      } else {
+        // No texture URL - apply neutral grey material as fallback
+        console.warn(`[WeaponModel] No texture URL available for item:`, econItem.name);
 
-    // Apply neutral material to all meshes (ENABLED - this is what we use now)
-    let meshCount = 0;
-    let materialCount = 0;
+        let meshCount = 0;
+        let materialCount = 0;
 
-    clonedScene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        meshCount++;
+        clonedScene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            meshCount++;
 
-        // Create a neutral, professional-looking PBR material
-        const neutralMaterial = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(0x444444), // Dark grey (professional look)
-          metalness: 0.6, // Slightly metallic
-          roughness: 0.4, // Smooth but not mirror-like
-          emissive: new THREE.Color(0x111111), // Slight glow
-          emissiveIntensity: 0.1
+            // Create a neutral, professional-looking PBR material
+            const neutralMaterial = new THREE.MeshStandardMaterial({
+              color: new THREE.Color(0x555555), // Dark grey (professional look)
+              metalness: 0.5, // Slightly metallic
+              roughness: 0.6, // Smooth but not mirror-like
+              emissive: new THREE.Color(0x111111), // Slight glow
+              emissiveIntensity: 0.1
+            });
+
+            // Apply to all materials in the mesh
+            if (Array.isArray(child.material)) {
+              child.material.forEach((mat, idx) => {
+                materialCount++;
+                child.material[idx] = neutralMaterial.clone();
+              });
+            } else {
+              materialCount++;
+              child.material = neutralMaterial;
+            }
+          }
         });
 
-        // Apply to all materials in the mesh
-        if (Array.isArray(child.material)) {
-          child.material.forEach((mat, idx) => {
-            materialCount++;
-            // Replace with neutral material
-            child.material[idx] = neutralMaterial.clone();
-          });
-        } else {
-          materialCount++;
-          child.material = neutralMaterial;
-        }
+        console.log(`[WeaponModel] ✅ Applied neutral fallback material to ${meshCount} meshes, ${materialCount} materials`);
       }
-    });
-
-    console.log(`[WeaponModel] ✅ Applied neutral material to ${meshCount} meshes, ${materialCount} materials`);
+    } // End of CS2 skin texture block
   }, [clonedScene, weaponDefIndex]);
 
   if (!clonedScene) return null;
