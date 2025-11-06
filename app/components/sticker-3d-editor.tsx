@@ -419,24 +419,31 @@ function LoadedWeaponModel({
 /**
  * Sticker Preview Component
  * Renders a sticker decal on the weapon using DecalGeometry
+ * Supports drag & drop with modifier keys
  */
 function StickerDecal({
   transform,
   stickerTexture,
   targetMesh,
   onPointerDown,
+  onDragUpdate,
+  isSelected,
   useDecal = false
 }: {
   transform: StickerTransform;
   stickerTexture?: THREE.Texture;
   targetMesh?: THREE.Mesh | null;
   onPointerDown?: () => void;
+  onDragUpdate?: (newTransform: Partial<StickerTransform>) => void;
+  isSelected?: boolean;
   useDecal?: boolean;
 }) {
   const { position, rotation, scale, wear } = transform;
   const meshRef = useRef<THREE.Mesh>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; transform: StickerTransform } | null>(null);
 
-  // Create material
+  // Create material with highlight for selected stickers
   const material = new THREE.MeshPhongMaterial({
     map: stickerTexture,
     transparent: true,
@@ -445,7 +452,72 @@ function StickerDecal({
     polygonOffset: true,
     polygonOffsetFactor: -4,
     side: THREE.DoubleSide,
+    emissive: isSelected ? new THREE.Color(0x3b82f6) : new THREE.Color(0x000000),
+    emissiveIntensity: isSelected ? 0.3 : 0,
   });
+
+  // Handle drag start
+  const handlePointerDown = (e: THREE.Event) => {
+    e.stopPropagation();
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX || 0,
+      y: e.clientY || 0,
+      transform: { ...transform }
+    };
+    onPointerDown?.();
+  };
+
+  // Handle drag move
+  const handlePointerMove = (e: THREE.Event) => {
+    if (!isDragging || !dragStartRef.current || !onDragUpdate) return;
+
+    const deltaX = ((e.clientX || 0) - dragStartRef.current.x) * 0.005;
+    const deltaY = ((e.clientY || 0) - dragStartRef.current.y) * 0.005;
+
+    // Check modifier keys
+    const isShiftPressed = e.shiftKey;
+    const isCtrlPressed = e.ctrlKey || e.metaKey;
+
+    if (isCtrlPressed) {
+      // Ctrl + Drag: Scale
+      const scaleChange = deltaY * -2; // Negative to make dragging up = larger
+      const newScale = Math.max(0.5, Math.min(3, dragStartRef.current.transform.scale + scaleChange));
+      onDragUpdate({ scale: newScale });
+    } else if (isShiftPressed) {
+      // Shift + Drag: Rotate (Z-axis)
+      const rotationChange = deltaX * 3; // Sensitivity multiplier
+      const newRotation: [number, number, number] = [...dragStartRef.current.transform.rotation];
+      newRotation[2] = newRotation[2] + rotationChange;
+      onDragUpdate({ rotation: newRotation });
+    } else {
+      // Normal drag: Move position
+      const newPosition: [number, number, number] = [...dragStartRef.current.transform.position];
+      newPosition[0] = newPosition[0] + deltaX;
+      newPosition[1] = newPosition[1] - deltaY; // Invert Y for natural drag feeling
+      onDragUpdate({ position: newPosition });
+    }
+  };
+
+  // Handle drag end
+  const handlePointerUp = () => {
+    setIsDragging(false);
+    dragStartRef.current = null;
+  };
+
+  // Handle scroll wheel for rotation
+  const handleWheel = (e: THREE.Event) => {
+    if (!isSelected || !onDragUpdate) return;
+
+    e.stopPropagation();
+
+    // Get scroll direction and amount
+    const delta = (e.deltaY || 0) * -0.01; // Negative to make scroll up = rotate clockwise
+
+    const newRotation: [number, number, number] = [...transform.rotation];
+    newRotation[2] = newRotation[2] + delta;
+    onDragUpdate({ rotation: newRotation });
+  };
 
   // If we have a target mesh and decal mode is enabled, use DecalGeometry
   if (useDecal && targetMesh) {
@@ -467,10 +539,10 @@ function StickerDecal({
           ref={meshRef}
           geometry={decalGeometry}
           material={material}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            onPointerDown?.();
-          }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onWheel={handleWheel}
         />
       );
     } catch (error) {
@@ -487,12 +559,19 @@ function StickerDecal({
       rotation={rotation}
       scale={scale}
       material={material}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        onPointerDown?.();
-      }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onWheel={handleWheel}
     >
       <planeGeometry args={[0.3, 0.3]} />
+      {/* Selection indicator ring */}
+      {isSelected && (
+        <lineLoop>
+          <edgesGeometry args={[new THREE.PlaneGeometry(0.35, 0.35)]} />
+          <lineBasicMaterial color="#3b82f6" linewidth={2} />
+        </lineLoop>
+      )}
     </mesh>
   );
 }
@@ -506,6 +585,7 @@ function Scene3D({
   stickers,
   selectedSlot,
   onStickerSelect,
+  onStickerUpdate,
   onDebugInfo,
   onStatusChange
 }: {
@@ -514,6 +594,7 @@ function Scene3D({
   stickers: Map<number, StickerTransform>;
   selectedSlot: number | null;
   onStickerSelect: (slot: number) => void;
+  onStickerUpdate?: (slot: number, update: Partial<StickerTransform>) => void;
   onDebugInfo?: (info: string) => void;
   onStatusChange?: (status: string) => void;
 }) {
@@ -641,7 +722,9 @@ function Scene3D({
           stickerTexture={stickerTexture || undefined}
           targetMesh={weaponMesh}
           useDecal={!!weaponMesh} // Use decal mode if we have a weapon mesh
+          isSelected={slot === selectedSlot}
           onPointerDown={() => onStickerSelect(slot)}
+          onDragUpdate={(update) => onStickerUpdate?.(slot, update)}
         />
       ))}
     </>
@@ -650,6 +733,7 @@ function Scene3D({
 
 /**
  * Control Panel for Position/Rotation/Scale adjustments
+ * Collapsible panel with "Precision Controls"
  */
 function ControlPanel({
   selectedSlot,
@@ -661,6 +745,7 @@ function ControlPanel({
   onChange: (newTransform: StickerTransform) => void;
 }) {
   const translate = useTranslate();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   if (selectedSlot === null || !transform) {
     return (
@@ -669,6 +754,9 @@ function ControlPanel({
           <div className="text-2xl sm:text-4xl mb-2">👆</div>
           <div className="font-medium">Select a slot above (0-4)</div>
           <div className="text-xs sm:text-sm mt-1">Choose where to place your sticker</div>
+          <div className="mt-4 text-xs text-neutral-500">
+            💡 Tip: Drag to move • Shift+Drag to rotate • Ctrl+Drag to scale
+          </div>
         </div>
       </div>
     );
@@ -688,9 +776,39 @@ function ControlPanel({
 
   return (
     <div className="space-y-2 sm:space-y-3 p-2 sm:p-4 bg-neutral-800 rounded-lg">
-      <div className="text-xs sm:text-sm font-bold text-neutral-200 mb-1 sm:mb-2">
-        Slot {selectedSlot} Controls
+      {/* Header with expand/collapse button */}
+      <div className="flex justify-between items-center mb-2">
+        <div className="text-xs sm:text-sm font-bold text-neutral-200">
+          Slot {selectedSlot} - Quick Tips
+        </div>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="px-3 py-1 text-xs font-bold rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+        >
+          {isExpanded ? '▼ Hide' : '⚙️ Precision Controls'}
+        </button>
       </div>
+
+      {/* Quick tips - always visible */}
+      <div className="text-xs text-neutral-400 space-y-1 bg-neutral-900 p-3 rounded">
+        <div>🖱️ <span className="text-white">Drag</span> - Move sticker</div>
+        <div>⇧ <span className="text-white">Shift + Drag</span> - Rotate</div>
+        <div>⌃ <span className="text-white">Ctrl + Drag</span> - Scale</div>
+        <div>🔄 <span className="text-white">Scroll Wheel</span> - Fine rotate</div>
+      </div>
+
+      {/* Collapsible slider controls */}
+      {!isExpanded && (
+        <div className="text-xs text-center text-neutral-500 py-2">
+          Click "Precision Controls" for manual adjustments
+        </div>
+      )}
+
+      {isExpanded && (
+        <div className="space-y-2 sm:space-y-3 pt-2 border-t border-neutral-700">
+          <div className="text-xs font-bold text-neutral-300 mb-2">
+            Manual Adjustments
+          </div>
 
       {/* Position Controls */}
       <div className="space-y-1">
@@ -845,6 +963,8 @@ function ControlPanel({
           className="w-full h-8 sm:h-6"
         />
       </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -897,6 +1017,15 @@ export function Sticker3DEditor({
 
     const newStickers = new Map(stickers);
     newStickers.set(selectedSlot, newTransform);
+    setStickers(newStickers);
+  };
+
+  const handleStickerUpdate = (slot: number, update: Partial<StickerTransform>) => {
+    const currentTransform = stickers.get(slot);
+    if (!currentTransform) return;
+
+    const newStickers = new Map(stickers);
+    newStickers.set(slot, { ...currentTransform, ...update });
     setStickers(newStickers);
   };
 
@@ -967,6 +1096,7 @@ export function Sticker3DEditor({
                     stickers={stickers}
                     selectedSlot={selectedSlot}
                     onStickerSelect={handleSlotSelect}
+                    onStickerUpdate={handleStickerUpdate}
                     onDebugInfo={handleDebugInfo}
                     onStatusChange={setStickerStatus}
                   />
