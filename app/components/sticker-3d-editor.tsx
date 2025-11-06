@@ -429,7 +429,7 @@ function LoadedWeaponModel({
       ref={meshRef}
       object={clonedScene}
       rotation={[0, Math.PI / 4, 0]}
-      scale={3} // Optimal scale - visible but not too large
+      scale={0.5} // Smaller scale for official CS2 models (they're larger than Sketchfab)
     />
   );
 }
@@ -858,19 +858,19 @@ function Scene3D({
 
   return (
     <>
-      {/* Camera setup - CS2 style: far view to see full weapon */}
+      {/* Camera setup - CS2 style: side view with proper distance */}
       <PerspectiveCamera
         makeDefault
-        position={[5, 1, 3]}  // Much further back
-        fov={35}  // Even narrower FOV
+        position={[2, 0.4, 1.2]}  // Closer since model is scaled down
+        fov={45}  // Normal FOV
       />
       <OrbitControls
         enablePan={false}  // Disable panning - CS2 style
         enableZoom={true}
         enableRotate={true}
-        minDistance={3}  // Can't get too close
-        maxDistance={12}  // Can zoom out far
-        target={[0, 0, 0]}  // Focus on origin
+        minDistance={1.5}  // Can't get too close
+        maxDistance={6}  // Can zoom out
+        target={[0, 0.1, 0]}  // Focus slightly above origin
       />
 
       {/* Lighting - Enhanced for better texture visibility */}
