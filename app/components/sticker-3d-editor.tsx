@@ -3,11 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, useGLTF } from "@react-three/drei";
 import { Suspense, useState, useEffect, useRef, Component, ReactNode } from "react";
 import * as THREE from "three";
 import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { useNameItemString } from "~/components/hooks/use-name-item";
 import { useSync } from "~/components/hooks/use-sync";
 import { SyncAction } from "~/data/sync";
@@ -185,7 +186,7 @@ function WeaponModel({
 }
 
 /**
- * Actual GLTF model loader component
+ * Actual model loader component - supports both GLTF and OBJ
  */
 function LoadedWeaponModel({
   modelPath,
@@ -198,23 +199,30 @@ function LoadedWeaponModel({
   meshRef: React.RefObject<THREE.Group>;
   onModelLoad?: (mesh: THREE.Mesh | null) => void;
 }) {
-  const gltf = useGLTF(modelPath);
+  const isOBJ = modelPath.endsWith('.obj');
+
+  // Load based on file type
+  const gltf = !isOBJ ? useGLTF(modelPath) : null;
+  const objGroup = isOBJ ? useLoader(OBJLoader, modelPath) : null;
+
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
 
   // Clone the scene once and store it
   useEffect(() => {
-    if (gltf.scene) {
-      const clone = gltf.scene.clone(true); // Deep clone including materials
+    const source = isOBJ ? objGroup : gltf?.scene;
+
+    if (source) {
+      const clone = source.clone(true); // Deep clone including materials
       setClonedScene(clone);
 
-      // Find the first mesh recursively (Sketchfab models can be deeply nested)
+      // Find the first mesh recursively (models can be deeply nested)
       if (onModelLoad) {
         let foundMesh: THREE.Mesh | null = null;
 
         clone.traverse((child) => {
           if (!foundMesh && child instanceof THREE.Mesh) {
             foundMesh = child;
-            console.log('[LoadedWeaponModel] Found mesh:', child.name || 'unnamed');
+            console.log('[LoadedWeaponModel] Found mesh:', child.name || 'unnamed', 'Type:', isOBJ ? 'OBJ' : 'GLTF');
           }
         });
 
@@ -223,7 +231,7 @@ function LoadedWeaponModel({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gltf]);
+  }, [isOBJ ? objGroup : gltf]);
 
   // Apply weapon material (NO SKIN TEXTURE - just neutral material)
   useEffect(() => {

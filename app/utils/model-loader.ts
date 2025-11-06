@@ -96,40 +96,40 @@ export const WEAPON_STICKER_PRESETS: Record<number, StickerPreset> = {
  */
 export const WEAPON_MODEL_MAP: Record<number, string> = {
   // Pistols
-  1: "deagle.glb",           // Desert Eagle
-  2: "elite.glb",            // Dual Berettas
-  3: "fiveseven.glb",        // Five-SeveN
-  4: "glock.glb",            // Glock-18
-  7: "ak47.glb",             // AK-47
-  8: "aug.glb",              // AUG
-  9: "awp.glb",              // AWP
-  10: "famas.glb",           // FAMAS
-  11: "g3sg1.glb",           // G3SG1
-  13: "galilar.glb",         // Galil AR
-  14: "m249.glb",            // M249
-  16: "m4a4.glb",            // M4A4
-  17: "mac10.glb",           // MAC-10
-  19: "p90.glb",             // P90
-  24: "ump45.glb",           // UMP-45
-  25: "xm1014.glb",          // XM1014
-  26: "bizon.glb",           // PP-Bizon
-  27: "mag7.glb",            // MAG-7
-  28: "negev.glb",           // Negev
-  29: "sawedoff.glb",        // Sawed-Off
-  30: "tec9.glb",            // Tec-9
-  32: "hkp2000.glb",         // P2000
-  33: "mp7.glb",             // MP7
-  34: "mp9.glb",             // MP9
-  35: "nova.glb",            // Nova
-  36: "p250.glb",            // P250
-  38: "scar20.glb",          // SCAR-20
-  39: "sg556.glb",           // SG 553
-  40: "ssg08.glb",           // SSG 08
-  60: "m4a1s.glb",           // M4A1-S
-  61: "usps.glb",            // USP-S
-  63: "cz75a.glb",           // CZ75-Auto
-  64: "revolver.glb",        // R8 Revolver
-  // Knives
+  1: "deagle.obj",           // Desert Eagle
+  2: "elite.obj",            // Dual Berettas
+  3: "fiveseven.obj",        // Five-SeveN
+  4: "glock.obj",            // Glock-18
+  7: "ak47.obj",             // AK-47
+  8: "aug.obj",              // AUG
+  9: "awp.obj",              // AWP
+  10: "famas.obj",           // FAMAS
+  11: "g3sg1.obj",           // G3SG1
+  13: "galilar.obj",         // Galil AR
+  14: "m249.obj",            // M249
+  16: "m4a4.obj",            // M4A4
+  17: "mac10.obj",           // MAC-10
+  19: "p90.obj",             // P90
+  24: "ump45.obj",           // UMP-45
+  25: "xm1014.obj",          // XM1014
+  26: "bizon.obj",           // PP-Bizon
+  27: "mag7.obj",            // MAG-7
+  28: "negev.obj",           // Negev
+  29: "sawedoff.obj",        // Sawed-Off
+  30: "tec9.obj",            // Tec-9
+  32: "hkp2000.obj",         // P2000
+  33: "mp7.obj",             // MP7
+  34: "mp9.obj",             // MP9
+  35: "nova.obj",            // Nova
+  36: "p250.obj",            // P250
+  38: "scar20.obj",          // SCAR-20
+  39: "sg556.obj",           // SG 553
+  40: "ssg08.obj",           // SSG 08
+  60: "m4a1s.obj",           // M4A1-S
+  61: "usps.obj",            // USP-S
+  63: "cz75a.obj",           // CZ75-Auto
+  64: "revolver.obj",        // R8 Revolver
+  // Knives - these don't have OBJ yet, will use fallback
   500: "knife_default_ct.glb",
   503: "knife_default_t.glb",
 };
