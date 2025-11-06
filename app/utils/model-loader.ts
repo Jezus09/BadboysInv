@@ -6,6 +6,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { getStickerImageSync } from "./sticker-api";
+import { CS2Economy } from "@ianlucas/cs2-lib";
 
 /**
  * Cache for loaded GLTF models to avoid redundant network requests
@@ -73,11 +74,28 @@ export const WEAPON_MODEL_MAP: Record<number, string> = {
 
 /**
  * Get weapon model filename from CS2 economy item
- * @param itemId CS2 economy item ID
+ * @param itemId CS2 economy item ID (can be weapon skin ID)
  * @returns Model filename or null if not found
  */
 export function getWeaponModelFilename(itemId: number): string | null {
-  return WEAPON_MODEL_MAP[itemId] || null;
+  // First try direct lookup (for base weapons)
+  if (WEAPON_MODEL_MAP[itemId]) {
+    return WEAPON_MODEL_MAP[itemId];
+  }
+
+  // For weapon skins, try to extract base weapon defindex
+  // CS2 weapon skins have IDs in ranges, base weapons are in specific slots
+  const econItem = CS2Economy.getById(itemId);
+
+  if (econItem && econItem.type === "weapon") {
+    // Try to get the weapon defindex from the item's def property
+    const weaponDefIndex = econItem.def;
+    if (weaponDefIndex && WEAPON_MODEL_MAP[weaponDefIndex]) {
+      return WEAPON_MODEL_MAP[weaponDefIndex];
+    }
+  }
+
+  return null;
 }
 
 /**
