@@ -659,6 +659,67 @@ function Scene3D({
   const [weaponMesh, setWeaponMesh] = useState<THREE.Mesh | null>(null);
   const [stickerTexture, setStickerTexture] = useState<THREE.Texture | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
+  const { camera } = useThree();
+
+  // Auto-snap sticker to weapon surface when weapon loads
+  useEffect(() => {
+    if (!weaponMesh || !onStickerUpdate) return;
+
+    console.log(`[Scene3D] Weapon mesh loaded, auto-snapping sticker to surface`);
+    onDebugInfo?.('🎯 Auto-snapping sticker to weapon...');
+
+    // Raycast from current sticker position towards weapon center
+    const stickerPos = new THREE.Vector3(...stickerTransform.position);
+    const weaponCenter = new THREE.Vector3(0, 0.2, 0); // Approximate weapon center
+    const direction = weaponCenter.clone().sub(stickerPos).normalize();
+
+    const raycaster = new THREE.Raycaster(stickerPos, direction);
+    const intersects = raycaster.intersectObject(weaponMesh, true);
+
+    if (intersects.length > 0) {
+      const intersect = intersects[0];
+      const hitPoint = intersect.point;
+
+      // Get surface normal in world space
+      const localNormal = intersect.face?.normal || new THREE.Vector3(0, 0, 1);
+      const worldNormal = localNormal.clone()
+        .transformDirection(intersect.object.matrixWorld)
+        .normalize();
+
+      // Offset position slightly above the surface
+      const offset = 0.01;
+      const offsetPoint = hitPoint.clone().add(worldNormal.clone().multiplyScalar(offset));
+
+      // Calculate rotation to align with surface
+      const up = new THREE.Vector3(0, 1, 0);
+      if (Math.abs(worldNormal.dot(up)) > 0.99) {
+        up.set(1, 0, 0);
+      }
+
+      const right = new THREE.Vector3().crossVectors(up, worldNormal).normalize();
+      const correctedUp = new THREE.Vector3().crossVectors(worldNormal, right).normalize();
+
+      const rotationMatrix = new THREE.Matrix4();
+      rotationMatrix.makeBasis(right, correctedUp, worldNormal);
+
+      const euler = new THREE.Euler().setFromRotationMatrix(rotationMatrix);
+
+      console.log(`[Scene3D] ✅ Auto-snapped to surface:`, {
+        position: offsetPoint.toArray(),
+        rotation: [euler.x, euler.y, euler.z]
+      });
+
+      onStickerUpdate({
+        position: [offsetPoint.x, offsetPoint.y, offsetPoint.z],
+        rotation: [euler.x, euler.y, euler.z]
+      });
+
+      onDebugInfo?.('✅ Sticker snapped to weapon surface!');
+    } else {
+      console.warn('[Scene3D] No intersection found during auto-snap');
+      onDebugInfo?.('⚠️ Could not snap to surface, using preset position');
+    }
+  }, [weaponMesh]); // Only run when weaponMesh changes
 
   // Load sticker texture
   useEffect(() => {
@@ -1071,18 +1132,19 @@ export function Sticker3DEditor({
     const x = stickerTransform.position[0];
     const y = stickerTransform.position[1];
     const rotation = Math.round((stickerTransform.rotation[2] * 180) / Math.PI); // Use Z rotation only
+    const slot = 0; // Always use slot 0 - CS2 style single sticker
 
     sync({
       type: SyncAction.ApplyItemSticker,
       targetUid,
-      slot: selectedSlot,
+      slot,
       stickerUid,
       x,
       y,
       rotation
     });
 
-    setInventory(inventory.applyItemSticker(targetUid, stickerUid, selectedSlot, x, y, rotation));
+    setInventory(inventory.applyItemSticker(targetUid, stickerUid, slot, x, y, rotation));
     playSound("sticker_apply_confirm");
     onClose();
   };
