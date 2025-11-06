@@ -240,27 +240,56 @@ function LoadedWeaponModel({
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
 
-          // Fix texture mapping for CS2 weapon skins
-          // CS2 skin textures need proper UV mapping configuration
-          texture.flipY = true; // CS2 textures need Y-flip for correct orientation
-          texture.wrapS = THREE.RepeatWrapping;
-          texture.wrapT = THREE.RepeatWrapping;
+          // CRITICAL: GLTF models have their own UV mapping embedded
+          // DO NOT flip or wrap the texture - use it as-is
+          texture.flipY = false; // GLTF models already have correct orientation
+          texture.wrapS = THREE.ClampToEdgeWrapping; // Don't repeat/tile
+          texture.wrapT = THREE.ClampToEdgeWrapping; // Don't repeat/tile
 
-          // Apply weapon-specific texture transformations
-          // These values fix UV mapping issues for different weapon models
-          const weaponTextureConfig: Record<number, { offset?: [number, number]; repeat?: [number, number]; rotation?: number }> = {
-            7: { // AK-47
+          // Set proper min/mag filters for sharpness
+          texture.minFilter = THREE.LinearMipMapLinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.anisotropy = 16; // Maximum anisotropic filtering for quality
+
+          // Weapon-specific texture adjustments (usually not needed for GLTF)
+          // Only use if texture still appears misaligned
+          const weaponTextureConfig: Record<number, {
+            flipY?: boolean;
+            offset?: [number, number];
+            repeat?: [number, number];
+            rotation?: number;
+            wrapS?: THREE.Wrapping;
+            wrapT?: THREE.Wrapping;
+          }> = {
+            // AK-47 - Use defaults (no adjustment needed)
+            7: {
+              flipY: false,
               offset: [0, 0],
               repeat: [1, 1],
-              rotation: 0
+              rotation: 0,
+              wrapS: THREE.ClampToEdgeWrapping,
+              wrapT: THREE.ClampToEdgeWrapping
             },
-            // Add more weapon-specific configs here as needed
+            // Add more weapon-specific configs here if needed
           };
 
           const baseWeaponDef = econItem.def || weaponDefIndex;
           const config = weaponTextureConfig[baseWeaponDef];
 
+          // Apply weapon-specific config overrides
           if (config) {
+            if (config.flipY !== undefined) {
+              texture.flipY = config.flipY;
+              console.log(`[WeaponModel] Applied flipY=${config.flipY} for weapon ${baseWeaponDef}`);
+            }
+            if (config.wrapS !== undefined) {
+              texture.wrapS = config.wrapS;
+              console.log(`[WeaponModel] Applied wrapS for weapon ${baseWeaponDef}`);
+            }
+            if (config.wrapT !== undefined) {
+              texture.wrapT = config.wrapT;
+              console.log(`[WeaponModel] Applied wrapT for weapon ${baseWeaponDef}`);
+            }
             if (config.offset) {
               texture.offset.set(config.offset[0], config.offset[1]);
               console.log(`[WeaponModel] Applied offset [${config.offset[0]}, ${config.offset[1]}] for weapon ${baseWeaponDef}`);
@@ -275,6 +304,9 @@ function LoadedWeaponModel({
             }
           }
 
+          // Force texture update after all settings applied
+          texture.needsUpdate = true;
+
           let meshCount = 0;
           let materialCount = 0;
 
@@ -282,7 +314,14 @@ function LoadedWeaponModel({
           clonedScene.traverse((child) => {
             if (child instanceof THREE.Mesh) {
               meshCount++;
-              console.log(`[WeaponModel] Found mesh:`, child.name, `Material type:`, child.material.constructor.name);
+
+              // Check if mesh has UV coordinates
+              const hasUV = child.geometry.attributes.uv !== undefined;
+              const uvCount = hasUV ? child.geometry.attributes.uv.count : 0;
+              console.log(`[WeaponModel] Found mesh:`, child.name,
+                `Material:`, child.material.constructor.name,
+                `Has UV:`, hasUV,
+                `UV count:`, uvCount);
 
               if (Array.isArray(child.material)) {
                 child.material.forEach((mat, idx) => {
