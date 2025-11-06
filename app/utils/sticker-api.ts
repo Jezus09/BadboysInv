@@ -157,7 +157,7 @@ export function getStickerImageSync(defIndex: string | number): string {
   if (stickerCache === null) {
     // Cache not loaded yet, return placeholder
     console.warn(
-      `[StickerAPI] Cache not loaded, returning placeholder for def_index: ${defIndex}`
+      `[StickerAPI] ❌ Cache not loaded yet! Returning placeholder for def_index: ${defIndex}`
     );
     return getPlaceholderStickerImage();
   }
@@ -165,7 +165,15 @@ export function getStickerImageSync(defIndex: string | number): string {
   const defIndexStr = String(defIndex);
   const sticker = stickerCache.find((s) => s.def_index === defIndexStr);
 
-  return sticker?.image || getPlaceholderStickerImage();
+  if (!sticker) {
+    console.warn(
+      `[StickerAPI] ⚠️ Sticker not found in cache! def_index: ${defIndexStr}, cache has ${stickerCache.length} stickers`
+    );
+    return getPlaceholderStickerImage();
+  }
+
+  console.log(`[StickerAPI] ✅ Found sticker: ${sticker.name}`);
+  return sticker.image;
 }
 
 /**

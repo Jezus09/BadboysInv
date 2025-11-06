@@ -408,7 +408,14 @@ function Scene3D({
 
     console.log(`[Scene3D] Loading texture from CSGO-API with def_index: ${stickerDefIndex}`);
     console.log(`[Scene3D] Texture URL: ${stickerUrl}`);
-    onDebugInfo?.(`Loading from CSGO-API: def_index=${stickerDefIndex}`);
+
+    // Check if it's a placeholder (data URI)
+    if (stickerUrl.startsWith('data:')) {
+      onDebugInfo?.(`⚠️ Using placeholder! Cache may not be loaded`);
+    } else {
+      onDebugInfo?.(`Loading from CSGO-API: def_index=${stickerDefIndex}`);
+    }
+    onDebugInfo?.(`URL: ${stickerUrl.substring(0, 60)}...`);
 
     loadStickerTexture(stickerUrl)
       .then((texture) => {
@@ -418,8 +425,22 @@ function Scene3D({
       })
       .catch((error) => {
         console.error("[Scene3D] ❌ Failed to load sticker texture", error);
-        onDebugInfo?.(`❌ Failed to load sticker: ${error.message}`);
-        setStickerTexture(null);
+        const errorMsg = error?.message || error?.toString() || 'Unknown error';
+        onDebugInfo?.(`❌ Failed to load: ${errorMsg}`);
+
+        // Don't set to null - keep trying with a fallback white color
+        console.warn("[Scene3D] Creating fallback white texture");
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 64, 64);
+          const fallbackTexture = new THREE.CanvasTexture(canvas);
+          setStickerTexture(fallbackTexture);
+        } else {
+          setStickerTexture(null);
+        }
       });
   }, [stickerItemId, onDebugInfo]);
 
