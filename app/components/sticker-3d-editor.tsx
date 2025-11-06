@@ -198,38 +198,68 @@ function LoadedWeaponModel({
     if (!clonedScene) return;
 
     const econItem = CS2Economy.getById(weaponDefIndex);
+    console.log(`[WeaponModel] Loading weapon:`, {
+      weaponDefIndex,
+      econItem: econItem ? {
+        id: econItem.id,
+        name: econItem.name,
+        type: econItem.type,
+        hasImage: !!econItem.image,
+        imageUrl: econItem.image
+      } : null
+    });
+
     if (econItem && econItem.image) {
       const textureLoader = new THREE.TextureLoader();
+      console.log(`[WeaponModel] Loading texture from: ${econItem.image}`);
+
       textureLoader.load(
         econItem.image,
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
           texture.flipY = false; // GLTF models don't need Y-flip
 
+          let meshCount = 0;
+          let materialCount = 0;
+
           // Apply texture to all meshes in the cloned scene
           clonedScene.traverse((child) => {
             if (child instanceof THREE.Mesh) {
+              meshCount++;
+              console.log(`[WeaponModel] Found mesh:`, child.name, `Material type:`, child.material.constructor.name);
+
               if (Array.isArray(child.material)) {
-                child.material.forEach((mat) => {
+                child.material.forEach((mat, idx) => {
+                  materialCount++;
+                  console.log(`[WeaponModel] Material[${idx}] type:`, mat.constructor.name);
                   if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
                     mat.map = texture;
                     mat.needsUpdate = true;
+                    console.log(`[WeaponModel] ✅ Applied texture to material[${idx}]`);
                   }
                 });
               } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhongMaterial) {
+                materialCount++;
                 child.material.map = texture;
                 child.material.needsUpdate = true;
+                console.log(`[WeaponModel] ✅ Applied texture to single material`);
+              } else {
+                console.warn(`[WeaponModel] ⚠️ Unsupported material type:`, child.material.constructor.name);
               }
             }
           });
 
-          console.log(`[WeaponModel] Applied skin texture: ${econItem.name}`);
+          console.log(`[WeaponModel] ✅ Texture applied to ${meshCount} meshes, ${materialCount} materials. Item: ${econItem.name}`);
         },
-        undefined,
+        (progress) => {
+          console.log(`[WeaponModel] Loading texture... ${Math.round((progress.loaded / progress.total) * 100)}%`);
+        },
         (error) => {
-          console.warn("[WeaponModel] Failed to load skin texture", error);
+          console.error("[WeaponModel] ❌ Failed to load skin texture", error);
         }
       );
+    } else {
+      console.warn("[WeaponModel] ⚠️ No image available for weapon", weaponDefIndex);
     }
   }, [clonedScene, weaponDefIndex]);
 
@@ -240,7 +270,7 @@ function LoadedWeaponModel({
       ref={meshRef}
       object={clonedScene}
       rotation={[0, Math.PI / 4, 0]}
-      scale={2.5} // Increased scale for better visibility
+      scale={10} // Much larger scale for visibility
     />
   );
 }
