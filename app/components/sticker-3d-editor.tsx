@@ -247,8 +247,11 @@ function LoadedWeaponModel({
       } : null
     });
 
-    // CS2 skin texture loading (Official CS2 OBJ models have proper UV mapping)
-    if (econItem) { // Enabled for official models
+    // CS2 skin texture loading - DISABLED
+    // NOTE: econItem.getImage() returns 2D inventory icons (not 3D UV textures!)
+    // These perspective icons cannot be properly mapped to 3D models
+    // Workshop OBJ models are designed for custom textures, not in-game skins
+    if (false && econItem) { // DISABLED - inventory icons don't work as 3D textures
       const imageUrl = econItem.getImage();
       const textureLoader = new THREE.TextureLoader();
       console.log(`[WeaponModel] Loading texture from: ${imageUrl}`);
