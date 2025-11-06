@@ -681,7 +681,8 @@ export function Sticker3DEditor({
   const [stickers, setStickers] = useState<Map<number, StickerTransform>>(
     new Map()
   );
-  const [debugInfo, setDebugInfo] = useState<string[]>(["🔍 Debug Info:"]);
+  const [debugInfo, setDebugInfo] = useState<string[]>(["🔍 Debug Info - Waiting for data..."]);
+  const [debugPaused, setDebugPaused] = useState(false);
 
   const handleSlotSelect = (slot: number) => {
     setSelectedSlot(slot);
@@ -706,7 +707,19 @@ export function Sticker3DEditor({
   };
 
   const handleDebugInfo = (info: string) => {
-    setDebugInfo(prev => [...prev.slice(-5), info]); // Keep last 6 lines
+    if (debugPaused) return; // Don't update if paused
+
+    setDebugInfo(prev => {
+      const newInfo = [...prev, info];
+
+      // Auto-pause on error
+      if (info.includes('❌')) {
+        setDebugPaused(true);
+      }
+
+      // Keep last 20 lines
+      return newInfo.slice(-20);
+    });
   };
 
   const handleApply = () => {
@@ -803,10 +816,31 @@ export function Sticker3DEditor({
         </div>
 
         {/* Debug Info Panel - Mobile Friendly */}
-        <div className="p-2 sm:p-4 border-t border-neutral-700 bg-black/50">
-          <div className="text-xs font-mono text-green-400 space-y-1">
+        <div className="p-2 sm:p-4 border-t border-neutral-700 bg-black/90">
+          <div className="flex justify-between items-center mb-2">
+            <div className="text-xs font-bold text-white">
+              📊 Debug Log {debugPaused && <span className="text-yellow-400">(PAUSED)</span>}
+            </div>
+            <button
+              onClick={() => setDebugPaused(!debugPaused)}
+              className="px-3 py-1 text-xs font-bold rounded bg-blue-600 text-white active:bg-blue-700"
+            >
+              {debugPaused ? '▶ Resume' : '⏸ Pause'}
+            </button>
+          </div>
+          <div className="max-h-32 overflow-y-auto text-xs font-mono space-y-1">
             {debugInfo.map((info, idx) => (
-              <div key={idx} className="truncate">{info}</div>
+              <div
+                key={idx}
+                className={`${
+                  info.includes('❌') ? 'text-red-400 font-bold' :
+                  info.includes('✅') ? 'text-green-400' :
+                  info.includes('def=') ? 'text-cyan-400' :
+                  'text-gray-300'
+                }`}
+              >
+                {info}
+              </div>
             ))}
           </div>
         </div>
