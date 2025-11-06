@@ -858,19 +858,19 @@ function Scene3D({
 
   return (
     <>
-      {/* Camera setup - CS2 style: side view with proper distance */}
+      {/* Camera setup - CS2 style: far side view */}
       <PerspectiveCamera
         makeDefault
-        position={[2, 0.4, 1.2]}  // Closer since model is scaled down
+        position={[6, 1.2, 3.6]}  // 3x further back
         fov={45}  // Normal FOV
       />
       <OrbitControls
         enablePan={false}  // Disable panning - CS2 style
         enableZoom={true}
         enableRotate={true}
-        minDistance={1.5}  // Can't get too close
-        maxDistance={6}  // Can zoom out
-        target={[0, 0.1, 0]}  // Focus slightly above origin
+        minDistance={4}  // Can't get too close
+        maxDistance={15}  // Can zoom out far
+        target={[0, 0.3, 0]}  // Focus slightly above origin
       />
 
       {/* Lighting - Enhanced for better texture visibility */}
