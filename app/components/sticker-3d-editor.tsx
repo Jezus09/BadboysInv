@@ -163,7 +163,13 @@ function WeaponModel({
         }}
       >
         <boxGeometry args={[2, 0.3, 0.1]} />
-        <meshStandardMaterial color="#444444" metalness={0.8} roughness={0.2} />
+        <meshStandardMaterial
+          color="#888888"
+          metalness={0.5}
+          roughness={0.5}
+          emissive="#222222"
+          emissiveIntensity={0.2}
+        />
       </mesh>
     );
   }
@@ -283,6 +289,14 @@ function LoadedWeaponModel({
                   console.log(`[WeaponModel] Material[${idx}] type:`, mat.constructor.name);
                   if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
                     mat.map = texture;
+                    // Enhance material properties for better visibility
+                    if (mat instanceof THREE.MeshStandardMaterial) {
+                      mat.metalness = 0.3;
+                      mat.roughness = 0.7;
+                      mat.emissive = new THREE.Color(0x111111);
+                      mat.emissiveIntensity = 0.1;
+                    }
+                    mat.color = new THREE.Color(0xffffff); // Bright white base
                     mat.needsUpdate = true;
                     console.log(`[WeaponModel] ✅ Applied texture to material[${idx}]`);
                   }
@@ -290,6 +304,14 @@ function LoadedWeaponModel({
               } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhongMaterial) {
                 materialCount++;
                 child.material.map = texture;
+                // Enhance material properties for better visibility
+                if (child.material instanceof THREE.MeshStandardMaterial) {
+                  child.material.metalness = 0.3;
+                  child.material.roughness = 0.7;
+                  child.material.emissive = new THREE.Color(0x111111);
+                  child.material.emissiveIntensity = 0.1;
+                }
+                child.material.color = new THREE.Color(0xffffff); // Bright white base
                 child.material.needsUpdate = true;
                 console.log(`[WeaponModel] ✅ Applied texture to single material`);
               } else {
@@ -526,10 +548,14 @@ function Scene3D({
         maxDistance={8}
       />
 
-      {/* Lighting */}
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 5, 5]} intensity={1} />
-      <pointLight position={[-5, 5, 5]} intensity={0.5} />
+      {/* Lighting - Enhanced for better texture visibility */}
+      <ambientLight intensity={1.2} />
+      <hemisphereLight intensity={0.8} groundColor="#444444" color="#ffffff" />
+      <directionalLight position={[5, 5, 5]} intensity={1.5} castShadow />
+      <directionalLight position={[-5, 3, 5]} intensity={1.2} />
+      <directionalLight position={[0, -3, 3]} intensity={0.8} />
+      <pointLight position={[0, 2, 2]} intensity={1.5} />
+      <pointLight position={[-2, 1, -2]} intensity={0.8} />
 
       {/* Weapon Model */}
       <WeaponModel
