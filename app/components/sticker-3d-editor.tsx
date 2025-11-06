@@ -140,12 +140,17 @@ function WeaponModel({
   // Notify parent of mesh reference for decal placement
   useEffect(() => {
     if (meshRef.current && onModelLoad) {
-      // Find the first mesh in the group
-      const mesh = meshRef.current.children.find(
-        (child) => child instanceof THREE.Mesh
-      ) as THREE.Mesh | undefined;
+      // Find the first mesh recursively (Sketchfab models can be nested)
+      let foundMesh: THREE.Mesh | null = null;
 
-      onModelLoad(mesh || null);
+      meshRef.current.traverse((child) => {
+        if (!foundMesh && child instanceof THREE.Mesh) {
+          foundMesh = child;
+        }
+      });
+
+      console.log('[WeaponModel] Found mesh:', foundMesh ? 'YES' : 'NO');
+      onModelLoad(foundMesh);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fallbackMode]);
@@ -202,12 +207,19 @@ function LoadedWeaponModel({
       const clone = gltf.scene.clone(true); // Deep clone including materials
       setClonedScene(clone);
 
-      // Find the first mesh for parent callback
+      // Find the first mesh recursively (Sketchfab models can be deeply nested)
       if (onModelLoad) {
-        const mesh = clone.children.find(
-          (child) => child instanceof THREE.Mesh
-        ) as THREE.Mesh | undefined;
-        onModelLoad(mesh || null);
+        let foundMesh: THREE.Mesh | null = null;
+
+        clone.traverse((child) => {
+          if (!foundMesh && child instanceof THREE.Mesh) {
+            foundMesh = child;
+            console.log('[LoadedWeaponModel] Found mesh:', child.name || 'unnamed');
+          }
+        });
+
+        console.log('[LoadedWeaponModel] Total mesh:', foundMesh ? 'YES' : 'NO');
+        onModelLoad(foundMesh);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -517,8 +529,19 @@ function StickerDecal({
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(mouse, camera);
 
-      // Raycast to weapon mesh
-      const intersects = raycaster.intersectObject(targetMesh, true);
+      // Collect all meshes (Sketchfab models have multiple meshes)
+      const allMeshes: THREE.Object3D[] = [];
+      targetMesh.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          allMeshes.push(child);
+        }
+      });
+      if (targetMesh instanceof THREE.Mesh) {
+        allMeshes.unshift(targetMesh);
+      }
+
+      // Raycast to ALL weapon meshes
+      const intersects = raycaster.intersectObjects(allMeshes, true);
 
       if (intersects.length > 0) {
         const intersect = intersects[0];
@@ -668,17 +691,36 @@ function Scene3D({
     console.log(`[Scene3D] Weapon mesh loaded, auto-snapping sticker to surface`);
     onDebugInfo?.('🎯 Auto-snapping sticker to weapon...');
 
+    // Collect all meshes in the weapon (Sketchfab models have multiple meshes)
+    const allMeshes: THREE.Mesh[] = [];
+    weaponMesh.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        allMeshes.push(child);
+      }
+    });
+
+    // If weaponMesh itself is a mesh, also include it
+    if (weaponMesh instanceof THREE.Mesh) {
+      allMeshes.unshift(weaponMesh);
+    }
+
+    console.log(`[Scene3D] Found ${allMeshes.length} meshes for raycasting`);
+
     // Raycast from current sticker position towards weapon center
     const stickerPos = new THREE.Vector3(...stickerTransform.position);
     const weaponCenter = new THREE.Vector3(0, 0.2, 0); // Approximate weapon center
     const direction = weaponCenter.clone().sub(stickerPos).normalize();
 
     const raycaster = new THREE.Raycaster(stickerPos, direction);
-    const intersects = raycaster.intersectObject(weaponMesh, true);
+
+    // Raycast to ALL meshes (recursive = true to handle nested groups)
+    const intersects = raycaster.intersectObjects(allMeshes, true);
 
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const hitPoint = intersect.point;
+
+      console.log(`[Scene3D] Hit mesh:`, intersect.object.name || 'unnamed', 'at', hitPoint.toArray());
 
       // Get surface normal in world space
       const localNormal = intersect.face?.normal || new THREE.Vector3(0, 0, 1);
@@ -716,7 +758,7 @@ function Scene3D({
 
       onDebugInfo?.('✅ Sticker snapped to weapon surface!');
     } else {
-      console.warn('[Scene3D] No intersection found during auto-snap');
+      console.warn('[Scene3D] No intersection found during auto-snap - checked', allMeshes.length, 'meshes');
       onDebugInfo?.('⚠️ Could not snap to surface, using preset position');
     }
   }, [weaponMesh]); // Only run when weaponMesh changes
