@@ -364,13 +364,15 @@ function Scene3D({
   stickerItemId,
   stickers,
   selectedSlot,
-  onStickerSelect
+  onStickerSelect,
+  onDebugInfo
 }: {
   weaponDefIndex: number;
   stickerItemId: number;
   stickers: Map<number, StickerTransform>;
   selectedSlot: number | null;
   onStickerSelect: (slot: number) => void;
+  onDebugInfo?: (info: string) => void;
 }) {
   const [weaponMesh, setWeaponMesh] = useState<THREE.Mesh | null>(null);
   const [stickerTexture, setStickerTexture] = useState<THREE.Texture | null>(null);
@@ -379,18 +381,23 @@ function Scene3D({
   useEffect(() => {
     // Get sticker item from CS2Economy
     const stickerEconItem = CS2Economy.getById(stickerItemId);
-    console.log(`[Scene3D] Loading sticker:`, {
+
+    const debugInfo = {
       stickerItemId,
-      stickerEconItem: stickerEconItem ? {
+      econItem: stickerEconItem ? {
         id: stickerEconItem.id,
-        def: stickerEconItem.def, // ⭐ This is the CS2 definition index!
+        def: stickerEconItem.def,
         name: stickerEconItem.name,
         type: stickerEconItem.type
       } : null
-    });
+    };
+
+    console.log(`[Scene3D] Loading sticker:`, debugInfo);
+    onDebugInfo?.(`Sticker: id=${stickerItemId}, def=${stickerEconItem?.def}, name=${stickerEconItem?.name}`);
 
     if (!stickerEconItem) {
       console.warn("[Scene3D] Sticker not found in CS2Economy", stickerItemId);
+      onDebugInfo?.(`❌ Sticker not found: ${stickerItemId}`);
       setStickerTexture(null);
       return;
     }
@@ -401,17 +408,20 @@ function Scene3D({
 
     console.log(`[Scene3D] Loading texture from CSGO-API with def_index: ${stickerDefIndex}`);
     console.log(`[Scene3D] Texture URL: ${stickerUrl}`);
+    onDebugInfo?.(`Loading from CSGO-API: def_index=${stickerDefIndex}`);
 
     loadStickerTexture(stickerUrl)
       .then((texture) => {
         console.log(`[Scene3D] ✅ Sticker texture loaded successfully`);
+        onDebugInfo?.(`✅ Sticker texture loaded!`);
         setStickerTexture(texture);
       })
       .catch((error) => {
         console.error("[Scene3D] ❌ Failed to load sticker texture", error);
+        onDebugInfo?.(`❌ Failed to load sticker: ${error.message}`);
         setStickerTexture(null);
       });
-  }, [stickerItemId]);
+  }, [stickerItemId, onDebugInfo]);
 
   return (
     <>
@@ -671,6 +681,7 @@ export function Sticker3DEditor({
   const [stickers, setStickers] = useState<Map<number, StickerTransform>>(
     new Map()
   );
+  const [debugInfo, setDebugInfo] = useState<string[]>(["🔍 Debug Info:"]);
 
   const handleSlotSelect = (slot: number) => {
     setSelectedSlot(slot);
@@ -692,6 +703,10 @@ export function Sticker3DEditor({
     const newStickers = new Map(stickers);
     newStickers.set(selectedSlot, newTransform);
     setStickers(newStickers);
+  };
+
+  const handleDebugInfo = (info: string) => {
+    setDebugInfo(prev => [...prev.slice(-5), info]); // Keep last 6 lines
   };
 
   const handleApply = () => {
@@ -745,6 +760,7 @@ export function Sticker3DEditor({
                     stickers={stickers}
                     selectedSlot={selectedSlot}
                     onStickerSelect={handleSlotSelect}
+                    onDebugInfo={handleDebugInfo}
                   />
                 </Suspense>
               </Canvas>
@@ -783,6 +799,15 @@ export function Sticker3DEditor({
               transform={selectedSlot !== null ? stickers.get(selectedSlot) || null : null}
               onChange={handleTransformChange}
             />
+          </div>
+        </div>
+
+        {/* Debug Info Panel - Mobile Friendly */}
+        <div className="p-2 sm:p-4 border-t border-neutral-700 bg-black/50">
+          <div className="text-xs font-mono text-green-400 space-y-1">
+            {debugInfo.map((info, idx) => (
+              <div key={idx} className="truncate">{info}</div>
+            ))}
           </div>
         </div>
 
