@@ -156,7 +156,7 @@ function WeaponModel({
   }
 
   // Real GLTF model mode
-  return <LoadedWeaponModel modelPath={modelPath} meshRef={meshRef} onModelLoad={onModelLoad} />;
+  return <LoadedWeaponModel modelPath={modelPath} weaponDefIndex={weaponDefIndex} meshRef={meshRef} onModelLoad={onModelLoad} />;
 }
 
 /**
@@ -164,33 +164,83 @@ function WeaponModel({
  */
 function LoadedWeaponModel({
   modelPath,
+  weaponDefIndex,
   meshRef,
   onModelLoad
 }: {
   modelPath: string;
+  weaponDefIndex: number;
   meshRef: React.RefObject<THREE.Group>;
   onModelLoad?: (mesh: THREE.Mesh | null) => void;
 }) {
   const gltf = useGLTF(modelPath);
+  const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
 
+  // Clone the scene once and store it
   useEffect(() => {
-    if (gltf.scene && onModelLoad) {
-      // Find the first mesh in the scene
-      const mesh = gltf.scene.children.find(
-        (child) => child instanceof THREE.Mesh
-      ) as THREE.Mesh | undefined;
+    if (gltf.scene) {
+      const clone = gltf.scene.clone(true); // Deep clone including materials
+      setClonedScene(clone);
 
-      onModelLoad(mesh || null);
+      // Find the first mesh for parent callback
+      if (onModelLoad) {
+        const mesh = clone.children.find(
+          (child) => child instanceof THREE.Mesh
+        ) as THREE.Mesh | undefined;
+        onModelLoad(mesh || null);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gltf]);
 
+  // Load and apply weapon skin texture
+  useEffect(() => {
+    if (!clonedScene) return;
+
+    const econItem = CS2Economy.getById(weaponDefIndex);
+    if (econItem && econItem.image) {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load(
+        econItem.image,
+        (texture) => {
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.flipY = false; // GLTF models don't need Y-flip
+
+          // Apply texture to all meshes in the cloned scene
+          clonedScene.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((mat) => {
+                  if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
+                    mat.map = texture;
+                    mat.needsUpdate = true;
+                  }
+                });
+              } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhongMaterial) {
+                child.material.map = texture;
+                child.material.needsUpdate = true;
+              }
+            }
+          });
+
+          console.log(`[WeaponModel] Applied skin texture: ${econItem.name}`);
+        },
+        undefined,
+        (error) => {
+          console.warn("[WeaponModel] Failed to load skin texture", error);
+        }
+      );
+    }
+  }, [clonedScene, weaponDefIndex]);
+
+  if (!clonedScene) return null;
+
   return (
     <primitive
       ref={meshRef}
-      object={gltf.scene.clone()}
+      object={clonedScene}
       rotation={[0, Math.PI / 4, 0]}
-      scale={1}
+      scale={2.5} // Increased scale for better visibility
     />
   );
 }
