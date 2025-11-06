@@ -393,7 +393,9 @@ function Scene3D({
     };
 
     console.log(`[Scene3D] Loading sticker:`, debugInfo);
-    onDebugInfo?.(`Sticker: id=${stickerItemId}, def=${stickerEconItem?.def}, name=${stickerEconItem?.name}`);
+    const statusMsg = `Sticker: id=${stickerItemId}, def=${stickerEconItem?.def}`;
+    onDebugInfo?.(statusMsg);
+    setStickerStatus(statusMsg);
 
     if (!stickerEconItem) {
       console.warn("[Scene3D] Sticker not found in CS2Economy", stickerItemId);
@@ -410,12 +412,18 @@ function Scene3D({
     console.log(`[Scene3D] Texture URL: ${stickerUrl}`);
 
     // Check if it's a placeholder (data URI)
-    if (stickerUrl.startsWith('data:')) {
-      onDebugInfo?.(`⚠️ Using placeholder! Cache may not be loaded`);
+    const isPlaceholder = stickerUrl.startsWith('data:');
+    const urlPreview = isPlaceholder ? 'PLACEHOLDER (base64)' : stickerUrl.substring(0, 50);
+
+    if (isPlaceholder) {
+      const msg = `⚠️ PLACEHOLDER! Cache not loaded?`;
+      onDebugInfo?.(msg);
+      setStickerStatus(msg);
     } else {
-      onDebugInfo?.(`Loading from CSGO-API: def_index=${stickerDefIndex}`);
+      const msg = `Loading: ${urlPreview}...`;
+      onDebugInfo?.(msg);
+      setStickerStatus(msg);
     }
-    onDebugInfo?.(`URL: ${stickerUrl.substring(0, 60)}...`);
 
     loadStickerTexture(stickerUrl)
       .then((texture) => {
@@ -425,8 +433,20 @@ function Scene3D({
       })
       .catch((error) => {
         console.error("[Scene3D] ❌ Failed to load sticker texture", error);
-        const errorMsg = error?.message || error?.toString() || 'Unknown error';
-        onDebugInfo?.(`❌ Failed to load: ${errorMsg}`);
+
+        // Extract meaningful error message
+        let errorMsg = 'Unknown error';
+        if (error instanceof ErrorEvent) {
+          errorMsg = `Image load failed: ${stickerUrl.substring(0, 40)}`;
+        } else if (error?.message) {
+          errorMsg = error.message;
+        } else if (typeof error === 'string') {
+          errorMsg = error;
+        }
+
+        const fullMsg = `❌ FAILED: ${errorMsg}`;
+        onDebugInfo?.(fullMsg);
+        setStickerStatus(fullMsg);
 
         // Don't set to null - keep trying with a fallback white color
         console.warn("[Scene3D] Creating fallback white texture");
@@ -704,6 +724,7 @@ export function Sticker3DEditor({
   );
   const [debugInfo, setDebugInfo] = useState<string[]>(["🔍 Debug Info - Waiting for data..."]);
   const [debugPaused, setDebugPaused] = useState(false);
+  const [stickerStatus, setStickerStatus] = useState<string>("Initializing...");
 
   const handleSlotSelect = (slot: number) => {
     setSelectedSlot(slot);
@@ -838,6 +859,20 @@ export function Sticker3DEditor({
 
         {/* Debug Info Panel - Mobile Friendly */}
         <div className="p-2 sm:p-4 border-t border-neutral-700 bg-black/90">
+          {/* Current Status - Always Visible */}
+          <div className="mb-2 p-2 bg-neutral-800 rounded border-l-4 border-yellow-400">
+            <div className="text-xs font-bold text-yellow-400 mb-1">Current Status:</div>
+            <div className={`text-xs font-mono ${
+              stickerStatus.includes('❌') ? 'text-red-400 font-bold' :
+              stickerStatus.includes('✅') ? 'text-green-400' :
+              stickerStatus.includes('⚠️') ? 'text-yellow-400' :
+              'text-cyan-400'
+            }`}>
+              {stickerStatus}
+            </div>
+          </div>
+
+          {/* Debug Log */}
           <div className="flex justify-between items-center mb-2">
             <div className="text-xs font-bold text-white">
               📊 Debug Log {debugPaused && <span className="text-yellow-400">(PAUSED)</span>}
@@ -856,6 +891,7 @@ export function Sticker3DEditor({
                 className={`${
                   info.includes('❌') ? 'text-red-400 font-bold' :
                   info.includes('✅') ? 'text-green-400' :
+                  info.includes('⚠️') ? 'text-yellow-400' :
                   info.includes('def=') ? 'text-cyan-400' :
                   'text-gray-300'
                 }`}
