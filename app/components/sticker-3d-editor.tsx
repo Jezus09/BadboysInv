@@ -990,7 +990,7 @@ export function Sticker3DEditor({
     new Map()
   );
   const [debugInfo, setDebugInfo] = useState<string[]>(["🔍 Debug Info - Waiting for data..."]);
-  const [debugPaused, setDebugPaused] = useState(false);
+  const [debugPaused, setDebugPaused] = useState(true); // Start hidden by default
   const [stickerStatus, setStickerStatus] = useState<string>("Initializing...");
 
   const handleSlotSelect = (slot: number) => {
@@ -1030,16 +1030,8 @@ export function Sticker3DEditor({
   };
 
   const handleDebugInfo = (info: string) => {
-    if (debugPaused) return; // Don't update if paused
-
     setDebugInfo(prev => {
       const newInfo = [...prev, info];
-
-      // Auto-pause on error
-      if (info.includes('❌')) {
-        setDebugPaused(true);
-      }
-
       // Keep last 20 lines
       return newInfo.slice(-20);
     });
@@ -1140,49 +1132,54 @@ export function Sticker3DEditor({
           </div>
         </div>
 
-        {/* Debug Info Panel - Mobile Friendly */}
+        {/* Debug Info Panel - Collapsible, hidden by default on mobile */}
         <div className="p-2 sm:p-4 border-t border-neutral-700 bg-black/90">
-          {/* Current Status - Always Visible */}
-          <div className="mb-2 p-2 bg-neutral-800 rounded border-l-4 border-yellow-400">
-            <div className="text-xs font-bold text-yellow-400 mb-1">Current Status:</div>
-            <div className={`text-xs font-mono ${
-              stickerStatus.includes('❌') ? 'text-red-400 font-bold' :
-              stickerStatus.includes('✅') ? 'text-green-400' :
-              stickerStatus.includes('⚠️') ? 'text-yellow-400' :
-              'text-cyan-400'
-            }`}>
-              {stickerStatus}
-            </div>
-          </div>
+          {/* Debug toggle button - mobile friendly */}
+          <button
+            onClick={() => setDebugPaused(!debugPaused)}
+            className="w-full px-3 py-2 text-xs font-bold rounded bg-neutral-800 hover:bg-neutral-700 text-white transition mb-2"
+          >
+            {debugPaused ? '🔍 Show Debug Info' : '✕ Hide Debug Info'}
+          </button>
 
-          {/* Debug Log */}
-          <div className="flex justify-between items-center mb-2">
-            <div className="text-xs font-bold text-white">
-              📊 Debug Log {debugPaused && <span className="text-yellow-400">(PAUSED)</span>}
-            </div>
-            <button
-              onClick={() => setDebugPaused(!debugPaused)}
-              className="px-3 py-1 text-xs font-bold rounded bg-blue-600 text-white active:bg-blue-700"
-            >
-              {debugPaused ? '▶ Resume' : '⏸ Pause'}
-            </button>
-          </div>
-          <div className="max-h-32 overflow-y-auto text-xs font-mono space-y-1">
-            {debugInfo.map((info, idx) => (
-              <div
-                key={idx}
-                className={`${
-                  info.includes('❌') ? 'text-red-400 font-bold' :
-                  info.includes('✅') ? 'text-green-400' :
-                  info.includes('⚠️') ? 'text-yellow-400' :
-                  info.includes('def=') ? 'text-cyan-400' :
-                  'text-gray-300'
-                }`}
-              >
-                {info}
+          {/* Debug content - hidden when paused */}
+          {!debugPaused && (
+            <>
+              {/* Current Status */}
+              <div className="mb-2 p-2 bg-neutral-800 rounded border-l-4 border-yellow-400">
+                <div className="text-xs font-bold text-yellow-400 mb-1">Status:</div>
+                <div className={`text-xs font-mono ${
+                  stickerStatus.includes('❌') ? 'text-red-400 font-bold' :
+                  stickerStatus.includes('✅') ? 'text-green-400' :
+                  stickerStatus.includes('⚠️') ? 'text-yellow-400' :
+                  'text-cyan-400'
+                }`}>
+                  {stickerStatus}
+                </div>
               </div>
-            ))}
-          </div>
+
+              {/* Debug Log */}
+              <div className="text-xs font-bold text-white mb-2">
+                📊 Debug Log
+              </div>
+              <div className="max-h-32 overflow-y-auto text-xs font-mono space-y-1">
+                {debugInfo.map((info, idx) => (
+                  <div
+                    key={idx}
+                    className={`${
+                      info.includes('❌') ? 'text-red-400 font-bold' :
+                      info.includes('✅') ? 'text-green-400' :
+                      info.includes('⚠️') ? 'text-yellow-400' :
+                      info.includes('def=') ? 'text-cyan-400' :
+                      'text-gray-300'
+                    }`}
+                  >
+                    {info}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer - mobile: stacked buttons, desktop: horizontal */}
