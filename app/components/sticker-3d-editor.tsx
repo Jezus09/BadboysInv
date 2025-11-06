@@ -824,7 +824,7 @@ function ControlPanel({
       {/* Header with expand/collapse button */}
       <div className="flex justify-between items-center mb-2">
         <div className="text-xs sm:text-sm font-bold text-neutral-200">
-          Slot {selectedSlot} - Quick Tips
+          Quick Tips
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
