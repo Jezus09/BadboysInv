@@ -258,10 +258,10 @@ function LoadedWeaponModel({
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
 
-          // Official CS2 OBJ models - try without Y-flip first
-          texture.flipY = false; // Test without flip
-          texture.wrapS = THREE.ClampToEdgeWrapping; // Don't repeat
-          texture.wrapT = THREE.ClampToEdgeWrapping; // Don't repeat
+          // Official CS2 OBJ models - OBJ format needs Y-flip!
+          texture.flipY = true; // OBJ format requires Y-flip
+          texture.wrapS = THREE.RepeatWrapping; // Allow repeat for better coverage
+          texture.wrapT = THREE.RepeatWrapping; // Allow repeat for better coverage
 
           // Set proper min/mag filters for sharpness
           texture.minFilter = THREE.LinearMipMapLinearFilter;
