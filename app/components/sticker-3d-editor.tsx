@@ -258,10 +258,10 @@ function LoadedWeaponModel({
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
 
-          // OBJ models need flipY for correct UV orientation
-          texture.flipY = true; // OBJ format requires Y-flip
-          texture.wrapS = THREE.RepeatWrapping; // Allow repeating
-          texture.wrapT = THREE.RepeatWrapping; // Allow repeating
+          // Official CS2 OBJ models - try without Y-flip first
+          texture.flipY = false; // Test without flip
+          texture.wrapS = THREE.ClampToEdgeWrapping; // Don't repeat
+          texture.wrapT = THREE.ClampToEdgeWrapping; // Don't repeat
 
           // Set proper min/mag filters for sharpness
           texture.minFilter = THREE.LinearMipMapLinearFilter;
@@ -858,19 +858,19 @@ function Scene3D({
 
   return (
     <>
-      {/* Camera setup - CS2 style: side view with proper distance */}
+      {/* Camera setup - CS2 style: far view to see full weapon */}
       <PerspectiveCamera
         makeDefault
-        position={[3, 0.5, 1.5]}  // Further back from weapon
-        fov={40}  // Narrower FOV for less distortion
+        position={[5, 1, 3]}  // Much further back
+        fov={35}  // Even narrower FOV
       />
       <OrbitControls
         enablePan={false}  // Disable panning - CS2 style
         enableZoom={true}
         enableRotate={true}
-        minDistance={2}  // Can't get too close
-        maxDistance={8}  // Can zoom out more
-        target={[0, 0, 0]}  // Focus on weapon center
+        minDistance={3}  // Can't get too close
+        maxDistance={12}  // Can zoom out far
+        target={[0, 0, 0]}  // Focus on origin
       />
 
       {/* Lighting - Enhanced for better texture visibility */}
