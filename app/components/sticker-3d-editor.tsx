@@ -319,7 +319,7 @@ function LoadedWeaponModel({
       ref={meshRef}
       object={clonedScene}
       rotation={[0, Math.PI / 4, 0]}
-      scale={10} // Much larger scale for visibility
+      scale={3} // Optimal scale - visible but not too large
     />
   );
 }
@@ -517,13 +517,13 @@ function Scene3D({
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, 1, 3]} />
+      <PerspectiveCamera makeDefault position={[0, 0.5, 2]} />
       <OrbitControls
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
-        minDistance={1}
-        maxDistance={10}
+        minDistance={0.3}
+        maxDistance={8}
       />
 
       {/* Lighting */}
