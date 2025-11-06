@@ -644,19 +644,15 @@ function StickerDecal({
 function Scene3D({
   weaponDefIndex,
   stickerItemId,
-  stickers,
-  selectedSlot,
-  onStickerSelect,
+  stickerTransform,
   onStickerUpdate,
   onDebugInfo,
   onStatusChange
 }: {
   weaponDefIndex: number;
   stickerItemId: number;
-  stickers: Map<number, StickerTransform>;
-  selectedSlot: number | null;
-  onStickerSelect: (slot: number) => void;
-  onStickerUpdate?: (slot: number, update: Partial<StickerTransform>) => void;
+  stickerTransform: StickerTransform;
+  onStickerUpdate?: (update: Partial<StickerTransform>) => void;
   onDebugInfo?: (info: string) => void;
   onStatusChange?: (status: string) => void;
 }) {
@@ -753,13 +749,19 @@ function Scene3D({
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, 0.5, 2]} />
+      {/* Camera setup - CS2 style: close-up, side view */}
+      <PerspectiveCamera
+        makeDefault
+        position={[1.5, 0.3, 0.8]}
+        fov={50}
+      />
       <OrbitControls
-        enablePan={true}
+        enablePan={false}  // Disable panning - CS2 style
         enableZoom={true}
         enableRotate={true}
-        minDistance={0.3}
-        maxDistance={8}
+        minDistance={0.8}
+        maxDistance={3}
+        target={[0, 0.2, 0]}  // Focus on weapon center
       />
 
       {/* Lighting - Enhanced for better texture visibility */}
@@ -777,19 +779,16 @@ function Scene3D({
         onModelLoad={(mesh) => setWeaponMesh(mesh)}
       />
 
-      {/* Stickers */}
-      {Array.from(stickers.entries()).map(([slot, transform]) => (
-        <StickerDecal
-          key={slot}
-          transform={transform}
-          stickerTexture={stickerTexture || undefined}
-          targetMesh={weaponMesh}
-          useDecal={!!weaponMesh} // Use decal mode if we have a weapon mesh
-          isSelected={slot === selectedSlot}
-          onPointerDown={() => onStickerSelect(slot)}
-          onDragUpdate={(update) => onStickerUpdate?.(slot, update)}
-        />
-      ))}
+      {/* Single Sticker - CS2 style */}
+      <StickerDecal
+        transform={stickerTransform}
+        stickerTexture={stickerTexture || undefined}
+        targetMesh={weaponMesh}
+        useDecal={!!weaponMesh} // Use decal mode if we have a weapon mesh
+        isSelected={true}  // Always selected
+        onPointerDown={() => {}}  // No need for selection
+        onDragUpdate={(update) => onStickerUpdate?.(update)}
+      />
     </>
   );
 }
@@ -799,31 +798,14 @@ function Scene3D({
  * Collapsible panel with "Precision Controls"
  */
 function ControlPanel({
-  selectedSlot,
   transform,
   onChange
 }: {
-  selectedSlot: number | null;
-  transform: StickerTransform | null;
+  transform: StickerTransform;
   onChange: (newTransform: StickerTransform) => void;
 }) {
   const translate = useTranslate();
   const [isExpanded, setIsExpanded] = useState(false);
-
-  if (selectedSlot === null || !transform) {
-    return (
-      <div className="p-4 sm:p-6 bg-neutral-800 rounded-lg">
-        <div className="text-center text-neutral-400 text-sm sm:text-base py-4 sm:py-8">
-          <div className="text-2xl sm:text-4xl mb-2">👆</div>
-          <div className="font-medium">Select a slot above (0-4)</div>
-          <div className="text-xs sm:text-sm mt-1">Choose where to place your sticker</div>
-          <div className="mt-4 text-xs text-neutral-500">
-            💡 Tip: Drag to move • Shift+Drag to rotate • Ctrl+Drag to scale
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const handlePositionChange = (axis: 0 | 1 | 2, value: number) => {
     const newPosition: [number, number, number] = [...transform.position];
@@ -1051,48 +1033,28 @@ export function Sticker3DEditor({
   const targetItem = inventory.get(targetUid);
   const stickerItem = inventory.get(stickerUid);
 
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
-  const [stickers, setStickers] = useState<Map<number, StickerTransform>>(
-    new Map()
-  );
+  const selectedSlot = 0; // Always use slot 0 for simplicity (CS2-style single placement)
+  const [stickerTransform, setStickerTransform] = useState<StickerTransform>(() => {
+    // Initialize with weapon-specific preset position
+    const preset = getWeaponStickerPreset(targetItem.id);
+    console.log(`[3D Editor] Using weapon preset for ${targetItem.id}:`, preset);
+    return {
+      position: [...preset.position],
+      rotation: [...preset.rotation],
+      scale: preset.scale,
+      wear: 0
+    };
+  });
   const [debugInfo, setDebugInfo] = useState<string[]>(["🔍 Debug Info - Waiting for data..."]);
   const [debugPaused, setDebugPaused] = useState(true); // Start hidden by default
   const [stickerStatus, setStickerStatus] = useState<string>("Initializing...");
 
-  const handleSlotSelect = (slot: number) => {
-    setSelectedSlot(slot);
-
-    // Initialize sticker transform if not exists
-    if (!stickers.has(slot)) {
-      // Get weapon-specific preset position for better initial placement
-      const preset = getWeaponStickerPreset(targetItem.id);
-
-      console.log(`[3D Editor] Using weapon preset for ${targetItem.id}:`, preset);
-
-      setStickers(new Map(stickers).set(slot, {
-        position: [...preset.position],
-        rotation: [...preset.rotation],
-        scale: preset.scale,
-        wear: 0
-      }));
-    }
-  };
-
   const handleTransformChange = (newTransform: StickerTransform) => {
-    if (selectedSlot === null) return;
-
-    const newStickers = new Map(stickers);
-    newStickers.set(selectedSlot, newTransform);
-    setStickers(newStickers);
+    setStickerTransform(newTransform);
   };
 
-  const handleStickerUpdate = (slot: number, update: Partial<StickerTransform>) => {
-    const currentTransform = stickers.get(slot);
-    if (!currentTransform) return;
-
-    const newStickers = new Map(stickers);
-    newStickers.set(slot, { ...currentTransform, ...update });
-    setStickers(newStickers);
+  const handleStickerUpdate = (update: Partial<StickerTransform>) => {
+    setStickerTransform(prev => ({ ...prev, ...update }));
   };
 
   const handleDebugInfo = (info: string) => {
@@ -1104,16 +1066,11 @@ export function Sticker3DEditor({
   };
 
   const handleApply = () => {
-    if (selectedSlot === null) return;
-
-    const transform = stickers.get(selectedSlot);
-    if (!transform) return;
-
     // Convert 3D coordinates to 2D for legacy backend
     // Simple projection: use X and Y, ignore Z
-    const x = transform.position[0];
-    const y = transform.position[1];
-    const rotation = Math.round((transform.rotation[2] * 180) / Math.PI); // Use Z rotation only
+    const x = stickerTransform.position[0];
+    const y = stickerTransform.position[1];
+    const rotation = Math.round((stickerTransform.rotation[2] * 180) / Math.PI); // Use Z rotation only
 
     sync({
       type: SyncAction.ApplyItemSticker,
@@ -1151,9 +1108,7 @@ export function Sticker3DEditor({
                   <Scene3D
                     weaponDefIndex={targetItem.id}
                     stickerItemId={stickerItem.id}
-                    stickers={stickers}
-                    selectedSlot={selectedSlot}
-                    onStickerSelect={handleSlotSelect}
+                    stickerTransform={stickerTransform}
                     onStickerUpdate={handleStickerUpdate}
                     onDebugInfo={handleDebugInfo}
                     onStatusChange={setStickerStatus}
@@ -1165,34 +1120,9 @@ export function Sticker3DEditor({
 
           {/* Control Panel - mobile: scrollable, desktop: fixed width */}
           <div className="flex-1 lg:w-80 lg:flex-none overflow-y-auto">
-            {/* Slot Selector */}
-            <div className="mb-2 sm:mb-4 p-2 sm:p-4 bg-neutral-800 rounded-lg">
-              <div className="text-xs sm:text-sm font-bold text-neutral-200 mb-2">
-                Select Slot (0-4)
-              </div>
-              <div className="flex gap-1 sm:gap-2">
-                {[0, 1, 2, 3, 4].map((slot) => (
-                  <button
-                    key={slot}
-                    onClick={() => handleSlotSelect(slot)}
-                    className={`
-                      flex-1 py-2 sm:py-3 rounded transition text-sm sm:text-base font-bold
-                      ${selectedSlot === slot
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600 active:bg-neutral-600'
-                      }
-                    `}
-                  >
-                    {slot}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Transform Controls */}
+            {/* Transform Controls - No slot selector, CS2 style */}
             <ControlPanel
-              selectedSlot={selectedSlot}
-              transform={selectedSlot !== null ? stickers.get(selectedSlot) || null : null}
+              transform={stickerTransform}
               onChange={handleTransformChange}
             />
           </div>
