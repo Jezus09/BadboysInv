@@ -158,10 +158,10 @@ export async function loadStickerTexture(stickerUrl: string): Promise<THREE.Text
 /**
  * Get sticker image URL from CS2 sticker definition index
  * Uses the ByMykel CSGO-API for accurate image URLs
- * @param stickerDefIndex CS2 sticker item definition index
+ * @param stickerDefIndex CS2 sticker item definition index (item.def, NOT item.id)
  * @returns Sticker image URL (synchronous, uses cache)
  */
-export function getStickerImageUrl(stickerDefIndex: number): string {
+export function getStickerImageUrl(stickerDefIndex: number | string): string {
   return getStickerImageSync(stickerDefIndex);
 }
 

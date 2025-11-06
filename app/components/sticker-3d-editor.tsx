@@ -20,6 +20,7 @@ import { CS2Economy } from "@ianlucas/cs2-lib";
 import {
   getWeaponModelFilename,
   loadStickerTexture,
+  getStickerImageUrl,
 } from "~/utils/model-loader";
 
 interface StickerTransform {
@@ -378,24 +379,30 @@ function Scene3D({
   useEffect(() => {
     // Get sticker item from CS2Economy
     const stickerEconItem = CS2Economy.getById(stickerItemId);
-    console.log(`[Scene3D] Loading sticker texture:`, {
+    console.log(`[Scene3D] Loading sticker:`, {
       stickerItemId,
       stickerEconItem: stickerEconItem ? {
         id: stickerEconItem.id,
+        def: stickerEconItem.def, // ⭐ This is the CS2 definition index!
         name: stickerEconItem.name,
-        type: stickerEconItem.type,
-        hasImage: !!stickerEconItem.image,
-        imageUrl: stickerEconItem.image
+        type: stickerEconItem.type
       } : null
     });
 
-    if (!stickerEconItem || !stickerEconItem.image) {
-      console.warn("[Scene3D] No image available for sticker", stickerItemId);
+    if (!stickerEconItem) {
+      console.warn("[Scene3D] Sticker not found in CS2Economy", stickerItemId);
       setStickerTexture(null);
       return;
     }
 
-    loadStickerTexture(stickerEconItem.image)
+    // Use def (definition index) to get image from CSGO-API
+    const stickerDefIndex = stickerEconItem.def;
+    const stickerUrl = getStickerImageUrl(stickerDefIndex);
+
+    console.log(`[Scene3D] Loading texture from CSGO-API with def_index: ${stickerDefIndex}`);
+    console.log(`[Scene3D] Texture URL: ${stickerUrl}`);
+
+    loadStickerTexture(stickerUrl)
       .then((texture) => {
         console.log(`[Scene3D] ✅ Sticker texture loaded successfully`);
         setStickerTexture(texture);
