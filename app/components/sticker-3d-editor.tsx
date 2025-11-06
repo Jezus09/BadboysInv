@@ -378,7 +378,8 @@ function Scene3D({
   stickers,
   selectedSlot,
   onStickerSelect,
-  onDebugInfo
+  onDebugInfo,
+  onStatusChange
 }: {
   weaponDefIndex: number;
   stickerItemId: number;
@@ -386,6 +387,7 @@ function Scene3D({
   selectedSlot: number | null;
   onStickerSelect: (slot: number) => void;
   onDebugInfo?: (info: string) => void;
+  onStatusChange?: (status: string) => void;
 }) {
   const [weaponMesh, setWeaponMesh] = useState<THREE.Mesh | null>(null);
   const [stickerTexture, setStickerTexture] = useState<THREE.Texture | null>(null);
@@ -408,7 +410,7 @@ function Scene3D({
     console.log(`[Scene3D] Loading sticker:`, debugInfo);
     const statusMsg = `Sticker: id=${stickerItemId}, def=${stickerEconItem?.def}`;
     onDebugInfo?.(statusMsg);
-    setStickerStatus(statusMsg);
+    onStatusChange?.(statusMsg);
 
     if (!stickerEconItem) {
       console.warn("[Scene3D] Sticker not found in CS2Economy", stickerItemId);
@@ -431,11 +433,11 @@ function Scene3D({
     if (isPlaceholder) {
       const msg = `⚠️ PLACEHOLDER! Cache not loaded?`;
       onDebugInfo?.(msg);
-      setStickerStatus(msg);
+      onStatusChange?.(msg);
     } else {
       const msg = `Loading: ${urlPreview}...`;
       onDebugInfo?.(msg);
-      setStickerStatus(msg);
+      onStatusChange?.(msg);
     }
 
     loadStickerTexture(stickerUrl)
@@ -459,7 +461,7 @@ function Scene3D({
 
         const fullMsg = `❌ FAILED: ${errorMsg}`;
         onDebugInfo?.(fullMsg);
-        setStickerStatus(fullMsg);
+        onStatusChange?.(fullMsg);
 
         // Don't set to null - keep trying with a fallback white color
         console.warn("[Scene3D] Creating fallback white texture");
@@ -829,6 +831,7 @@ export function Sticker3DEditor({
                     selectedSlot={selectedSlot}
                     onStickerSelect={handleSlotSelect}
                     onDebugInfo={handleDebugInfo}
+                    onStatusChange={setStickerStatus}
                   />
                 </Suspense>
               </Canvas>
