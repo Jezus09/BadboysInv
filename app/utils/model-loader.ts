@@ -5,6 +5,7 @@
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { getStickerImageSync } from "./sticker-api";
 
 /**
  * Cache for loaded GLTF models to avoid redundant network requests
@@ -143,8 +144,6 @@ export async function loadStickerTexture(stickerUrl: string): Promise<THREE.Text
  * @returns Sticker image URL (synchronous, uses cache)
  */
 export function getStickerImageUrl(stickerDefIndex: number): string {
-  // Import here to avoid circular dependencies
-  const { getStickerImageSync } = require("./sticker-api");
   return getStickerImageSync(stickerDefIndex);
 }
 

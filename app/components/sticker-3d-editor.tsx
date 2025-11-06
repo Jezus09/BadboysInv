@@ -5,7 +5,7 @@
 
 import { Canvas, useLoader } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, useGLTF } from "@react-three/drei";
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef, Component, ReactNode } from "react";
 import * as THREE from "three";
 import { DecalGeometry } from "three/examples/jsm/geometries/DecalGeometry.js";
 import { useNameItemString } from "~/components/hooks/use-name-item";
@@ -34,6 +34,46 @@ interface Sticker3DEditorProps {
   onClose: () => void;
   targetUid: number;
   stickerUid: number;
+}
+
+/**
+ * Error Boundary for 3D components
+ * Prevents crashes from propagating to the entire app
+ */
+class ThreeErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error("[3D Editor] Error caught by boundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        this.props.fallback || (
+          <div className="flex items-center justify-center h-full text-neutral-400">
+            <div className="text-center">
+              <div className="text-4xl mb-2">⚠️</div>
+              <div>3D mode unavailable</div>
+              <div className="text-xs mt-2">Check browser console for details</div>
+            </div>
+          </div>
+        )
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 /**
@@ -93,7 +133,8 @@ function WeaponModel({
 
       onModelLoad(mesh || null);
     }
-  }, [onModelLoad, fallbackMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fallbackMode]);
 
   // Fallback mode: simple box geometry
   if (fallbackMode || !modelPath) {
@@ -141,7 +182,8 @@ function LoadedWeaponModel({
 
       onModelLoad(mesh || null);
     }
-  }, [gltf, onModelLoad]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gltf]);
 
   return (
     <primitive
@@ -590,17 +632,19 @@ export function Sticker3DEditor({
         <div className="flex-1 flex flex-col lg:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-hidden">
           {/* 3D Canvas - mobile: smaller height, desktop: full */}
           <div className="h-64 sm:h-80 lg:h-auto lg:flex-1 bg-neutral-800 rounded-lg overflow-hidden">
-            <Canvas shadows>
-              <Suspense fallback={null}>
-                <Scene3D
-                  weaponDefIndex={targetItem.id}
-                  stickerItemId={stickerItem.id}
-                  stickers={stickers}
-                  selectedSlot={selectedSlot}
-                  onStickerSelect={handleSlotSelect}
-                />
-              </Suspense>
-            </Canvas>
+            <ThreeErrorBoundary>
+              <Canvas shadows>
+                <Suspense fallback={null}>
+                  <Scene3D
+                    weaponDefIndex={targetItem.id}
+                    stickerItemId={stickerItem.id}
+                    stickers={stickers}
+                    selectedSlot={selectedSlot}
+                    onStickerSelect={handleSlotSelect}
+                  />
+                </Suspense>
+              </Canvas>
+            </ThreeErrorBoundary>
           </div>
 
           {/* Control Panel - mobile: scrollable, desktop: fixed width */}
