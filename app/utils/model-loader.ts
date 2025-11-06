@@ -138,47 +138,32 @@ export async function loadStickerTexture(stickerUrl: string): Promise<THREE.Text
     return textureCache.get(stickerUrl)!;
   }
 
+  // Use proxy for Steam CDN URLs to bypass CORS
+  let proxiedUrl = stickerUrl;
+  if (stickerUrl.startsWith('https://cdn.steamstatic.com/')) {
+    proxiedUrl = `/api/proxy-image?url=${encodeURIComponent(stickerUrl)}`;
+    console.log(`[ModelLoader] Using proxy for Steam CDN image`);
+  }
+
   return new Promise((resolve, reject) => {
-    // Try to load with Image first to get better error messages
-    const img = new Image();
-    img.crossOrigin = 'anonymous'; // Try CORS
-
-    img.onload = () => {
-      console.log(`[ModelLoader] ✅ Image loaded successfully: ${stickerUrl.substring(0, 50)}`);
-
-      // Now load with TextureLoader
-      textureLoader.load(
-        stickerUrl,
-        (texture) => {
-          texture.colorSpace = THREE.SRGBColorSpace;
-          textureCache.set(stickerUrl, texture);
-          resolve(texture);
-        },
-        undefined,
-        (error) => {
-          console.error(`[ModelLoader] TextureLoader failed: ${stickerUrl}`, error);
-          reject(new Error(`TextureLoader failed: ${stickerUrl.substring(0, 40)}`));
-        }
-      );
-    };
-
-    img.onerror = (error) => {
-      console.error(`[ModelLoader] ❌ Image load failed:`, {
-        url: stickerUrl,
-        error: error,
-        type: error.type,
-        message: (error as any)?.message
-      });
-
-      // Determine error type
-      if (stickerUrl.startsWith('http') && !stickerUrl.startsWith(window.location.origin)) {
-        reject(new Error(`CORS error: Cannot load ${stickerUrl.substring(0, 40)}... from external domain`));
-      } else {
-        reject(new Error(`Failed to load image: ${stickerUrl.substring(0, 40)}`));
+    textureLoader.load(
+      proxiedUrl,
+      (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        textureCache.set(stickerUrl, texture);
+        console.log(`[ModelLoader] ✅ Texture loaded successfully via ${proxiedUrl === stickerUrl ? 'direct' : 'proxy'}`);
+        resolve(texture);
+      },
+      undefined,
+      (error) => {
+        console.error(`[ModelLoader] ❌ Failed to load texture:`, {
+          originalUrl: stickerUrl,
+          proxiedUrl: proxiedUrl,
+          error: error
+        });
+        reject(new Error(`Failed to load texture: ${stickerUrl.substring(0, 40)}`));
       }
-    };
-
-    img.src = stickerUrl;
+    );
   });
 }
 
