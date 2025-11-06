@@ -20,7 +20,6 @@ import { CS2Economy } from "@ianlucas/cs2-lib";
 import {
   getWeaponModelFilename,
   loadStickerTexture,
-  getStickerImageUrl,
 } from "~/utils/model-loader";
 
 interface StickerTransform {
@@ -377,14 +376,32 @@ function Scene3D({
 
   // Load sticker texture
   useEffect(() => {
-    const stickerUrl = getStickerImageUrl(stickerItemId);
+    // Get sticker item from CS2Economy
+    const stickerEconItem = CS2Economy.getById(stickerItemId);
+    console.log(`[Scene3D] Loading sticker texture:`, {
+      stickerItemId,
+      stickerEconItem: stickerEconItem ? {
+        id: stickerEconItem.id,
+        name: stickerEconItem.name,
+        type: stickerEconItem.type,
+        hasImage: !!stickerEconItem.image,
+        imageUrl: stickerEconItem.image
+      } : null
+    });
 
-    loadStickerTexture(stickerUrl)
+    if (!stickerEconItem || !stickerEconItem.image) {
+      console.warn("[Scene3D] No image available for sticker", stickerItemId);
+      setStickerTexture(null);
+      return;
+    }
+
+    loadStickerTexture(stickerEconItem.image)
       .then((texture) => {
+        console.log(`[Scene3D] ✅ Sticker texture loaded successfully`);
         setStickerTexture(texture);
       })
       .catch((error) => {
-        console.warn("[Scene3D] Failed to load sticker texture, using fallback", error);
+        console.error("[Scene3D] ❌ Failed to load sticker texture", error);
         setStickerTexture(null);
       });
   }, [stickerItemId]);
