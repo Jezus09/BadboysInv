@@ -137,19 +137,15 @@ export async function loadStickerTexture(stickerUrl: string): Promise<THREE.Text
 }
 
 /**
- * Get sticker image URL from CS2 sticker ID
- * Uses the ByMykel CSGO-API CDN
- * @param stickerId CS2 sticker item ID
- * @returns Sticker image URL
+ * Get sticker image URL from CS2 sticker definition index
+ * Uses the ByMykel CSGO-API for accurate image URLs
+ * @param stickerDefIndex CS2 sticker item definition index
+ * @returns Sticker image URL (synchronous, uses cache)
  */
-export function getStickerImageUrl(stickerId: number): string {
-  // This is a simplified mapping - in production, you'd fetch from the API
-  // For now, we'll use a pattern based on the sticker ID
-  const CDN_BASE = "https://raw.githubusercontent.com/ByMykel/counter-strike-image-tracker/main/static/panorama/images/econ/stickers";
-
-  // TODO: Implement proper API integration to get actual sticker filename
-  // For now, return a placeholder that follows the CDN pattern
-  return `${CDN_BASE}/default/sticker_${stickerId}.png`;
+export function getStickerImageUrl(stickerDefIndex: number): string {
+  // Import here to avoid circular dependencies
+  const { getStickerImageSync } = require("./sticker-api");
+  return getStickerImageSync(stickerDefIndex);
 }
 
 /**

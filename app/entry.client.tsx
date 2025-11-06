@@ -10,6 +10,7 @@ import { hydrateRoot } from "react-dom/client";
 import { HydratedRouter } from "react-router/dom";
 import { TRANSLATION_LOADED_TYPE } from "./components/hooks/use-translation";
 import { clientGlobals } from "./globals";
+import { preloadStickerMetadata } from "./utils/sticker-api";
 
 function hydrate() {
   window.removeEventListener(TRANSLATION_LOADED_TYPE, hydrate);
@@ -40,3 +41,8 @@ if (clientGlobals.isTranslationLoaded) {
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/scripts/service-worker.js");
 }
+
+// Preload sticker metadata in background for 3D editor
+preloadStickerMetadata().catch((error) => {
+  console.warn("[App] Failed to preload sticker metadata", error);
+});
