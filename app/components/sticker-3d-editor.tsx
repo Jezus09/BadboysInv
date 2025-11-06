@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, useGLTF } from "@react-three/drei";
 import { Suspense, useState, useEffect, useRef, Component, ReactNode } from "react";
 import * as THREE from "three";
@@ -443,6 +443,9 @@ function StickerDecal({
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; transform: StickerTransform } | null>(null);
 
+  // Get camera and canvas from React Three Fiber context
+  const { camera, gl } = useThree();
+
   // Create material with highlight for selected stickers
   const material = new THREE.MeshPhongMaterial({
     map: stickerTexture,
@@ -468,34 +471,93 @@ function StickerDecal({
     onPointerDown?.();
   };
 
-  // Handle drag move
+  // Handle drag move with raycasting to weapon surface
   const handlePointerMove = (e: THREE.Event) => {
     if (!isDragging || !dragStartRef.current || !onDragUpdate) return;
-
-    const deltaX = ((e.clientX || 0) - dragStartRef.current.x) * 0.005;
-    const deltaY = ((e.clientY || 0) - dragStartRef.current.y) * 0.005;
 
     // Check modifier keys
     const isShiftPressed = e.shiftKey;
     const isCtrlPressed = e.ctrlKey || e.metaKey;
 
     if (isCtrlPressed) {
-      // Ctrl + Drag: Scale
-      const scaleChange = deltaY * -2; // Negative to make dragging up = larger
+      // Ctrl + Drag: Scale (keep original behavior)
+      const deltaY = ((e.clientY || 0) - dragStartRef.current.y) * 0.005;
+      const scaleChange = deltaY * -2;
       const newScale = Math.max(0.5, Math.min(3, dragStartRef.current.transform.scale + scaleChange));
       onDragUpdate({ scale: newScale });
     } else if (isShiftPressed) {
-      // Shift + Drag: Rotate (Z-axis)
-      const rotationChange = deltaX * 3; // Sensitivity multiplier
+      // Shift + Drag: Rotate (keep original behavior)
+      const deltaX = ((e.clientX || 0) - dragStartRef.current.x) * 0.005;
+      const rotationChange = deltaX * 3;
       const newRotation: [number, number, number] = [...dragStartRef.current.transform.rotation];
       newRotation[2] = newRotation[2] + rotationChange;
       onDragUpdate({ rotation: newRotation });
     } else {
-      // Normal drag: Move position
-      const newPosition: [number, number, number] = [...dragStartRef.current.transform.position];
-      newPosition[0] = newPosition[0] + deltaX;
-      newPosition[1] = newPosition[1] - deltaY; // Invert Y for natural drag feeling
-      onDragUpdate({ position: newPosition });
+      // Normal drag: Use raycasting to move sticker on weapon surface
+      if (!targetMesh) {
+        // Fallback: free movement if no target mesh
+        const deltaX = ((e.clientX || 0) - dragStartRef.current.x) * 0.005;
+        const deltaY = ((e.clientY || 0) - dragStartRef.current.y) * 0.005;
+        const newPosition: [number, number, number] = [...dragStartRef.current.transform.position];
+        newPosition[0] = newPosition[0] + deltaX;
+        newPosition[1] = newPosition[1] - deltaY;
+        onDragUpdate({ position: newPosition });
+        return;
+      }
+
+      // Calculate normalized mouse coordinates (-1 to +1)
+      const canvas = gl.domElement;
+      const rect = canvas.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+
+      // Create raycaster from camera through mouse position
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      // Raycast to weapon mesh
+      const intersects = raycaster.intersectObject(targetMesh, true);
+
+      if (intersects.length > 0) {
+        const intersect = intersects[0];
+        const hitPoint = intersect.point;
+
+        // Get surface normal in world space
+        const localNormal = intersect.face?.normal || new THREE.Vector3(0, 0, 1);
+        const worldNormal = localNormal.clone()
+          .transformDirection(intersect.object.matrixWorld)
+          .normalize();
+
+        // Offset position slightly above the surface to avoid z-fighting
+        const offset = 0.01; // Small offset
+        const offsetPoint = hitPoint.clone().add(worldNormal.clone().multiplyScalar(offset));
+
+        // Update position to offset hit point
+        const newPosition: [number, number, number] = [offsetPoint.x, offsetPoint.y, offsetPoint.z];
+
+        // Calculate rotation to align with surface normal
+        // The sticker should face outward from the weapon surface
+        const up = new THREE.Vector3(0, 1, 0);
+
+        // If normal is too close to up vector, use different reference
+        if (Math.abs(worldNormal.dot(up)) > 0.99) {
+          up.set(1, 0, 0); // Use right vector instead
+        }
+
+        const right = new THREE.Vector3().crossVectors(up, worldNormal).normalize();
+        const correctedUp = new THREE.Vector3().crossVectors(worldNormal, right).normalize();
+
+        // Create rotation matrix from these vectors
+        const rotationMatrix = new THREE.Matrix4();
+        rotationMatrix.makeBasis(right, correctedUp, worldNormal);
+
+        const euler = new THREE.Euler().setFromRotationMatrix(rotationMatrix);
+        const newRotation: [number, number, number] = [euler.x, euler.y, euler.z];
+
+        onDragUpdate({ position: newPosition, rotation: newRotation });
+      }
     }
   };
 
@@ -600,6 +662,7 @@ function Scene3D({
 }) {
   const [weaponMesh, setWeaponMesh] = useState<THREE.Mesh | null>(null);
   const [stickerTexture, setStickerTexture] = useState<THREE.Texture | null>(null);
+  const cameraRef = useRef<THREE.Camera | null>(null);
 
   // Load sticker texture
   useEffect(() => {
@@ -791,10 +854,13 @@ function ControlPanel({
 
       {/* Quick tips - always visible */}
       <div className="text-xs text-neutral-400 space-y-1 bg-neutral-900 p-3 rounded">
-        <div>🖱️ <span className="text-white">Drag</span> - Move sticker</div>
+        <div>🖱️ <span className="text-white">Drag</span> - Move on weapon surface</div>
         <div>⇧ <span className="text-white">Shift + Drag</span> - Rotate</div>
         <div>⌃ <span className="text-white">Ctrl + Drag</span> - Scale</div>
         <div>🔄 <span className="text-white">Scroll Wheel</span> - Fine rotate</div>
+        <div className="pt-1 border-t border-neutral-800 mt-1 text-yellow-400">
+          💡 Stickers snap to weapon surface like CS2!
+        </div>
       </div>
 
       {/* Collapsible slider controls */}
