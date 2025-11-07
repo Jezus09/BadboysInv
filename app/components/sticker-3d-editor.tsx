@@ -298,10 +298,13 @@ function LoadedWeaponModel({
 
       // Function to apply texture to all materials
       const applyTextureToModel = (texture: THREE.Texture, textureName: string) => {
+        // CRITICAL Source 2 texture settings:
+        texture.flipY = false; // Source 2 textures are NOT flipped
+        texture.wrapS = THREE.RepeatWrapping; // Use RepeatWrapping for Source 2
+        texture.wrapT = THREE.RepeatWrapping;
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.flipY = false;
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.repeat.set(1, 1); // No repeat
+        texture.offset.set(0, 0); // No offset
         texture.minFilter = THREE.LinearMipMapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
         texture.anisotropy = 16;
@@ -380,11 +383,7 @@ function LoadedWeaponModel({
 
                   const ctx = canvas.getContext('2d');
                   if (ctx) {
-                    // FLIP THE ENTIRE CANVAS (both base and skin need Y-flip)
-                    ctx.save();
-                    ctx.translate(0, maxHeight);
-                    ctx.scale(1, -1);
-
+                    // NO FLIP - Source 2 textures are already correct orientation
                     // Draw base texture first (background)
                     ctx.drawImage(baseTexture.image, 0, 0, maxWidth, maxHeight);
 
@@ -392,12 +391,19 @@ function LoadedWeaponModel({
                     ctx.globalAlpha = 1.0; // Full opacity for skin
                     ctx.drawImage(skinTexture.image, 0, 0, maxWidth, maxHeight);
 
-                    ctx.restore();
-
                     // Create merged texture from canvas
                     const mergedTexture = new THREE.CanvasTexture(canvas);
+
+                    // CRITICAL Source 2 texture settings:
+                    mergedTexture.flipY = false; // Source 2 textures are NOT flipped
+                    mergedTexture.wrapS = THREE.RepeatWrapping;
+                    mergedTexture.wrapT = THREE.RepeatWrapping;
+                    mergedTexture.colorSpace = THREE.SRGBColorSpace;
+                    mergedTexture.repeat.set(1, 1);
+                    mergedTexture.offset.set(0, 0);
                     mergedTexture.needsUpdate = true;
-                    console.log(`[WeaponModel] 🔄 Both textures flipped vertically for correct orientation`);
+
+                    console.log(`[WeaponModel] ✅ Merged texture with Source 2 settings (flipY=false, RepeatWrapping)`);
                     applyTextureToModel(mergedTexture, 'Merged (base + skin)');
                   }
                 },
