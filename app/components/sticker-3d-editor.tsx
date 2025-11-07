@@ -249,16 +249,37 @@ function LoadedWeaponModel({
 
     // CS2 skin texture loading using getTextureImage() for proper UV mapping
     if (econItem) {
+      // Debug: Log ALL texture-related properties
+      console.log(`[WeaponModel] 🔍 Item debug:`, {
+        id: econItem.id,
+        name: econItem.name,
+        type: econItem.type,
+        def: econItem.def,
+        textureImage_prop: econItem.textureImage,
+        model_prop: econItem.model,
+        modelBinary_prop: econItem.modelBinary
+      });
+
       // Use getTextureImage() which returns the actual texture map (not inventory icon!)
       const textureUrl = econItem.getTextureImage();
 
+      console.log(`[WeaponModel] 📥 Texture URL:`, textureUrl);
+
       if (textureUrl) {
         const textureLoader = new THREE.TextureLoader();
-        console.log(`[WeaponModel] Loading texture from: ${textureUrl}`);
+        console.log(`[WeaponModel] ⏳ Loading texture from: ${textureUrl}`);
 
         textureLoader.load(
           textureUrl,
           (texture) => {
+          console.log(`[WeaponModel] ✅ Texture LOADED successfully:`, {
+            width: texture.image?.width,
+            height: texture.image?.height,
+            format: texture.format,
+            type: texture.type,
+            hasAlpha: texture.image?.src?.includes('data:') ? 'data URL' : 'external'
+          });
+
           texture.colorSpace = THREE.SRGBColorSpace;
 
           // OBJ models UV mapping settings
@@ -391,7 +412,11 @@ function LoadedWeaponModel({
           console.log(`[WeaponModel] Loading texture... ${Math.round((progress.loaded / progress.total) * 100)}%`);
         },
         (error) => {
-          console.error("[WeaponModel] ❌ Failed to load skin texture", error);
+          console.error("[WeaponModel] ❌ Failed to load skin texture", {
+            textureUrl,
+            error: error.message || error
+          });
+          console.log("[WeaponModel] ⚠️ Will use neutral grey material as fallback");
         }
       );
       } else {
