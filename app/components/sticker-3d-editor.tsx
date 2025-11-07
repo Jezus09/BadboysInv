@@ -247,25 +247,27 @@ function LoadedWeaponModel({
       } : null
     });
 
-    // CS2 skin texture loading using getTextureImage() for proper UV mapping
+    // SKIN TEXTURES DISABLED - OBJ models have incompatible UV mapping
+    // The community OBJ models we use have different UV layouts than CS2's official models
+    // Loading CS2 skin textures results in misaligned/scrambled textures
+    //
+    // Solution: Use realistic neutral PBR materials instead
+    // This way at least the weapon shape and stickers display correctly
+    //
+    // TODO: Find/extract official CS2 GLTF models with correct UV mapping
+
     if (econItem) {
-      // Debug: Log ALL texture-related properties
-      console.log(`[WeaponModel] 🔍 Item debug:`, {
+      console.log(`[WeaponModel] 🔧 Applying neutral material for:`, {
         id: econItem.id,
         name: econItem.name,
         type: econItem.type,
-        def: econItem.def,
-        textureImage_prop: econItem.textureImage,
-        model_prop: econItem.model,
-        modelBinary_prop: econItem.modelBinary
+        def: econItem.def
       });
 
-      // Use getTextureImage() which returns the actual texture map (not inventory icon!)
-      const textureUrl = econItem.getTextureImage();
+      // TEXTURE LOADING DISABLED - UV mapping incompatible
+      const ENABLE_SKIN_TEXTURES = false; // Set to true when we have compatible models
 
-      console.log(`[WeaponModel] 📥 Texture URL:`, textureUrl);
-
-      if (textureUrl) {
+      if (ENABLE_SKIN_TEXTURES) {
         const textureLoader = new THREE.TextureLoader();
         console.log(`[WeaponModel] ⏳ Loading texture from: ${textureUrl}`);
 
@@ -420,8 +422,8 @@ function LoadedWeaponModel({
         }
       );
       } else {
-        // No texture URL - apply neutral grey material as fallback
-        console.warn(`[WeaponModel] No texture URL available for item:`, econItem.name);
+        // Apply realistic neutral material (no skin texture)
+        console.log(`[WeaponModel] 🎨 Applying realistic neutral material (skin textures disabled)`);
 
         let meshCount = 0;
         let materialCount = 0;
@@ -430,13 +432,17 @@ function LoadedWeaponModel({
           if (child instanceof THREE.Mesh) {
             meshCount++;
 
-            // Create a neutral, professional-looking PBR material
+            // Create realistic weapon-like PBR material
+            // This simulates a black/dark polymer weapon (like default skins)
             const neutralMaterial = new THREE.MeshStandardMaterial({
-              color: new THREE.Color(0x555555), // Dark grey (professional look)
-              metalness: 0.5, // Slightly metallic
-              roughness: 0.6, // Smooth but not mirror-like
-              emissive: new THREE.Color(0x111111), // Slight glow
-              emissiveIntensity: 0.1
+              color: new THREE.Color(0x2a2a2a), // Dark gunmetal grey
+              metalness: 0.7, // Metallic look (like gun metal)
+              roughness: 0.3, // Smooth polished surface
+              emissive: new THREE.Color(0x0a0a0a), // Slight ambient glow
+              emissiveIntensity: 0.05,
+              // These make it look more realistic
+              envMapIntensity: 1.0, // Environment reflections
+              side: THREE.FrontSide
             });
 
             // Apply to all materials in the mesh
@@ -452,9 +458,10 @@ function LoadedWeaponModel({
           }
         });
 
-        console.log(`[WeaponModel] ✅ Applied neutral fallback material to ${meshCount} meshes, ${materialCount} materials`);
+        console.log(`[WeaponModel] ✅ Applied realistic neutral material to ${meshCount} meshes, ${materialCount} materials`);
+        console.log(`[WeaponModel] ℹ️ Skin textures are disabled because OBJ UV mapping is incompatible with CS2 textures`);
       }
-    } // End of CS2 skin texture block
+    } // End of neutral material application
   }, [clonedScene, weaponDefIndex]);
 
   if (!clonedScene) return null;
