@@ -383,12 +383,17 @@ function LoadedWeaponModel({
                     // Draw base texture first (background)
                     ctx.drawImage(baseTexture.image, 0, 0, maxWidth, maxHeight);
 
-                    // Draw skin texture on top (with blending)
+                    // Draw skin texture on top (FLIPPED vertically because Steam CDN textures are upside-down)
+                    ctx.save();
+                    ctx.translate(0, maxHeight);
+                    ctx.scale(1, -1);
                     ctx.globalAlpha = 1.0; // Full opacity for skin
                     ctx.drawImage(skinTexture.image, 0, 0, maxWidth, maxHeight);
+                    ctx.restore();
 
                     // Create merged texture from canvas
                     const mergedTexture = new THREE.CanvasTexture(canvas);
+                    console.log(`[WeaponModel] 🔄 Skin texture flipped vertically for correct orientation`);
                     applyTextureToModel(mergedTexture, 'Merged (base + skin)');
                   }
                 },
