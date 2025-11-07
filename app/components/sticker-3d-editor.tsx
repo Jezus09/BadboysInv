@@ -247,48 +247,41 @@ function LoadedWeaponModel({
       } : null
     });
 
-    // SKIN TEXTURES DISABLED - OBJ models have incompatible UV mapping
-    // The community OBJ models we use have different UV layouts than CS2's official models
-    // Loading CS2 skin textures results in misaligned/scrambled textures
-    //
-    // Solution: Use realistic neutral PBR materials instead
-    // This way at least the weapon shape and stickers display correctly
-    //
-    // TODO: Find/extract official CS2 GLTF models with correct UV mapping
-
+    // CS2 Texture Loading - Debugging enabled
     if (econItem) {
-      console.log(`[WeaponModel] 🔧 Applying neutral material for:`, {
+      console.log(`[WeaponModel] 🔧 Item info:`, {
         id: econItem.id,
         name: econItem.name,
         type: econItem.type,
-        def: econItem.def
+        def: econItem.def,
+        hasWear: econItem.hasWear()
       });
 
-      // TEXTURE LOADING DISABLED - UV mapping incompatible
-      const ENABLE_SKIN_TEXTURES = false; // Set to true when we have compatible models
+      // Try loading the texture
+      const textureUrl = econItem.getTextureImage();
 
-      if (ENABLE_SKIN_TEXTURES) {
+      console.log(`[WeaponModel] 📥 Texture URL from getTextureImage():`, textureUrl);
+
+      if (textureUrl) {
         const textureLoader = new THREE.TextureLoader();
-        console.log(`[WeaponModel] ⏳ Loading texture from: ${textureUrl}`);
+        console.log(`[WeaponModel] ⏳ Starting texture load...`);
 
         textureLoader.load(
           textureUrl,
           (texture) => {
-          console.log(`[WeaponModel] ✅ Texture LOADED successfully:`, {
+          console.log(`[WeaponModel] ✅ Texture LOADED:`, {
+            url: textureUrl,
             width: texture.image?.width,
             height: texture.image?.height,
-            format: texture.format,
-            type: texture.type,
-            hasAlpha: texture.image?.src?.includes('data:') ? 'data URL' : 'external'
+            src: texture.image?.src?.substring(0, 100)
           });
 
           texture.colorSpace = THREE.SRGBColorSpace;
 
-          // OBJ models UV mapping settings
-          // Start with safe defaults - no flip, clamp to edge (like GLTF)
-          texture.flipY = false; // Try without flip first
-          texture.wrapS = THREE.ClampToEdgeWrapping; // Prevent repeat artifacts
-          texture.wrapT = THREE.ClampToEdgeWrapping; // Prevent repeat artifacts
+          // OBJ models typically need Y-flip for proper orientation
+          texture.flipY = true;
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
 
           // Set proper min/mag filters for sharpness
           texture.minFilter = THREE.LinearMipMapLinearFilter;
@@ -302,19 +295,13 @@ function LoadedWeaponModel({
             anisotropy: texture.anisotropy
           });
 
-          // Weapon-specific texture adjustments
-          // Use these if texture appears misaligned for specific weapons
+          // Weapon-specific adjustments if needed
           const weaponTextureConfig: Record<number, {
             flipY?: boolean;
             offset?: [number, number];
             repeat?: [number, number];
-            rotation?: number;
-            wrapS?: THREE.Wrapping;
-            wrapT?: THREE.Wrapping;
           }> = {
-            // Examples - uncomment and adjust if needed:
-            // 7: { flipY: true, offset: [0, 0], repeat: [1, 1] }, // AK-47
-            // 9: { flipY: true, offset: [0, 0], repeat: [1, 1] }, // AWP
+            // Add weapon-specific configs here based on testing
           };
 
           const baseWeaponDef = econItem.def || weaponDefIndex;
@@ -370,40 +357,25 @@ function LoadedWeaponModel({
               if (Array.isArray(child.material)) {
                 child.material.forEach((mat, idx) => {
                   materialCount++;
-                  console.log(`[WeaponModel] Material[${idx}] type:`, mat.constructor.name);
                   if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
                     mat.map = texture;
-                    // Set base color to gunmetal grey (default weapon color)
-                    // This shows through where the skin texture is transparent
-                    mat.color = new THREE.Color(0x888888); // Medium grey base
-                    // Enhance material properties for better visibility
+                    mat.color = new THREE.Color(0xffffff); // White to not tint texture
                     if (mat instanceof THREE.MeshStandardMaterial) {
-                      mat.metalness = 0.6; // More metallic for weapon look
-                      mat.roughness = 0.4; // Smoother surface
-                      mat.emissive = new THREE.Color(0x0a0a0a);
-                      mat.emissiveIntensity = 0.05;
+                      mat.metalness = 0.3;
+                      mat.roughness = 0.7;
                     }
                     mat.needsUpdate = true;
-                    console.log(`[WeaponModel] ✅ Applied texture to material[${idx}] with grey base`);
                   }
                 });
               } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhongMaterial) {
                 materialCount++;
                 child.material.map = texture;
-                // Set base color to gunmetal grey (default weapon color)
-                // This shows through where the skin texture is transparent
-                child.material.color = new THREE.Color(0x888888); // Medium grey base
-                // Enhance material properties for better visibility
+                child.material.color = new THREE.Color(0xffffff); // White to not tint texture
                 if (child.material instanceof THREE.MeshStandardMaterial) {
-                  child.material.metalness = 0.6; // More metallic for weapon look
-                  child.material.roughness = 0.4; // Smoother surface
-                  child.material.emissive = new THREE.Color(0x0a0a0a);
-                  child.material.emissiveIntensity = 0.05;
+                  child.material.metalness = 0.3;
+                  child.material.roughness = 0.7;
                 }
                 child.material.needsUpdate = true;
-                console.log(`[WeaponModel] ✅ Applied texture to single material with grey base`);
-              } else {
-                console.warn(`[WeaponModel] ⚠️ Unsupported material type:`, child.material.constructor.name);
               }
             }
           });
@@ -422,46 +394,29 @@ function LoadedWeaponModel({
         }
       );
       } else {
-        // Apply realistic neutral material (no skin texture)
-        console.log(`[WeaponModel] 🎨 Applying realistic neutral material (skin textures disabled)`);
-
-        let meshCount = 0;
-        let materialCount = 0;
+        // No texture URL available
+        console.warn(`[WeaponModel] ⚠️ No texture URL available for item:`, econItem.name);
+        console.log(`[WeaponModel] 🎨 Using fallback neutral material`);
 
         clonedScene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
-            meshCount++;
-
-            // Create realistic weapon-like PBR material
-            // This simulates a black/dark polymer weapon (like default skins)
             const neutralMaterial = new THREE.MeshStandardMaterial({
-              color: new THREE.Color(0x2a2a2a), // Dark gunmetal grey
-              metalness: 0.7, // Metallic look (like gun metal)
-              roughness: 0.3, // Smooth polished surface
-              emissive: new THREE.Color(0x0a0a0a), // Slight ambient glow
-              emissiveIntensity: 0.05,
-              // These make it look more realistic
-              envMapIntensity: 1.0, // Environment reflections
-              side: THREE.FrontSide
+              color: new THREE.Color(0x666666),
+              metalness: 0.5,
+              roughness: 0.6
             });
 
-            // Apply to all materials in the mesh
             if (Array.isArray(child.material)) {
               child.material.forEach((mat, idx) => {
-                materialCount++;
                 child.material[idx] = neutralMaterial.clone();
               });
             } else {
-              materialCount++;
               child.material = neutralMaterial;
             }
           }
         });
-
-        console.log(`[WeaponModel] ✅ Applied realistic neutral material to ${meshCount} meshes, ${materialCount} materials`);
-        console.log(`[WeaponModel] ℹ️ Skin textures are disabled because OBJ UV mapping is incompatible with CS2 textures`);
       }
-    } // End of neutral material application
+    }
   }, [clonedScene, weaponDefIndex]);
 
   if (!clonedScene) return null;
