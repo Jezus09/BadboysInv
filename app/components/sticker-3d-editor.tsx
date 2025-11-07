@@ -321,53 +321,17 @@ function LoadedWeaponModel({
           });
 
           // Weapon-specific UV fine-tuning
-          // These values can be adjusted based on visual testing
+          // IMPORTANT: Default settings work for Valve official models!
+          // Deagle, USP, AUG work perfectly with NO custom config.
+          // Only add config here if a specific weapon needs adjustment.
           const weaponTextureConfig: Record<number, {
             flipY?: boolean;
             offset?: [number, number];
             repeat?: [number, number];
             rotation?: number;
           }> = {
-            // Rifles - often need different UV mapping
-            7: { // AK-47 - texture not aligned
-              flipY: true,       // Try flip
-              offset: [0, 0],    // Reset to origin
-              repeat: [1.5, 1.5], // Larger repeat
-              rotation: 0
-            },
-            16: { // M4A4 - similar to AK-47
-              flipY: true,
-              offset: [0, 0],
-              repeat: [1.5, 1.5],
-              rotation: 0
-            },
-            60: { // M4A1-S - texture not aligned
-              flipY: true,
-              offset: [0, 0],
-              repeat: [1.5, 1.5],
-              rotation: 0
-            },
-
-            // Sniper Rifles - long weapons need different mapping
-            9: { // AWP - texture not aligned
-              flipY: true,
-              offset: [0, 0],
-              repeat: [2, 2],    // Even larger for AWP (long weapon)
-              rotation: 0
-            },
-            40: { // SSG 08 - similar to AWP
-              flipY: true,
-              offset: [0, 0],
-              repeat: [2, 2],
-              rotation: 0
-            },
-
-            // Working pistols - keep default (no config needed)
-            // 1: Desert Eagle - works ✅
-            // 61: USP-S - works ✅
-
-            // Working rifles
-            // 8: AUG - works ✅
+            // All weapons use default settings (works for Valve models)
+            // If a weapon needs adjustment, add it here with minimal changes
           };
 
           const baseWeaponDef = econItem.def || weaponDefIndex;
