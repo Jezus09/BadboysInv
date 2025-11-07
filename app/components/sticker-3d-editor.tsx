@@ -261,18 +261,26 @@ function LoadedWeaponModel({
           (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace;
 
-          // Official CS2 OBJ models - OBJ format needs Y-flip!
-          texture.flipY = true; // OBJ format requires Y-flip
-          texture.wrapS = THREE.RepeatWrapping; // Allow repeat for better coverage
-          texture.wrapT = THREE.RepeatWrapping; // Allow repeat for better coverage
+          // OBJ models UV mapping settings
+          // Start with safe defaults - no flip, clamp to edge (like GLTF)
+          texture.flipY = false; // Try without flip first
+          texture.wrapS = THREE.ClampToEdgeWrapping; // Prevent repeat artifacts
+          texture.wrapT = THREE.ClampToEdgeWrapping; // Prevent repeat artifacts
 
           // Set proper min/mag filters for sharpness
           texture.minFilter = THREE.LinearMipMapLinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.anisotropy = 16; // Maximum anisotropic filtering for quality
 
-          // Weapon-specific texture adjustments (usually not needed for GLTF)
-          // Only use if texture still appears misaligned
+          console.log(`[WeaponModel] Texture settings:`, {
+            flipY: texture.flipY,
+            wrapS: texture.wrapS === THREE.ClampToEdgeWrapping ? 'ClampToEdge' : 'Repeat',
+            wrapT: texture.wrapT === THREE.ClampToEdgeWrapping ? 'ClampToEdge' : 'Repeat',
+            anisotropy: texture.anisotropy
+          });
+
+          // Weapon-specific texture adjustments
+          // Use these if texture appears misaligned for specific weapons
           const weaponTextureConfig: Record<number, {
             flipY?: boolean;
             offset?: [number, number];
@@ -281,16 +289,9 @@ function LoadedWeaponModel({
             wrapS?: THREE.Wrapping;
             wrapT?: THREE.Wrapping;
           }> = {
-            // AK-47 - Use defaults (no adjustment needed)
-            7: {
-              flipY: false,
-              offset: [0, 0],
-              repeat: [1, 1],
-              rotation: 0,
-              wrapS: THREE.ClampToEdgeWrapping,
-              wrapT: THREE.ClampToEdgeWrapping
-            },
-            // Add more weapon-specific configs here if needed
+            // Examples - uncomment and adjust if needed:
+            // 7: { flipY: true, offset: [0, 0], repeat: [1, 1] }, // AK-47
+            // 9: { flipY: true, offset: [0, 0], repeat: [1, 1] }, // AWP
           };
 
           const baseWeaponDef = econItem.def || weaponDefIndex;
@@ -349,31 +350,35 @@ function LoadedWeaponModel({
                   console.log(`[WeaponModel] Material[${idx}] type:`, mat.constructor.name);
                   if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
                     mat.map = texture;
+                    // Set base color to gunmetal grey (default weapon color)
+                    // This shows through where the skin texture is transparent
+                    mat.color = new THREE.Color(0x888888); // Medium grey base
                     // Enhance material properties for better visibility
                     if (mat instanceof THREE.MeshStandardMaterial) {
-                      mat.metalness = 0.3;
-                      mat.roughness = 0.7;
-                      mat.emissive = new THREE.Color(0x111111);
-                      mat.emissiveIntensity = 0.1;
+                      mat.metalness = 0.6; // More metallic for weapon look
+                      mat.roughness = 0.4; // Smoother surface
+                      mat.emissive = new THREE.Color(0x0a0a0a);
+                      mat.emissiveIntensity = 0.05;
                     }
-                    mat.color = new THREE.Color(0xffffff); // Bright white base
                     mat.needsUpdate = true;
-                    console.log(`[WeaponModel] ✅ Applied texture to material[${idx}]`);
+                    console.log(`[WeaponModel] ✅ Applied texture to material[${idx}] with grey base`);
                   }
                 });
               } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhongMaterial) {
                 materialCount++;
                 child.material.map = texture;
+                // Set base color to gunmetal grey (default weapon color)
+                // This shows through where the skin texture is transparent
+                child.material.color = new THREE.Color(0x888888); // Medium grey base
                 // Enhance material properties for better visibility
                 if (child.material instanceof THREE.MeshStandardMaterial) {
-                  child.material.metalness = 0.3;
-                  child.material.roughness = 0.7;
-                  child.material.emissive = new THREE.Color(0x111111);
-                  child.material.emissiveIntensity = 0.1;
+                  child.material.metalness = 0.6; // More metallic for weapon look
+                  child.material.roughness = 0.4; // Smoother surface
+                  child.material.emissive = new THREE.Color(0x0a0a0a);
+                  child.material.emissiveIntensity = 0.05;
                 }
-                child.material.color = new THREE.Color(0xffffff); // Bright white base
                 child.material.needsUpdate = true;
-                console.log(`[WeaponModel] ✅ Applied texture to single material`);
+                console.log(`[WeaponModel] ✅ Applied texture to single material with grey base`);
               } else {
                 console.warn(`[WeaponModel] ⚠️ Unsupported material type:`, child.material.constructor.name);
               }
