@@ -279,161 +279,190 @@ function LoadedWeaponModel({
         def: baseWeapon.def
       });
 
-      // Try loading the texture
-      const textureUrl = econItem.getTextureImage();
+      // Map weapon def to base texture filename
+      const baseTextureMap: Record<number, string> = {
+        7: 'ak47_color.png',     // AK-47
+        9: 'awp_color.png',      // AWP
+        1: 'deagle_color.png',   // Desert Eagle
+        60: 'm4a1_color.png',    // M4A1-S
+        16: 'm4a4_color.png',    // M4A4
+      };
 
-      console.log(`[WeaponModel] 📥 Texture URL from getTextureImage():`, textureUrl);
+      const baseTexturePath = baseTextureMap[baseWeapon.def];
+      console.log(`[WeaponModel] 🎨 Base texture:`, baseTexturePath || 'none');
 
-      if (textureUrl) {
-        const textureLoader = new THREE.TextureLoader();
-        console.log(`[WeaponModel] ⏳ Starting texture load...`);
+      // Try loading the skin texture
+      const skinTextureUrl = econItem.getTextureImage();
 
-        textureLoader.load(
-          textureUrl,
-          (texture) => {
-          console.log(`[WeaponModel] ✅ Texture LOADED:`, {
-            url: textureUrl,
-            width: texture.image?.width,
-            height: texture.image?.height,
-            src: texture.image?.src?.substring(0, 100)
-          });
+      console.log(`[WeaponModel] 📥 Skin texture URL from getTextureImage():`, skinTextureUrl);
 
-          texture.colorSpace = THREE.SRGBColorSpace;
+      // Function to apply texture to all materials
+      const applyTextureToModel = (texture: THREE.Texture, textureName: string) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.flipY = false;
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.minFilter = THREE.LinearMipMapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 16;
+        texture.needsUpdate = true;
 
-          // Try different settings for OBJ UV mapping
-          // EXPERIMENT: Try NO flip and ClampToEdge (more stable)
-          texture.flipY = false; // Try without Y-flip
-          texture.wrapS = THREE.ClampToEdgeWrapping; // Prevent tiling artifacts
-          texture.wrapT = THREE.ClampToEdgeWrapping; // Prevent tiling artifacts
+        let meshCount = 0;
+        let materialCount = 0;
 
-          // Set proper min/mag filters for sharpness
-          texture.minFilter = THREE.LinearMipMapLinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          texture.anisotropy = 16; // Maximum anisotropic filtering for quality
+        clonedScene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            meshCount++;
 
-          console.log(`[WeaponModel] 🎨 Texture settings:`, {
-            flipY: texture.flipY,
-            wrapS: 'ClampToEdge',
-            wrapT: 'ClampToEdge',
-            anisotropy: texture.anisotropy,
-            offset: [texture.offset.x, texture.offset.y],
-            repeat: [texture.repeat.x, texture.repeat.y]
-          });
-
-          // Weapon-specific UV fine-tuning
-          // IMPORTANT: Default settings work for Valve official models!
-          // Deagle, USP, AUG work perfectly with NO custom config.
-          // Only add config here if a specific weapon needs adjustment.
-          const weaponTextureConfig: Record<number, {
-            flipY?: boolean;
-            offset?: [number, number];
-            repeat?: [number, number];
-            rotation?: number;
-          }> = {
-            // All weapons use default settings (works for Valve models)
-            // If a weapon needs adjustment, add it here with minimal changes
-          };
-
-          const baseWeaponDef = econItem.def || weaponDefIndex;
-          const config = weaponTextureConfig[baseWeaponDef];
-
-          // Apply weapon-specific config overrides
-          if (config) {
-            if (config.flipY !== undefined) {
-              texture.flipY = config.flipY;
-              console.log(`[WeaponModel] Applied flipY=${config.flipY} for weapon ${baseWeaponDef}`);
-            }
-            if (config.wrapS !== undefined) {
-              texture.wrapS = config.wrapS;
-              console.log(`[WeaponModel] Applied wrapS for weapon ${baseWeaponDef}`);
-            }
-            if (config.wrapT !== undefined) {
-              texture.wrapT = config.wrapT;
-              console.log(`[WeaponModel] Applied wrapT for weapon ${baseWeaponDef}`);
-            }
-            if (config.offset) {
-              texture.offset.set(config.offset[0], config.offset[1]);
-              console.log(`[WeaponModel] Applied offset [${config.offset[0]}, ${config.offset[1]}] for weapon ${baseWeaponDef}`);
-            }
-            if (config.repeat) {
-              texture.repeat.set(config.repeat[0], config.repeat[1]);
-              console.log(`[WeaponModel] Applied repeat [${config.repeat[0]}, ${config.repeat[1]}] for weapon ${baseWeaponDef}`);
-            }
-            if (config.rotation !== undefined) {
-              texture.rotation = config.rotation;
-              console.log(`[WeaponModel] Applied rotation ${config.rotation} for weapon ${baseWeaponDef}`);
+            if (Array.isArray(child.material)) {
+              child.material.forEach((mat, idx) => {
+                materialCount++;
+                if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
+                  mat.map = texture;
+                  mat.color = new THREE.Color(0xffffff);
+                  if (mat instanceof THREE.MeshStandardMaterial) {
+                    mat.metalness = 0.4;
+                    mat.roughness = 0.6;
+                  }
+                  mat.needsUpdate = true;
+                }
+              });
+            } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhongMaterial) {
+              materialCount++;
+              child.material.map = texture;
+              child.material.color = new THREE.Color(0xffffff);
+              if (child.material instanceof THREE.MeshStandardMaterial) {
+                child.material.metalness = 0.4;
+                child.material.roughness = 0.6;
+              }
+              child.material.needsUpdate = true;
             }
           }
+        });
 
-          // Force texture update after all settings applied
-          texture.needsUpdate = true;
+        console.log(`[WeaponModel] ✅ ${textureName} applied to ${meshCount} meshes, ${materialCount} materials`);
+      };
 
-          let meshCount = 0;
-          let materialCount = 0;
+      // STRATEGY: Load base texture first, then skin texture (if available)
+      if (baseTexturePath) {
+        const baseTextureUrl = `/models/weapons/textures/${baseTexturePath}`;
+        console.log(`[WeaponModel] ⏳ Loading BASE texture:`, baseTextureUrl);
 
-          // Apply texture to all meshes - handle multi-material
-          clonedScene.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              meshCount++;
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+          baseTextureUrl,
+          (baseTexture) => {
+            console.log(`[WeaponModel] ✅ BASE texture loaded:`, {
+              url: baseTextureUrl,
+              width: baseTexture.image?.width,
+              height: baseTexture.image?.height
+            });
 
-              // Check UV coordinates
-              const hasUV = child.geometry.attributes.uv !== undefined;
-              const uvCount = hasUV ? child.geometry.attributes.uv.count : 0;
-              console.log(`[WeaponModel] 🔍 Mesh:`, child.name || 'unnamed',
-                `Has UV:`, hasUV,
-                `UV count:`, uvCount);
+            // If skin texture is available, merge it with base texture
+            if (skinTextureUrl) {
+              console.log(`[WeaponModel] ⏳ Now loading SKIN texture to merge:`, skinTextureUrl);
 
-              if (Array.isArray(child.material)) {
-                // Multi-material mesh
-                console.log(`[WeaponModel] 📦 Multi-material: ${child.material.length} materials`);
+              const skinLoader = new THREE.TextureLoader();
+              skinLoader.load(
+                skinTextureUrl,
+                (skinTexture) => {
+                  console.log(`[WeaponModel] ✅ SKIN texture loaded:`, {
+                    width: skinTexture.image?.width,
+                    height: skinTexture.image?.height
+                  });
 
-                child.material.forEach((mat, idx) => {
-                  materialCount++;
-                  console.log(`[WeaponModel] Material[${idx}]:`, mat.constructor.name);
+                  // Merge textures using canvas
+                  const canvas = document.createElement('canvas');
+                  const maxWidth = Math.max(baseTexture.image.width, skinTexture.image.width);
+                  const maxHeight = Math.max(baseTexture.image.height, skinTexture.image.height);
+                  canvas.width = maxWidth;
+                  canvas.height = maxHeight;
 
-                  if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
-                    mat.map = texture;
-                    mat.color = new THREE.Color(0xffffff);
-                    if (mat instanceof THREE.MeshStandardMaterial) {
-                      mat.metalness = 0.4;
-                      mat.roughness = 0.6;
-                    }
-                    mat.needsUpdate = true;
-                    console.log(`[WeaponModel] ✅ Texture → material[${idx}]`);
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    // Draw base texture first (background)
+                    ctx.drawImage(baseTexture.image, 0, 0, maxWidth, maxHeight);
+
+                    // Draw skin texture on top (with blending)
+                    ctx.globalAlpha = 1.0; // Full opacity for skin
+                    ctx.drawImage(skinTexture.image, 0, 0, maxWidth, maxHeight);
+
+                    // Create merged texture from canvas
+                    const mergedTexture = new THREE.CanvasTexture(canvas);
+                    applyTextureToModel(mergedTexture, 'Merged (base + skin)');
                   }
-                });
-              } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhongMaterial) {
-                materialCount++;
-                child.material.map = texture;
-                child.material.color = new THREE.Color(0xffffff);
-                if (child.material instanceof THREE.MeshStandardMaterial) {
-                  child.material.metalness = 0.4;
-                  child.material.roughness = 0.6;
+                },
+                undefined,
+                (error) => {
+                  console.error(`[WeaponModel] ❌ Failed to load SKIN texture:`, error);
+                  console.log(`[WeaponModel] ⚠️ Using BASE texture only`);
+                  applyTextureToModel(baseTexture, 'BASE only');
                 }
-                child.material.needsUpdate = true;
-                console.log(`[WeaponModel] ✅ Texture → single material`);
-              }
+              );
+            } else {
+              // No skin texture, use base texture only
+              console.log(`[WeaponModel] ℹ️ No skin texture, using BASE texture only`);
+              applyTextureToModel(baseTexture, 'BASE only');
             }
-          });
+          },
+          undefined,
+          (error) => {
+            console.error(`[WeaponModel] ❌ Failed to load BASE texture:`, error);
 
-          console.log(`[WeaponModel] ✅ Texture applied to ${meshCount} meshes, ${materialCount} materials. Item: ${econItem.name}`);
-        },
-        (progress) => {
-          console.log(`[WeaponModel] Loading texture... ${Math.round((progress.loaded / progress.total) * 100)}%`);
-        },
-        (error) => {
-          console.error("[WeaponModel] ❌ Failed to load skin texture", {
-            textureUrl,
-            error: error.message || error
-          });
-          console.log("[WeaponModel] ⚠️ Will use neutral grey material as fallback");
-        }
-      );
+            // Fallback: try loading skin texture without base
+            if (skinTextureUrl) {
+              console.log(`[WeaponModel] ⚠️ BASE failed, trying SKIN texture only:`, skinTextureUrl);
+
+              const skinLoader = new THREE.TextureLoader();
+              skinLoader.load(
+                skinTextureUrl,
+                (skinTexture) => {
+                  console.log(`[WeaponModel] ✅ SKIN texture loaded (no base)`);
+                  applyTextureToModel(skinTexture, 'SKIN only');
+                },
+                undefined,
+                (skinError) => {
+                  console.error(`[WeaponModel] ❌ Both BASE and SKIN failed:`, skinError);
+                  console.log(`[WeaponModel] ⚠️ Using neutral grey material`);
+                  applyNeutralMaterial();
+                }
+              );
+            } else {
+              console.log(`[WeaponModel] ⚠️ No textures available, using neutral material`);
+              applyNeutralMaterial();
+            }
+          }
+        );
+      } else if (skinTextureUrl) {
+        // No base texture map, load skin texture directly
+        console.log(`[WeaponModel] ⏳ Loading SKIN texture (no base):`, skinTextureUrl);
+
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+          skinTextureUrl,
+          (skinTexture) => {
+            console.log(`[WeaponModel] ✅ SKIN texture loaded:`, {
+              url: skinTextureUrl,
+              width: skinTexture.image?.width,
+              height: skinTexture.image?.height
+            });
+
+            applyTextureToModel(skinTexture, 'SKIN only');
+          },
+          undefined,
+          (error) => {
+            console.error(`[WeaponModel] ❌ Failed to load SKIN texture:`, error);
+            applyNeutralMaterial();
+          }
+        );
       } else {
-        // No texture URL available
-        console.warn(`[WeaponModel] ⚠️ No texture URL available for item:`, econItem.name);
-        console.log(`[WeaponModel] 🎨 Using fallback neutral material`);
+        // No textures available
+        console.log(`[WeaponModel] ⚠️ No textures available, using neutral material`);
+        applyNeutralMaterial();
+      }
 
+      // Helper function to apply neutral grey material
+      function applyNeutralMaterial() {
         clonedScene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             const neutralMaterial = new THREE.MeshStandardMaterial({
@@ -451,6 +480,7 @@ function LoadedWeaponModel({
             }
           }
         });
+        console.log(`[WeaponModel] ✅ Neutral material applied`);
       }
     }
   }, [clonedScene, weaponDefIndex]);
