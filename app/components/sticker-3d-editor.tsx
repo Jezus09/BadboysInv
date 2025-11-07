@@ -300,30 +300,40 @@ function LoadedWeaponModel({
 
           texture.colorSpace = THREE.SRGBColorSpace;
 
-          // OBJ models typically need Y-flip for proper orientation
-          texture.flipY = true;
-          texture.wrapS = THREE.RepeatWrapping;
-          texture.wrapT = THREE.RepeatWrapping;
+          // Try different settings for OBJ UV mapping
+          // EXPERIMENT: Try NO flip and ClampToEdge (more stable)
+          texture.flipY = false; // Try without Y-flip
+          texture.wrapS = THREE.ClampToEdgeWrapping; // Prevent tiling artifacts
+          texture.wrapT = THREE.ClampToEdgeWrapping; // Prevent tiling artifacts
 
           // Set proper min/mag filters for sharpness
           texture.minFilter = THREE.LinearMipMapLinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.anisotropy = 16; // Maximum anisotropic filtering for quality
 
-          console.log(`[WeaponModel] Texture settings:`, {
+          console.log(`[WeaponModel] 🎨 Texture settings:`, {
             flipY: texture.flipY,
-            wrapS: texture.wrapS === THREE.ClampToEdgeWrapping ? 'ClampToEdge' : 'Repeat',
-            wrapT: texture.wrapT === THREE.ClampToEdgeWrapping ? 'ClampToEdge' : 'Repeat',
-            anisotropy: texture.anisotropy
+            wrapS: 'ClampToEdge',
+            wrapT: 'ClampToEdge',
+            anisotropy: texture.anisotropy,
+            offset: [texture.offset.x, texture.offset.y],
+            repeat: [texture.repeat.x, texture.repeat.y]
           });
 
-          // Weapon-specific adjustments if needed
+          // Weapon-specific UV adjustments
+          // AK-47 and other weapons may need specific settings
           const weaponTextureConfig: Record<number, {
             flipY?: boolean;
             offset?: [number, number];
             repeat?: [number, number];
+            rotation?: number;
           }> = {
-            // Add weapon-specific configs here based on testing
+            7: { // AK-47 - try different settings
+              flipY: false,
+              offset: [0, 0],
+              repeat: [1, 1],
+              rotation: 0
+            }
           };
 
           const baseWeaponDef = econItem.def || weaponDefIndex;
@@ -363,41 +373,47 @@ function LoadedWeaponModel({
           let meshCount = 0;
           let materialCount = 0;
 
-          // Apply texture to all meshes in the cloned scene
+          // Apply texture to all meshes - handle multi-material
           clonedScene.traverse((child) => {
             if (child instanceof THREE.Mesh) {
               meshCount++;
 
-              // Check if mesh has UV coordinates
+              // Check UV coordinates
               const hasUV = child.geometry.attributes.uv !== undefined;
               const uvCount = hasUV ? child.geometry.attributes.uv.count : 0;
-              console.log(`[WeaponModel] Found mesh:`, child.name,
-                `Material:`, child.material.constructor.name,
+              console.log(`[WeaponModel] 🔍 Mesh:`, child.name || 'unnamed',
                 `Has UV:`, hasUV,
                 `UV count:`, uvCount);
 
               if (Array.isArray(child.material)) {
+                // Multi-material mesh
+                console.log(`[WeaponModel] 📦 Multi-material: ${child.material.length} materials`);
+
                 child.material.forEach((mat, idx) => {
                   materialCount++;
+                  console.log(`[WeaponModel] Material[${idx}]:`, mat.constructor.name);
+
                   if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
                     mat.map = texture;
-                    mat.color = new THREE.Color(0xffffff); // White to not tint texture
+                    mat.color = new THREE.Color(0xffffff);
                     if (mat instanceof THREE.MeshStandardMaterial) {
-                      mat.metalness = 0.3;
-                      mat.roughness = 0.7;
+                      mat.metalness = 0.4;
+                      mat.roughness = 0.6;
                     }
                     mat.needsUpdate = true;
+                    console.log(`[WeaponModel] ✅ Texture → material[${idx}]`);
                   }
                 });
               } else if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhongMaterial) {
                 materialCount++;
                 child.material.map = texture;
-                child.material.color = new THREE.Color(0xffffff); // White to not tint texture
+                child.material.color = new THREE.Color(0xffffff);
                 if (child.material instanceof THREE.MeshStandardMaterial) {
-                  child.material.metalness = 0.3;
-                  child.material.roughness = 0.7;
+                  child.material.metalness = 0.4;
+                  child.material.roughness = 0.6;
                 }
                 child.material.needsUpdate = true;
+                console.log(`[WeaponModel] ✅ Texture → single material`);
               }
             }
           });
