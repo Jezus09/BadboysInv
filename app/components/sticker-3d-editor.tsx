@@ -320,18 +320,18 @@ function LoadedWeaponModel({
             repeat: [texture.repeat.x, texture.repeat.y]
           });
 
-          // Weapon-specific UV adjustments
-          // AK-47 and other weapons may need specific settings
+          // Weapon-specific UV fine-tuning
+          // These values can be adjusted based on visual testing
           const weaponTextureConfig: Record<number, {
             flipY?: boolean;
             offset?: [number, number];
             repeat?: [number, number];
             rotation?: number;
           }> = {
-            7: { // AK-47 - try different settings
-              flipY: false,
-              offset: [0, 0],
-              repeat: [1, 1],
+            7: { // AK-47 - Fine tuning for "majdnem jó" (almost good)
+              flipY: false,    // Keep false (works better)
+              offset: [0, 0.05], // Try small Y offset
+              repeat: [1, 1],  // Keep 1:1
               rotation: 0
             }
           };
