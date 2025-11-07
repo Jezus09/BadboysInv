@@ -222,7 +222,19 @@ function LoadedWeaponModel({
         clone.traverse((child) => {
           if (!foundMesh && child instanceof THREE.Mesh) {
             foundMesh = child;
-            console.log('[LoadedWeaponModel] Found mesh:', child.name || 'unnamed', 'Type:', isOBJ ? 'OBJ' : 'GLTF');
+            console.log('[LoadedWeaponModel] 🔍 Found mesh:', {
+              name: child.name || 'unnamed',
+              type: isOBJ ? 'OBJ' : 'GLTF',
+              materialCount: Array.isArray(child.material) ? child.material.length : 1,
+              materialType: Array.isArray(child.material) ? 'Array' : child.material.constructor.name
+            });
+
+            // Log all materials
+            if (Array.isArray(child.material)) {
+              child.material.forEach((mat, idx) => {
+                console.log(`[LoadedWeaponModel] Material[${idx}]:`, mat.constructor.name, mat.name || 'unnamed');
+              });
+            }
           }
         });
 
@@ -247,14 +259,24 @@ function LoadedWeaponModel({
       } : null
     });
 
-    // CS2 Texture Loading - Debugging enabled
+    // CS2 Texture Loading - Multi-material support
     if (econItem) {
       console.log(`[WeaponModel] 🔧 Item info:`, {
         id: econItem.id,
         name: econItem.name,
         type: econItem.type,
         def: econItem.def,
-        hasWear: econItem.hasWear()
+        index: econItem.index, // Skin variant index (0 = base weapon)
+        hasWear: econItem.hasWear(),
+        parent: econItem.parent ? econItem.parent.name : 'none'
+      });
+
+      // Get base weapon (def) for base texture
+      const baseWeapon = econItem.parent || econItem;
+      console.log(`[WeaponModel] 📦 Base weapon:`, {
+        id: baseWeapon.id,
+        name: baseWeapon.name,
+        def: baseWeapon.def
       });
 
       // Try loading the texture
