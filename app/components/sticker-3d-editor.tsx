@@ -328,10 +328,10 @@ function LoadedWeaponModel({
             repeat?: [number, number];
             rotation?: number;
           }> = {
-            7: { // AK-47 - Fine tuning for "majdnem jó" (almost good)
-              flipY: false,    // Keep false (works better)
-              offset: [0, 0.05], // Try small Y offset
-              repeat: [1, 1],  // Keep 1:1
+            7: { // AK-47 - "alakul de még nincs a helyén" (getting there but not perfect)
+              flipY: false,    // Keep false
+              offset: [0, 0.15], // Larger Y offset
+              repeat: [1, 1],
               rotation: 0
             }
           };
