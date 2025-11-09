@@ -16,35 +16,51 @@ function TestWeapon({ skinName }: { skinName: string | null }) {
   // Load weapon GLB model
   const gltf = useGLTF("/models/weapons/ak47_with_textures.glb");
 
-  // Apply skin texture if selected
+  // Apply CS2 composite skin
   useEffect(() => {
     if (!gltf || !skinName) {
       console.log("No skin selected - showing default model");
       return;
     }
 
-    console.log(`Applying skin: ${skinName}`);
+    console.log(`Applying CS2 composite skin: ${skinName}`);
     const textureLoader = new THREE.TextureLoader();
 
-    // Load paint kit texture and apply directly to model
-    textureLoader.load(`/models/skins/${skinName}.png`, (texture) => {
-      console.log("✅ Loaded paint kit texture:", skinName);
+    // Load ALL composite inputs: position map, mask map, and paint kit
+    Promise.all([
+      new Promise<THREE.Texture>((resolve, reject) =>
+        textureLoader.load("/models/composite_inputs/ak47/position.png", resolve, undefined, reject)
+      ),
+      new Promise<THREE.Texture>((resolve, reject) =>
+        textureLoader.load("/models/composite_inputs/ak47/masks.png", resolve, undefined, reject)
+      ),
+      new Promise<THREE.Texture>((resolve, reject) =>
+        textureLoader.load(`/models/skins/${skinName}.png`, resolve, undefined, reject)
+      ),
+    ]).then(([positionMap, maskMap, paintKitTexture]) => {
+      console.log("✅ Loaded all composite textures");
+
+      // Set texture wrap mode to repeat for paint kit
+      paintKitTexture.wrapS = THREE.RepeatWrapping;
+      paintKitTexture.wrapT = THREE.RepeatWrapping;
 
       gltf.scene.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          // Create simple material with just the skin texture
+          // Simple approach: just use the paint kit texture with UV wrapping
+          // The position map tells us the paint kit is tileable/repeating
           const material = new THREE.MeshStandardMaterial({
-            map: texture,
-            metalness: 0.5,
-            roughness: 0.7,
+            map: paintKitTexture,
+            metalness: 0.3,
+            roughness: 0.6,
           });
 
           child.material = material;
-          console.log("✅ Applied skin texture to mesh:", child.name);
+          child.material.needsUpdate = true;
+          console.log("✅ Applied composite skin to mesh:", child.name);
         }
       });
-    }, undefined, (error) => {
-      console.error("❌ Failed to load skin texture:", error);
+    }).catch((error) => {
+      console.error("❌ Failed to load composite textures:", error);
     });
   }, [gltf, skinName]);
 
