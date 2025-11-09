@@ -13,11 +13,10 @@ import * as THREE from "three";
  * Test weapon component - loads GLB and applies CS2 skin texture
  */
 function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
-  // Load weapon GLB model - Testing CS2 (New) version (54 MB)
-  // GLB has embedded textures (3x 4096x4096 = base weapon texture)
-  const gltf = useGLTF("/models/weapons/ak47_cs2.glb");
+  // Load weapon GLB model - Official CS2 export (3.1 MB)
+  const gltf = useGLTF("/models/weapons/ak47_cs2_official.glb");
 
-  console.log("✅ GLB loaded with embedded textures");
+  console.log("✅ Official CS2 GLB loaded:", gltf);
 
   return (
     <primitive
@@ -73,10 +72,10 @@ export default function TestWeaponPage() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-neutral-800/90 backdrop-blur p-4 border-b border-neutral-700">
         <h1 className="font-display text-2xl font-bold text-white mb-2 uppercase">
-          🧪 CS2 Model + CS2 Skin Test
+          🧪 Official CS2 Model Test
         </h1>
         <p className="text-neutral-400 text-sm mb-3">
-          CS2 weapon model (54 MB) with CS2 skin textures - Testing if skins apply correctly
+          Official CS2 weapon model (3.1 MB) extracted from game files - Base weapon texture
         </p>
 
         {/* Skin selector */}
