@@ -15,13 +15,53 @@ import * as THREE from "three";
 function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
   // Load weapon GLB model - Official CS2 export (3.1 MB)
   const gltf = useGLTF("/models/weapons/ak47_cs2_official.glb");
+  const [textureUrl, setTextureUrl] = useState<string | null>(null);
 
-  console.log("✅ Official CS2 GLB loaded:", gltf);
+  // Get CS2 skin texture
+  useEffect(() => {
+    try {
+      const item = CS2Economy.getById(weaponDefIndex);
+      const url = item.getTextureImage();
+      console.log("🎨 Weapon:", item.name);
+      console.log("🖼️ Texture URL:", url);
+      setTextureUrl(url);
+    } catch (e) {
+      console.error("❌ Failed to get texture:", e);
+    }
+  }, [weaponDefIndex]);
+
+  // Apply CS2 skin texture to model
+  useEffect(() => {
+    if (!gltf || !textureUrl) return;
+
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(
+      textureUrl,
+      (texture) => {
+        console.log("✅ CS2 Skin texture loaded, applying to official CS2 model...");
+        gltf.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            // Apply CS2 skin texture
+            child.material = new THREE.MeshStandardMaterial({
+              map: texture,
+              metalness: 0.6,
+              roughness: 0.4,
+            });
+            console.log("✅ Applied CS2 skin to mesh:", child.name);
+          }
+        });
+      },
+      undefined,
+      (error) => {
+        console.error("❌ Failed to load CS2 skin texture:", error);
+      }
+    );
+  }, [gltf, textureUrl]);
 
   return (
     <primitive
       object={gltf.scene}
-      scale={0.01}
+      scale={1.5}
       rotation={[0, Math.PI, 0]}
     />
   );
@@ -34,8 +74,8 @@ function TestScene({ weaponDefIndex }: { weaponDefIndex: number }) {
   return (
     <>
       {/* Camera */}
-      <PerspectiveCamera makeDefault position={[2, 1, 3]} fov={50} />
-      <OrbitControls enableDamping dampingFactor={0.05} />
+      <PerspectiveCamera makeDefault position={[2, 1, 3]} fov={50} near={0.01} far={100} />
+      <OrbitControls enableDamping dampingFactor={0.05} minDistance={0.5} maxDistance={10} />
 
       {/* Lighting */}
       <ambientLight intensity={1} />
