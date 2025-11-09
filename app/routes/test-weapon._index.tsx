@@ -12,51 +12,80 @@ import * as THREE from "three";
 /**
  * Test weapon component - loads GLB and applies CS2 skin texture
  */
-function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
+function TestWeapon({ skinName }: { skinName: string | null }) {
   // Load weapon GLB model - Official CS2 export (3.1 MB)
   const gltf = useGLTF("/models/weapons/ak47_cs2_official.glb");
-  const [textureUrl, setTextureUrl] = useState<string | null>(null);
 
-  // Get CS2Economy pre-rendered composite texture
+  // Apply CS2 composite skin (position map + paint kit texture)
   useEffect(() => {
-    try {
-      const item = CS2Economy.getById(weaponDefIndex);
-      const url = item.getTextureImage();
-      console.log("🎨 Weapon:", item.name);
-      console.log("🖼️ CS2Economy Texture URL:", url);
-      setTextureUrl(url);
-    } catch (e) {
-      console.error("❌ Failed to get CS2Economy texture:", e);
-    }
-  }, [weaponDefIndex]);
-
-  // Apply CS2Economy pre-rendered composite texture
-  useEffect(() => {
-    if (!gltf || !textureUrl) return;
+    if (!gltf || !skinName) return;
 
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-      textureUrl,
-      (texture) => {
-        console.log("✅ CS2Economy texture loaded, applying...");
-        gltf.scene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            // Apply CS2Economy pre-rendered composite texture
-            child.material = new THREE.MeshStandardMaterial({
-              map: texture,
-              metalness: 0.6,
-              roughness: 0.4,
-            });
-            console.log("✅ Applied skin to mesh:", child.name);
-          }
-        });
-      },
-      undefined,
-      (error) => {
-        console.error("❌ Failed to load CS2Economy texture:", error);
-      }
-    );
-  }, [gltf, textureUrl]);
+
+    // Load composite inputs and paint kit texture
+    Promise.all([
+      new Promise<THREE.Texture>((resolve) =>
+        textureLoader.load("/models/composite_inputs/ak47/position.png", resolve)
+      ),
+      new Promise<THREE.Texture>((resolve) =>
+        textureLoader.load("/models/composite_inputs/ak47/masks.png", resolve)
+      ),
+      new Promise<THREE.Texture>((resolve) =>
+        textureLoader.load(`/models/skins/${skinName}.png`, resolve)
+      ),
+    ]).then(([positionMap, maskMap, paintKitTexture]) => {
+      console.log("✅ Loaded composite inputs + paint kit");
+
+      gltf.scene.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // Create custom shader material for composite rendering
+          const material = new THREE.ShaderMaterial({
+            uniforms: {
+              positionMap: { value: positionMap },
+              maskMap: { value: maskMap },
+              paintKitTexture: { value: paintKitTexture },
+            },
+            vertexShader: `
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform sampler2D positionMap;
+              uniform sampler2D maskMap;
+              uniform sampler2D paintKitTexture;
+              varying vec2 vUv;
+
+              void main() {
+                // Sample position map (RGB = XYZ coordinates in paint kit space)
+                vec3 posInPaintKit = texture2D(positionMap, vUv).rgb;
+
+                // Sample mask (where to apply paint kit)
+                float mask = texture2D(maskMap, vUv).r;
+
+                // Sample paint kit texture using position map coordinates
+                vec2 paintKitUV = posInPaintKit.xy;
+                vec4 paintKitColor = texture2D(paintKitTexture, paintKitUV);
+
+                // Mix base color with paint kit based on mask
+                vec4 baseColor = vec4(0.3, 0.3, 0.3, 1.0); // Grey base
+                vec4 finalColor = mix(baseColor, paintKitColor, mask);
+
+                gl_FragColor = finalColor;
+              }
+            `,
+          });
+
+          child.material = material;
+          console.log("✅ Applied composite shader to mesh:", child.name);
+        }
+      });
+    }).catch((error) => {
+      console.error("❌ Failed to load composite textures:", error);
+    });
+  }, [gltf, skinName]);
 
   return (
     <primitive
@@ -70,7 +99,7 @@ function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
 /**
  * Test scene with lighting
  */
-function TestScene({ weaponDefIndex }: { weaponDefIndex: number }) {
+function TestScene({ skinName }: { skinName: string | null }) {
   return (
     <>
       {/* Camera */}
@@ -78,14 +107,13 @@ function TestScene({ weaponDefIndex }: { weaponDefIndex: number }) {
       <OrbitControls enableDamping dampingFactor={0.05} minDistance={0.5} maxDistance={10} />
 
       {/* Lighting */}
-      <ambientLight intensity={1} />
-      <directionalLight position={[5, 5, 5]} intensity={1.5} />
-      <directionalLight position={[-5, 3, -5]} intensity={0.8} />
-      <pointLight position={[0, 2, 0]} intensity={0.5} />
+      <ambientLight intensity={1.5} />
+      <directionalLight position={[5, 5, 5]} intensity={2} />
+      <directionalLight position={[-5, 3, -5]} intensity={1} />
 
       {/* Weapon */}
       <Suspense fallback={null}>
-        <TestWeapon weaponDefIndex={weaponDefIndex} />
+        <TestWeapon skinName={skinName} />
       </Suspense>
     </>
   );
@@ -95,15 +123,12 @@ function TestScene({ weaponDefIndex }: { weaponDefIndex: number }) {
  * Test page component
  */
 export default function TestWeaponPage() {
-  const [weaponId, setWeaponId] = useState(7); // AK-47 Base
+  const [skinName, setSkinName] = useState<string | null>(null);
 
-  // Test skins - CS2Economy IDs (pre-rendered composite textures)
+  // Test skins - Extracted CS2 paint kits
   const testSkins = [
-    { id: 7, name: "AK-47 (Base)" },
-    { id: 359, name: "AK-47 | Fire Serpent" },
-    { id: 1086, name: "AK-47 | Asiimov" },
-    { id: 44, name: "AK-47 | Redline" },
-    { id: 489, name: "AK-47 | Neon Revolution" },
+    { skin: null, name: "AK-47 (Base)" },
+    { skin: "fireserpent_ak47", name: "AK-47 | Fire Serpent" },
   ];
 
   return (
@@ -111,20 +136,20 @@ export default function TestWeaponPage() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-neutral-800/90 backdrop-blur p-4 border-b border-neutral-700">
         <h1 className="font-display text-2xl font-bold text-white mb-2 uppercase">
-          🧪 Official CS2 Model Test
+          🧪 CS2 Composite Shader Test
         </h1>
         <p className="text-neutral-400 text-sm mb-3">
-          Official CS2 weapon model (3.1 MB) extracted from game files - Base weapon texture
+          Official CS2 model + position map + paint kit texture = REAL CS2 skins!
         </p>
 
         {/* Skin selector */}
         <div className="flex gap-2 flex-wrap">
-          {testSkins.map((skin) => (
+          {testSkins.map((skin, idx) => (
             <button
-              key={skin.id}
-              onClick={() => setWeaponId(skin.id)}
+              key={idx}
+              onClick={() => setSkinName(skin.skin)}
               className={`px-3 py-1 rounded text-sm transition ${
-                weaponId === skin.id
+                skinName === skin.skin
                   ? "bg-blue-600 text-white"
                   : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
               }`}
@@ -140,7 +165,7 @@ export default function TestWeaponPage() {
         className="w-full h-full"
         gl={{ antialias: true, alpha: true }}
       >
-        <TestScene weaponDefIndex={weaponId} />
+        <TestScene skinName={skinName} />
       </Canvas>
 
       {/* Instructions */}
@@ -149,7 +174,7 @@ export default function TestWeaponPage() {
           <strong className="text-white">Controls:</strong> Left click + drag to rotate | Scroll to zoom
         </p>
         <p className="text-neutral-400 text-xs mt-1">
-          Official CS2 model (3.1 MB) + CS2Economy pre-rendered composite textures
+          Using position map + paint kit texture + custom GLSL shader for CS2-accurate rendering
         </p>
       </div>
     </div>
