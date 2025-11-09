@@ -13,85 +13,18 @@ import * as THREE from "three";
  * Test weapon component - loads GLB and applies CS2 skin texture
  */
 function TestWeapon({ skinName }: { skinName: string | null }) {
-  // Load weapon GLB model - Official CS2 export (3.1 MB)
-  const gltf = useGLTF("/models/weapons/ak47_cs2_official.glb");
+  // Load weapon GLB model with embedded textures
+  const gltf = useGLTF("/models/weapons/ak47_with_textures.glb");
 
-  // Apply CS2 composite skin (position map + paint kit texture)
+  // Log loaded materials for debugging
   useEffect(() => {
-    if (!gltf || !skinName) return;
+    if (!gltf) return;
 
-    const textureLoader = new THREE.TextureLoader();
-
-    // Load composite inputs and paint kit texture
-    Promise.all([
-      new Promise<THREE.Texture>((resolve) =>
-        textureLoader.load("/models/composite_inputs/ak47/position.png", resolve)
-      ),
-      new Promise<THREE.Texture>((resolve) =>
-        textureLoader.load("/models/composite_inputs/ak47/masks.png", resolve)
-      ),
-      new Promise<THREE.Texture>((resolve) =>
-        textureLoader.load(`/models/skins/${skinName}.png`, resolve)
-      ),
-    ]).then(([positionMap, maskMap, paintKitTexture]) => {
-      console.log("✅ Loaded composite inputs + paint kit");
-
-      gltf.scene.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          // Create custom shader material for composite rendering
-          const material = new THREE.ShaderMaterial({
-            uniforms: {
-              positionMap: { value: positionMap },
-              maskMap: { value: maskMap },
-              paintKitTexture: { value: paintKitTexture },
-              uvScale: { value: 0.772 }, // CS2 g_flUvScale1 parameter
-              weaponLength: { value: 37.287 }, // CS2 g_flWeaponLength1 (inches)
-            },
-            vertexShader: `
-              varying vec2 vUv;
-              void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-              }
-            `,
-            fragmentShader: `
-              uniform sampler2D positionMap;
-              uniform sampler2D maskMap;
-              uniform sampler2D paintKitTexture;
-              uniform float uvScale;
-              uniform float weaponLength;
-              varying vec2 vUv;
-
-              void main() {
-                // Sample position map (RGB = normalized 3D position on weapon surface)
-                vec3 posInPaintKit = texture2D(positionMap, vUv).rgb;
-
-                // Sample mask (where to apply paint kit)
-                float mask = texture2D(maskMap, vUv).r;
-
-                // CS2 composite UV calculation
-                // Position map stores normalized 3D coordinates (0-1 range)
-                // Convert to paint kit UV space using CS2 formula
-                vec2 paintKitUV = posInPaintKit.xy * uvScale;
-
-                // Sample paint kit texture
-                vec4 paintKitColor = texture2D(paintKitTexture, paintKitUV);
-
-                // Mix base color with paint kit based on mask
-                vec4 baseColor = vec4(0.3, 0.3, 0.3, 1.0); // Grey base
-                vec4 finalColor = mix(baseColor, paintKitColor, mask);
-
-                gl_FragColor = finalColor;
-              }
-            `,
-          });
-
-          child.material = material;
-          console.log("✅ Applied composite shader to mesh:", child.name);
-        }
-      });
-    }).catch((error) => {
-      console.error("❌ Failed to load composite textures:", error);
+    console.log("✅ Loaded AK-47 model with embedded textures");
+    gltf.scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        console.log("Mesh:", child.name, "Material:", child.material);
+      }
     });
   }, [gltf, skinName]);
 
@@ -133,10 +66,9 @@ function TestScene({ skinName }: { skinName: string | null }) {
 export default function TestWeaponPage() {
   const [skinName, setSkinName] = useState<string | null>(null);
 
-  // Test skins - Extracted CS2 paint kits
+  // Test: Using embedded textures from GLB export
   const testSkins = [
-    { skin: null, name: "AK-47 (Base)" },
-    { skin: "fireserpent_ak47", name: "AK-47 | Fire Serpent" },
+    { skin: null, name: "AK-47 (CS2 Default Textures)" },
   ];
 
   return (
@@ -144,10 +76,10 @@ export default function TestWeaponPage() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-neutral-800/90 backdrop-blur p-4 border-b border-neutral-700">
         <h1 className="font-display text-2xl font-bold text-white mb-2 uppercase">
-          🧪 CS2 Composite Shader Test
+          🧪 CS2 Model Test - Embedded Textures
         </h1>
         <p className="text-neutral-400 text-sm mb-3">
-          Official CS2 model + position map + paint kit texture = REAL CS2 skins!
+          Official CS2 model with default embedded textures from game files
         </p>
 
         {/* Skin selector */}
@@ -182,7 +114,7 @@ export default function TestWeaponPage() {
           <strong className="text-white">Controls:</strong> Left click + drag to rotate | Scroll to zoom
         </p>
         <p className="text-neutral-400 text-xs mt-1">
-          Using position map + paint kit texture + custom GLSL shader for CS2-accurate rendering
+          Testing if GLB export contains proper textures. Check console for material info.
         </p>
       </div>
     </div>
