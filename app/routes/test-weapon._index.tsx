@@ -14,46 +14,72 @@ import { CS2Economy } from "@ianlucas/cs2-lib";
  * Test weapon component - loads OBJ and applies CS2 skin texture
  */
 function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
-  const [textureUrl, setTextureUrl] = useState<string | null>(null);
-
   // Load weapon OBJ model
   const obj = useLoader(OBJLoader, "/models/weapons/weapon_rif_ak47.obj");
 
-  // Get CS2 skin texture URL
+  // Apply basic material or CS2 skin texture
   useEffect(() => {
+    if (!obj) return;
+
+    console.log("✅ OBJ loaded, children:", obj.children.length);
+
+    // Get CS2 skin texture URL
+    let textureUrl: string | null = null;
     try {
       const item = CS2Economy.getById(weaponDefIndex);
-      const url = item.getTextureImage();
+      textureUrl = item.getTextureImage();
       console.log("🎨 Weapon:", item.name);
-      console.log("🖼️ Texture URL:", url);
-      setTextureUrl(url);
+      console.log("🖼️ Texture URL:", textureUrl);
     } catch (e) {
       console.error("❌ Failed to get texture:", e);
     }
-  }, [weaponDefIndex]);
 
-  // Load texture
-  const texture = useLoader(THREE.TextureLoader, textureUrl || "");
-
-  // Apply texture to model
-  useEffect(() => {
-    if (!obj || !texture) return;
-
-    console.log("✅ OBJ loaded, vertices:", obj.children.length);
-
-    obj.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        // Apply CS2 skin texture
-        child.material = new THREE.MeshStandardMaterial({
-          map: texture,
-          metalness: 0.6,
-          roughness: 0.4,
-        });
-
-        console.log("✅ Applied texture to mesh:", child.name);
-      }
-    });
-  }, [obj, texture]);
+    // Load texture and apply to model
+    if (textureUrl) {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load(
+        textureUrl,
+        (texture) => {
+          console.log("✅ Texture loaded!");
+          obj.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.material = new THREE.MeshStandardMaterial({
+                map: texture,
+                metalness: 0.6,
+                roughness: 0.4,
+              });
+              console.log("✅ Applied texture to mesh:", child.name);
+            }
+          });
+        },
+        undefined,
+        (error) => {
+          console.error("❌ Failed to load texture:", error);
+          // Fallback to basic material
+          obj.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                metalness: 0.6,
+                roughness: 0.4,
+              });
+            }
+          });
+        }
+      );
+    } else {
+      // No texture, use basic grey material
+      obj.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: 0x888888,
+            metalness: 0.6,
+            roughness: 0.4,
+          });
+        }
+      });
+    }
+  }, [obj, weaponDefIndex]);
 
   return (
     <primitive
