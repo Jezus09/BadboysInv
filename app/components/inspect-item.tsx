@@ -4,11 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { FloatingFocusManager } from "@floating-ui/react";
-import { faCheck, faShareNodes } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faShareNodes, faCube } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CS2Economy, CS2_MIN_SEED } from "@ianlucas/cs2-lib";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ClientOnly } from "remix-utils/client-only";
 import { useInspectFloating } from "~/components/hooks/use-inspect-floating";
@@ -24,6 +24,7 @@ import { ItemImage } from "./item-image";
 import { ModalButton } from "./modal-button";
 import { Overlay } from "./overlay";
 import { UseItemFooter } from "./use-item-footer";
+import { Inspect3D } from "./inspect-3d";
 
 export function InspectItem({
   onClose,
@@ -48,6 +49,7 @@ export function InspectItem({
     ref
   } = useInspectFloating();
   const [clickedShare, triggerClickedShare] = useTimedState();
+  const [show3D, setShow3D] = useState(false);
 
   useEffect(() => {
     clientGlobals.inspectedItem = item;
@@ -58,10 +60,16 @@ export function InspectItem({
 
   const hasInfo = item.hasSeed() && item.hasWear();
   const hasShare = item.isPaintable();
+  const has3DModel = item.model === "weapon_ak47"; // Currently only AK-47 has 3D model
 
   function handleClickShare() {
     triggerClickedShare();
     copyToClipboard(getInventoryItemShareUrl(item, user?.id));
+  }
+
+  // If showing 3D view, render that instead
+  if (show3D) {
+    return <Inspect3D onClose={() => setShow3D(false)} uid={uid} />;
   }
 
   return (
@@ -129,6 +137,14 @@ export function InspectItem({
                     <ModalButton variant="secondary" onClick={handleClickShare}>
                       <FontAwesomeIcon
                         icon={clickedShare ? faCheck : faShareNodes}
+                        className="h-6"
+                      />
+                    </ModalButton>
+                  )}
+                  {has3DModel && (
+                    <ModalButton variant="secondary" onClick={() => setShow3D(true)}>
+                      <FontAwesomeIcon
+                        icon={faCube}
                         className="h-6"
                       />
                     </ModalButton>
