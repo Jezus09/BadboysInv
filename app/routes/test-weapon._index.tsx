@@ -14,51 +14,10 @@ import * as THREE from "three";
  */
 function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
   // Load weapon GLB model - Testing CS2 (New) version (54 MB)
+  // GLB has embedded textures (3x 4096x4096 = base weapon texture)
   const gltf = useGLTF("/models/weapons/ak47_cs2.glb");
-  const [textureUrl, setTextureUrl] = useState<string | null>(null);
 
-  // Get CS2 skin texture
-  useEffect(() => {
-    try {
-      const item = CS2Economy.getById(weaponDefIndex);
-      const url = item.getTextureImage();
-      console.log("🎨 Weapon:", item.name);
-      console.log("🖼️ Texture URL:", url);
-      setTextureUrl(url);
-    } catch (e) {
-      console.error("❌ Failed to get texture:", e);
-    }
-  }, [weaponDefIndex]);
-
-  // Apply CS2 skin texture to model
-  useEffect(() => {
-    if (!gltf || !textureUrl) return;
-
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-      textureUrl,
-      (texture) => {
-        console.log("✅ CS2 Skin texture loaded, applying to CSGO model...");
-        gltf.scene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            // Apply CS2 skin texture
-            child.material = new THREE.MeshStandardMaterial({
-              map: texture,
-              metalness: 0.6,
-              roughness: 0.4,
-            });
-            console.log("✅ Applied CS2 skin to mesh:", child.name);
-          }
-        });
-      },
-      undefined,
-      (error) => {
-        console.error("❌ Failed to load CS2 skin texture:", error);
-      }
-    );
-  }, [gltf, textureUrl]);
-
-  console.log("✅ GLB loaded:", gltf);
+  console.log("✅ GLB loaded with embedded textures");
 
   return (
     <primitive
