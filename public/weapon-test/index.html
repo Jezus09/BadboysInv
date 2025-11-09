@@ -182,8 +182,19 @@
             weaponModel.scale.multiplyScalar(scale);
             weaponModel.position.sub(center.multiplyScalar(scale));
 
+            // Remove embedded texture to show clean base model initially
+            weaponModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.material = new THREE.MeshStandardMaterial({
+                        color: 0x888888,  // Neutral grey
+                        metalness: 0.3,
+                        roughness: 0.6,
+                    });
+                }
+            });
+
             scene.add(weaponModel);
-            console.log('✅ Inspect3D weapon model loaded with correct UV mapping');
+            console.log('✅ Inspect3D weapon model loaded (clean base - no texture)');
         }, undefined, (error) => {
             console.error('❌ Failed to load weapon model:', error);
         });
@@ -232,7 +243,7 @@
             document.getElementById('btn-asiimov').classList.remove('active');
 
             if (weaponModel) {
-                // Reload model to reset to base
+                // Reload model to reset to base (no texture)
                 scene.remove(weaponModel);
                 loader.load('inspect3d_ak47/scene.gltf', (gltf) => {
                     weaponModel = gltf.scene;
@@ -247,8 +258,19 @@
                     weaponModel.scale.multiplyScalar(scale);
                     weaponModel.position.sub(center.multiplyScalar(scale));
 
+                    // Remove embedded texture to show clean base model
+                    weaponModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.material = new THREE.MeshStandardMaterial({
+                                color: 0x888888,  // Neutral grey
+                                metalness: 0.3,
+                                roughness: 0.6,
+                            });
+                        }
+                    });
+
                     scene.add(weaponModel);
-                    console.log('✅ Reset to base model');
+                    console.log('✅ Reset to clean base model (no texture)');
                 });
             }
         });
