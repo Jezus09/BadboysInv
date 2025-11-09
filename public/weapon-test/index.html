@@ -165,16 +165,25 @@
         dirLight2.position.set(-5, 3, -5);
         scene.add(dirLight2);
 
-        // Load weapon model
+        // Load weapon model (using Inspect3D model for correct UV mapping)
         const loader = new GLTFLoader();
         let weaponModel = null;
 
-        loader.load('models/weapons/ak47_with_textures.glb', (gltf) => {
+        loader.load('inspect3d_ak47/scene.gltf', (gltf) => {
             weaponModel = gltf.scene;
-            weaponModel.scale.set(1.5, 1.5, 1.5);
-            weaponModel.rotation.y = Math.PI;
+
+            // Normalize size & center (like Inspect3D does)
+            const box = new THREE.Box3().setFromObject(weaponModel);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxSize = Math.max(size.x, size.y, size.z);
+            const scale = 10 / maxSize;
+
+            weaponModel.scale.multiplyScalar(scale);
+            weaponModel.position.sub(center.multiplyScalar(scale));
+
             scene.add(weaponModel);
-            console.log('✅ Weapon model loaded');
+            console.log('✅ Inspect3D weapon model loaded with correct UV mapping');
         }, undefined, (error) => {
             console.error('❌ Failed to load weapon model:', error);
         });
@@ -225,10 +234,19 @@
             if (weaponModel) {
                 // Reload model to reset to base
                 scene.remove(weaponModel);
-                loader.load('models/weapons/ak47_with_textures.glb', (gltf) => {
+                loader.load('inspect3d_ak47/scene.gltf', (gltf) => {
                     weaponModel = gltf.scene;
-                    weaponModel.scale.set(1.5, 1.5, 1.5);
-                    weaponModel.rotation.y = Math.PI;
+
+                    // Normalize size & center
+                    const box = new THREE.Box3().setFromObject(weaponModel);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxSize = Math.max(size.x, size.y, size.z);
+                    const scale = 10 / maxSize;
+
+                    weaponModel.scale.multiplyScalar(scale);
+                    weaponModel.position.sub(center.multiplyScalar(scale));
+
                     scene.add(weaponModel);
                     console.log('✅ Reset to base model');
                 });
@@ -238,7 +256,7 @@
         document.getElementById('btn-asiimov').addEventListener('click', () => {
             document.getElementById('btn-asiimov').classList.add('active');
             document.getElementById('btn-base').classList.remove('active');
-            applySkin('ak47_asiimov_unwrapped.png');
+            applySkin('inspect3d_ak47/textures/asiimov.png');
         });
 
         // Animation loop
