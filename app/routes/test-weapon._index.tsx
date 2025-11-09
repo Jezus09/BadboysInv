@@ -13,8 +13,8 @@ import * as THREE from "three";
  * Test weapon component - loads GLB and applies CS2 skin texture
  */
 function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
-  // Load weapon GLB model - Testing CSGO (Old) version (14 MB vs 54 MB)
-  const gltf = useGLTF("/models/weapons/ak47_csgo.glb");
+  // Load weapon GLB model - Testing CS2 (New) version (54 MB)
+  const gltf = useGLTF("/models/weapons/ak47_cs2.glb");
   const [textureUrl, setTextureUrl] = useState<string | null>(null);
 
   // Get CS2 skin texture
@@ -114,10 +114,10 @@ export default function TestWeaponPage() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-neutral-800/90 backdrop-blur p-4 border-b border-neutral-700">
         <h1 className="font-display text-2xl font-bold text-white mb-2 uppercase">
-          🧪 CSGO Model + CS2 Skin UV Test
+          🧪 CS2 Model + CS2 Skin Test
         </h1>
         <p className="text-neutral-400 text-sm mb-3">
-          CSGO weapon model (14 MB) with CS2 skin textures - Testing UV compatibility
+          CS2 weapon model (54 MB) with CS2 skin textures - Testing if skins apply correctly
         </p>
 
         {/* Skin selector */}
@@ -152,8 +152,7 @@ export default function TestWeaponPage() {
           <strong className="text-white">Controls:</strong> Left click + drag to rotate | Scroll to zoom
         </p>
         <p className="text-neutral-400 text-xs mt-1">
-          ✅ If CS2 skins look correct on CSGO model → UV compatible, use smaller files!<br/>
-          ❌ If skins are misaligned → Must use CS2 models (54 MB each)
+          Testing CS2 model with CS2 skin textures - Click different skins to verify rendering
         </p>
       </div>
     </div>
