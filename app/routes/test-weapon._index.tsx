@@ -44,6 +44,8 @@ function TestWeapon({ skinName }: { skinName: string | null }) {
               positionMap: { value: positionMap },
               maskMap: { value: maskMap },
               paintKitTexture: { value: paintKitTexture },
+              uvScale: { value: 0.772 }, // CS2 g_flUvScale1 parameter
+              weaponLength: { value: 37.287 }, // CS2 g_flWeaponLength1 (inches)
             },
             vertexShader: `
               varying vec2 vUv;
@@ -56,17 +58,23 @@ function TestWeapon({ skinName }: { skinName: string | null }) {
               uniform sampler2D positionMap;
               uniform sampler2D maskMap;
               uniform sampler2D paintKitTexture;
+              uniform float uvScale;
+              uniform float weaponLength;
               varying vec2 vUv;
 
               void main() {
-                // Sample position map (RGB = XYZ coordinates in paint kit space)
+                // Sample position map (RGB = normalized 3D position on weapon surface)
                 vec3 posInPaintKit = texture2D(positionMap, vUv).rgb;
 
                 // Sample mask (where to apply paint kit)
                 float mask = texture2D(maskMap, vUv).r;
 
-                // Sample paint kit texture using position map coordinates
-                vec2 paintKitUV = posInPaintKit.xy;
+                // CS2 composite UV calculation
+                // Position map stores normalized 3D coordinates (0-1 range)
+                // Convert to paint kit UV space using CS2 formula
+                vec2 paintKitUV = posInPaintKit.xy * uvScale;
+
+                // Sample paint kit texture
                 vec4 paintKitColor = texture2D(paintKitTexture, paintKitUV);
 
                 // Mix base color with paint kit based on mask
