@@ -12,51 +12,43 @@ import * as THREE from "three";
 /**
  * Test weapon component - loads GLB and applies CS2 skin texture
  */
-function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
+function TestWeapon({ skinTexture }: { skinTexture: string | null }) {
   // Load weapon GLB model - Official CS2 export (3.1 MB)
   const gltf = useGLTF("/models/weapons/ak47_cs2_official.glb");
-  const [textureUrl, setTextureUrl] = useState<string | null>(null);
 
-  // Get CS2 skin texture
+  // Apply extracted CS2 paint kit texture to model
   useEffect(() => {
-    try {
-      const item = CS2Economy.getById(weaponDefIndex);
-      const url = item.getTextureImage();
-      console.log("🎨 Weapon:", item.name);
-      console.log("🖼️ Texture URL:", url);
-      setTextureUrl(url);
-    } catch (e) {
-      console.error("❌ Failed to get texture:", e);
+    if (!gltf) return;
+
+    if (!skinTexture) {
+      // No skin selected - show base weapon textures
+      console.log("✅ Showing base weapon textures");
+      return;
     }
-  }, [weaponDefIndex]);
-
-  // Apply CS2 skin texture to model
-  useEffect(() => {
-    if (!gltf || !textureUrl) return;
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
-      textureUrl,
+      skinTexture,
       (texture) => {
-        console.log("✅ CS2 Skin texture loaded, applying to official CS2 model...");
+        console.log("✅ Extracted CS2 skin texture loaded:", skinTexture);
         gltf.scene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
-            // Apply CS2 skin texture
+            // Apply extracted CS2 paint kit texture
             child.material = new THREE.MeshStandardMaterial({
               map: texture,
               metalness: 0.6,
               roughness: 0.4,
             });
-            console.log("✅ Applied CS2 skin to mesh:", child.name);
+            console.log("✅ Applied extracted skin to mesh:", child.name);
           }
         });
       },
       undefined,
       (error) => {
-        console.error("❌ Failed to load CS2 skin texture:", error);
+        console.error("❌ Failed to load extracted skin texture:", error);
       }
     );
-  }, [gltf, textureUrl]);
+  }, [gltf, skinTexture]);
 
   return (
     <primitive
@@ -70,7 +62,7 @@ function TestWeapon({ weaponDefIndex }: { weaponDefIndex: number }) {
 /**
  * Test scene with lighting
  */
-function TestScene({ weaponDefIndex }: { weaponDefIndex: number }) {
+function TestScene({ skinTexture }: { skinTexture: string | null }) {
   return (
     <>
       {/* Camera */}
@@ -85,7 +77,7 @@ function TestScene({ weaponDefIndex }: { weaponDefIndex: number }) {
 
       {/* Weapon */}
       <Suspense fallback={null}>
-        <TestWeapon weaponDefIndex={weaponDefIndex} />
+        <TestWeapon skinTexture={skinTexture} />
       </Suspense>
     </>
   );
@@ -95,16 +87,13 @@ function TestScene({ weaponDefIndex }: { weaponDefIndex: number }) {
  * Test page component
  */
 export default function TestWeaponPage() {
-  const [weaponId, setWeaponId] = useState(44); // AK-47 | Redline
+  const [skinTexture, setSkinTexture] = useState<string | null>(null);
 
-  // Test skins
+  // Test skins - using extracted CS2 paint kit textures
   const testSkins = [
-    { id: 7, name: "AK-47 (Base)" },
-    { id: 44, name: "AK-47 | Redline" },
-    { id: 359, name: "AK-47 | Fire Serpent" },
-    { id: 489, name: "AK-47 | Neon Revolution" },
-    { id: 675, name: "AK-47 | Bloodsport" },
-    { id: 1086, name: "AK-47 | Asiimov" },
+    { texture: null, name: "AK-47 (Base)" },
+    { texture: "/models/skins/fireserpent_ak47.png", name: "AK-47 | Fire Serpent" },
+    { texture: "/models/skins/ak47_asiimov.png", name: "AK-47 | Asiimov" },
   ];
 
   return (
@@ -120,12 +109,12 @@ export default function TestWeaponPage() {
 
         {/* Skin selector */}
         <div className="flex gap-2 flex-wrap">
-          {testSkins.map((skin) => (
+          {testSkins.map((skin, idx) => (
             <button
-              key={skin.id}
-              onClick={() => setWeaponId(skin.id)}
+              key={idx}
+              onClick={() => setSkinTexture(skin.texture)}
               className={`px-3 py-1 rounded text-sm transition ${
-                weaponId === skin.id
+                skinTexture === skin.texture
                   ? "bg-blue-600 text-white"
                   : "bg-neutral-700 text-neutral-300 hover:bg-neutral-600"
               }`}
@@ -141,7 +130,7 @@ export default function TestWeaponPage() {
         className="w-full h-full"
         gl={{ antialias: true, alpha: true }}
       >
-        <TestScene weaponDefIndex={weaponId} />
+        <TestScene skinTexture={skinTexture} />
       </Canvas>
 
       {/* Instructions */}
@@ -150,7 +139,7 @@ export default function TestWeaponPage() {
           <strong className="text-white">Controls:</strong> Left click + drag to rotate | Scroll to zoom
         </p>
         <p className="text-neutral-400 text-xs mt-1">
-          Testing CS2 model with CS2 skin textures - Click different skins to verify rendering
+          Testing extracted CS2 paint kit textures from game files - Fire Serpent & Asiimov available!
         </p>
       </div>
     </div>
