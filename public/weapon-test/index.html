@@ -108,11 +108,11 @@
 </head>
 <body>
     <div id="header">
-        <h1>🧪 CS2 Skin Test - RepeatWrapping</h1>
-        <p class="description">Testing paint kit texture with THREE.RepeatWrapping mode</p>
+        <h1>🧪 CS2 Skin Test - Unwrapped Texture (Inspect3D Method)</h1>
+        <p class="description">Testing pre-unwrapped skin texture from Inspect3D</p>
         <div class="buttons">
             <button id="btn-base" class="active">AK-47 (Base Model)</button>
-            <button id="btn-fireserpent">AK-47 | Fire Serpent</button>
+            <button id="btn-asiimov">AK-47 | Asiimov (Unwrapped)</button>
         </div>
     </div>
 
@@ -182,60 +182,45 @@
         // Texture loader
         const textureLoader = new THREE.TextureLoader();
 
-        // Apply skin function
-        function applySkin(skinName) {
+        // Apply skin function (Inspect3D method - simple unwrapped texture)
+        function applySkin(texturePath) {
             if (!weaponModel) {
                 console.log('⏳ Weapon model not loaded yet');
                 return;
             }
 
-            if (!skinName) {
+            if (!texturePath) {
                 console.log('📦 Showing base model');
                 return;
             }
 
-            console.log(`🎨 Applying CS2 composite skin: ${skinName}`);
+            console.log(`🎨 Applying unwrapped skin texture: ${texturePath}`);
 
-            // Load all composite textures
-            Promise.all([
-                new Promise((resolve, reject) =>
-                    textureLoader.load('models/composite_inputs/ak47/position.png', resolve, undefined, reject)
-                ),
-                new Promise((resolve, reject) =>
-                    textureLoader.load('models/composite_inputs/ak47/masks.png', resolve, undefined, reject)
-                ),
-                new Promise((resolve, reject) =>
-                    textureLoader.load(`models/skins/${skinName}.png`, resolve, undefined, reject)
-                )
-            ]).then(([positionMap, maskMap, paintKitTexture]) => {
-                console.log('✅ Loaded all composite textures');
-
-                // Set repeat wrapping for paint kit
-                paintKitTexture.wrapS = THREE.RepeatWrapping;
-                paintKitTexture.wrapT = THREE.RepeatWrapping;
+            // Load unwrapped texture (like Inspect3D does)
+            textureLoader.load(texturePath, (customTexture) => {
+                console.log('✅ Loaded unwrapped texture');
+                customTexture.colorSpace = THREE.SRGBColorSpace;
 
                 weaponModel.traverse((child) => {
                     if (child.isMesh) {
-                        const material = new THREE.MeshStandardMaterial({
-                            map: paintKitTexture,
+                        child.material = new THREE.MeshStandardMaterial({
+                            map: customTexture,
                             metalness: 0.3,
                             roughness: 0.6,
                         });
-
-                        child.material = material;
                         child.material.needsUpdate = true;
-                        console.log('✅ Applied composite skin to mesh:', child.name);
+                        console.log('✅ Applied unwrapped skin to mesh:', child.name);
                     }
                 });
-            }).catch((error) => {
-                console.error('❌ Failed to load composite textures:', error);
+            }, undefined, (error) => {
+                console.error('❌ Failed to load unwrapped texture:', error);
             });
         }
 
         // Button handlers
         document.getElementById('btn-base').addEventListener('click', () => {
             document.getElementById('btn-base').classList.add('active');
-            document.getElementById('btn-fireserpent').classList.remove('active');
+            document.getElementById('btn-asiimov').classList.remove('active');
 
             if (weaponModel) {
                 // Reload model to reset to base
@@ -250,10 +235,10 @@
             }
         });
 
-        document.getElementById('btn-fireserpent').addEventListener('click', () => {
-            document.getElementById('btn-fireserpent').classList.add('active');
+        document.getElementById('btn-asiimov').addEventListener('click', () => {
+            document.getElementById('btn-asiimov').classList.add('active');
             document.getElementById('btn-base').classList.remove('active');
-            applySkin('fireserpent_ak47');
+            applySkin('ak47_asiimov_unwrapped.png');
         });
 
         // Animation loop
