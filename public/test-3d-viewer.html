@@ -342,23 +342,41 @@
                         const materials = Array.isArray(child.material) ? child.material : [child.material];
 
                         materials.forEach(mat => {
-                            // Base skin texture
+                            // IMPORTANT: Keep the original GLB textures (normal, roughness, AO)
+                            // Only replace the BASE COLOR with skin pattern
+
+                            // Store original PBR maps if not already stored
+                            if (!mat.userData.originalNormalMap) {
+                                mat.userData.originalNormalMap = mat.normalMap;
+                                mat.userData.originalRoughnessMap = mat.roughnessMap;
+                                mat.userData.originalAoMap = mat.aoMap;
+                                mat.userData.originalMetalnessMap = mat.metalnessMap;
+                            }
+
+                            // Apply skin pattern as base color
                             mat.map = skinTexture;
 
-                            // Add wear/grunge layers if available
-                            if (grungeTexture && currentWear > 0) {
-                                mat.roughnessMap = grungeTexture;
-                                mat.roughness = 0.4 + (currentWear * 0.4); // 0.4-0.8 based on wear
-                            }
+                            // Keep original PBR maps from GLB
+                            mat.normalMap = mat.userData.originalNormalMap;
+                            mat.aoMap = mat.userData.originalAoMap;
 
-                            // Metalness
-                            if (metalnessTexture) {
-                                mat.metalnessMap = metalnessTexture;
-                                mat.metalness = 0.1;
+                            // Mix roughness: original + wear effect
+                            if (mat.userData.originalRoughnessMap) {
+                                mat.roughnessMap = mat.userData.originalRoughnessMap;
                             }
+                            mat.roughness = 0.42 + (currentWear * 0.4); // CS2 default: 0.42
 
-                            // Enable better material properties
+                            // Metalness from original
+                            if (mat.userData.originalMetalnessMap) {
+                                mat.metalnessMap = mat.userData.originalMetalnessMap;
+                            }
+                            mat.metalness = 0.1;
+
+                            // Enable PBR
                             mat.envMapIntensity = 1.0;
+                            mat.aoMapIntensity = 1.0;
+                            mat.normalScale.set(1, 1);
+
                             mat.needsUpdate = true;
                         });
                     }
