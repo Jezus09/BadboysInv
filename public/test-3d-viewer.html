@@ -537,7 +537,13 @@
             const wear = parseFloat(e.target.value);
             currentWear = wear;
             wearValue.textContent = `${wear.toFixed(2)} (${getWearLabel(wear)})`;
+            console.log('🎚️ Wear slider moved to:', wear);
             updateWear(wear);
+
+            // Force update model info
+            if (currentModel) {
+                updateModelInfo();
+            }
         });
 
         // Initialize
