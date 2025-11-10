@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Debug</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 20px;
+        }
+        .info {
+            background: #000;
+            border: 2px solid #0f0;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        h1 { color: #0ff; }
+        .good { color: #0f0; }
+        .bad { color: #f00; }
+    </style>
+</head>
+<body>
+    <h1>AK-47 GLB Material Debugger</h1>
+    <div id="status">Loading...</div>
+    <div id="results"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        const status = document.getElementById('status');
+        const results = document.getElementById('results');
+
+        status.textContent = 'Loading AK-47 model...';
+
+        const loader = new GLTFLoader();
+        loader.load('/models/weapons/ak47/weapon_rif_ak47.glb', (gltf) => {
+            status.innerHTML = '<span class="good">✅ Model loaded!</span>';
+
+            let html = '<div class="info"><h2>GLB Structure:</h2>';
+            html += `<p>Scene children: ${gltf.scene.children.length}</p>`;
+
+            let materialCount = 0;
+            gltf.scene.traverse((child) => {
+                if (child.isMesh) {
+                    html += `<div class="info">`;
+                    html += `<h3>Mesh: ${child.name || 'unnamed'}</h3>`;
+
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                    materials.forEach((mat, i) => {
+                        materialCount++;
+                        html += `<p><strong>Material ${i + 1}: ${mat.name || 'unnamed'}</strong></p>`;
+                        html += `<p>Type: ${mat.type}</p>`;
+
+                        // Check textures
+                        html += `<p>map (color): <span class="${mat.map ? 'good' : 'bad'}">${mat.map ? '✅ YES' : '❌ NO'}</span></p>`;
+                        if (mat.map) {
+                            html += `  → Image: ${mat.map.image?.currentSrc || mat.map.source?.data?.currentSrc || 'unknown'}<br>`;
+                        }
+
+                        html += `<p>normalMap: <span class="${mat.normalMap ? 'good' : 'bad'}">${mat.normalMap ? '✅ YES' : '❌ NO'}</span></p>`;
+                        if (mat.normalMap) {
+                            html += `  → Image: ${mat.normalMap.image?.currentSrc || 'embedded'}<br>`;
+                        }
+
+                        html += `<p>roughnessMap: <span class="${mat.roughnessMap ? 'good' : 'bad'}">${mat.roughnessMap ? '✅ YES' : '❌ NO'}</span></p>`;
+                        if (mat.roughnessMap) {
+                            html += `  → Image: ${mat.roughnessMap.image?.currentSrc || 'embedded'}<br>`;
+                        }
+
+                        html += `<p>aoMap: <span class="${mat.aoMap ? 'good' : 'bad'}">${mat.aoMap ? '✅ YES' : '❌ NO'}</span></p>`;
+                        if (mat.aoMap) {
+                            html += `  → Image: ${mat.aoMap.image?.currentSrc || 'embedded'}<br>`;
+                        }
+
+                        html += `<p>metalnessMap: <span class="${mat.metalnessMap ? 'good' : 'bad'}">${mat.metalnessMap ? '✅ YES' : '❌ NO'}</span></p>`;
+                        if (mat.metalnessMap) {
+                            html += `  → Image: ${mat.metalnessMap.image?.currentSrc || 'embedded'}<br>`;
+                        }
+
+                        // Values
+                        html += `<p>roughness value: ${mat.roughness?.toFixed(3) || 'N/A'}</p>`;
+                        html += `<p>metalness value: ${mat.metalness?.toFixed(3) || 'N/A'}</p>`;
+                        html += `<p>color: rgb(${mat.color?.r.toFixed(2)}, ${mat.color?.g.toFixed(2)}, ${mat.color?.b.toFixed(2)})</p>`;
+                    });
+
+                    html += `</div>`;
+                }
+            });
+
+            html += `</div><div class="info"><h2>Summary:</h2><p>Total materials: ${materialCount}</p></div>`;
+            results.innerHTML = html;
+
+        }, undefined, (error) => {
+            status.innerHTML = `<span class="bad">❌ Error: ${error.message}</span>`;
+        });
+    </script>
+</body>
+</html>
