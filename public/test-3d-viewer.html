@@ -277,6 +277,23 @@
 
                 scene.add(currentModel);
 
+                // Debug materials
+                currentModel.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+                        console.log('🔍 Material found:', {
+                            name: mat.name,
+                            hasMap: !!mat.map,
+                            hasNormalMap: !!mat.normalMap,
+                            hasRoughnessMap: !!mat.roughnessMap,
+                            hasAoMap: !!mat.aoMap,
+                            hasMetalnessMap: !!mat.metalnessMap,
+                            roughness: mat.roughness,
+                            metalness: mat.metalness
+                        });
+                    }
+                });
+
                 // Update info
                 modelInfo.innerHTML = `
                     <strong>📊 Model Info:</strong><br>
@@ -288,8 +305,6 @@
 
                 loading.style.display = 'none';
                 console.log('✅ Model loaded successfully:', filename);
-                console.log('📦 GLTF Scene:', gltf.scene);
-                console.log('🎨 Materials:', gltf.scene.children.map(c => c.material?.name));
             } catch (error) {
                 loading.style.display = 'none';
                 loading.className = 'loading error';
