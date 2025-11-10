@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texture Comparison</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        h1 { text-align: center; }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .texture-card {
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .texture-card h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .texture-card img {
+            width: 100%;
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
+        .info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <h1>🖼️ CS2 Texture Comparison</h1>
+    <p style="text-align: center;">Compare what textures we have vs what should be displayed</p>
+
+    <div class="container">
+        <!-- Default weapon texture -->
+        <div class="texture-card">
+            <h2>Default AK-47 (from GLB)</h2>
+            <img src="/models/weapons/ak47/ak47_default_color_psd_5b66a23b.png" alt="Default Color">
+            <div class="info">
+                This is what the GLB model contains by default.<br>
+                Size: 20 MB<br>
+                This should be the BASE before applying skins.
+            </div>
+        </div>
+
+        <!-- Asiimov skin -->
+        <div class="texture-card">
+            <h2>AK-47 | Asiimov (Skin Pattern)</h2>
+            <img src="/models/skins/ak47_asiimov.png" alt="Asiimov">
+            <div class="info">
+                This is the SKIN PATTERN that should replace the base color.<br>
+                Size: 3.9 MB<br>
+                Orange/white sci-fi design.
+            </div>
+        </div>
+
+        <!-- Fire Serpent skin -->
+        <div class="texture-card">
+            <h2>AK-47 | Fire Serpent (Skin Pattern)</h2>
+            <img src="/models/skins/ak47_fire_serpent.png" alt="Fire Serpent">
+            <div class="info">
+                Red dragon design pattern.<br>
+                Size: 3.3 MB<br>
+                Should show red/gold dragon on weapon.
+            </div>
+        </div>
+
+        <!-- Grunge texture -->
+        <div class="texture-card">
+            <h2>Grunge Overlay (Wear Effect)</h2>
+            <img src="/models/skins/shared/gun_grunge.png" alt="Grunge">
+            <div class="info">
+                Applied based on wear amount (0.0-1.0).<br>
+                Size: 11 MB<br>
+                Makes weapon look worn/scratched.
+            </div>
+        </div>
+
+        <!-- Normal map -->
+        <div class="texture-card">
+            <h2>Normal Map (Surface Detail)</h2>
+            <img src="/models/weapons/ak47/ak47_default_normal_png_c8c5793e.png" alt="Normal">
+            <div class="info">
+                Surface details (bumps, scratches).<br>
+                Size: 18 MB<br>
+                Purple/blue = normal map data.
+            </div>
+        </div>
+
+        <!-- Roughness map -->
+        <div class="texture-card">
+            <h2>Roughness Map</h2>
+            <img src="/models/weapons/ak47/ak47_default_rough_psd_469dc584.png" alt="Roughness">
+            <div class="info">
+                Material shininess.<br>
+                Size: 14 MB<br>
+                Black = shiny, White = rough/matt.
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px; padding: 20px; background: #2a2a2a; border-radius: 8px; max-width: 800px; margin: 40px auto;">
+        <h2>❓ What Should Happen:</h2>
+        <p style="text-align: left;">
+            1. <strong>Model loads</strong> → Shows default_color texture (basic AK-47)<br>
+            2. <strong>Select Asiimov</strong> → Replaces base color with orange/white pattern<br>
+            3. <strong>Keeps</strong> normal map, roughness, AO from GLB<br>
+            4. <strong>Wear slider</strong> → Adds grunge overlay, increases roughness<br>
+            <br>
+            <strong>Problem:</strong> If you don't see orange/white Asiimov pattern, the skin texture isn't being applied correctly!
+        </p>
+    </div>
+</body>
+</html>
