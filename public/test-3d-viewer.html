@@ -168,11 +168,29 @@
             camera.position.set(0, 0.5, 2);
 
             // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                powerPreference: "high-performance"
+            });
             renderer.setSize(viewer.clientWidth, viewer.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance
             renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
             viewer.appendChild(renderer.domElement);
+
+            // Add environment map for realistic reflections (after renderer exists)
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            pmremGenerator.compileEquirectangularShader();
+
+            // Create simple environment for reflections
+            const envScene = new THREE.Scene();
+            envScene.background = new THREE.Color(0x666666);
+            const envTexture = pmremGenerator.fromScene(envScene).texture;
+            scene.environment = envTexture;
+            pmremGenerator.dispose();
 
             // Lights - Enhanced for PBR materials
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
