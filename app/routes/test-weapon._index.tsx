@@ -13,8 +13,8 @@ import * as THREE from "three";
  * Test weapon component - loads GLB and applies CS2 skin texture
  */
 function TestWeapon({ skinName, wear, seed }: { skinName: string | null; wear: number; seed: number }) {
-  // Load weapon GLB model
-  const gltf = useGLTF("/models/weapons/ak47_with_textures.glb");
+  // Load weapon GLTF model from Inspect3D (has proper UVs and textures)
+  const gltf = useGLTF("/models/weapons/ak47_inspect3d/scene.gltf");
 
   // Apply CS2 baked skin texture
   useEffect(() => {
@@ -26,9 +26,9 @@ function TestWeapon({ skinName, wear, seed }: { skinName: string | null; wear: n
     console.log(`Applying baked CS2 skin: ${skinName} (wear: ${wear.toFixed(2)}, seed: ${seed})`);
     const textureLoader = new THREE.TextureLoader();
 
-    // Load the pre-baked texture (position map already applied during baking)
+    // Load the Inspect3D skin texture (pre-unwrapped, ready to use)
     textureLoader.load(
-      `/models/baked_skins/ak47/${skinName}.png`,
+      `/models/weapons/ak47_inspect3d/textures/${skinName}.png`,
       (bakedTexture) => {
         console.log("✅ Loaded baked skin texture");
 
@@ -113,8 +113,8 @@ function TestWeapon({ skinName, wear, seed }: { skinName: string | null; wear: n
       },
       undefined,
       (error) => {
-        console.error("❌ Failed to load baked texture:", error);
-        console.log("💡 Make sure to run: node scripts/bake-all-skins.mjs");
+        console.error("❌ Failed to load Inspect3D texture:", error);
+        console.log("💡 Make sure Inspect3D textures are in: /models/weapons/ak47_inspect3d/textures/");
       }
     );
   }, [gltf, skinName, wear, seed]);
@@ -180,12 +180,12 @@ export default function TestWeaponPage() {
     return "Battle-Scarred";
   };
 
-  // Test skins - Using baked textures
+  // Test skins - Using Inspect3D textures
   const testSkins = [
     { skin: null, name: "AK-47 (Base Model)" },
-    { skin: "ak47_fire_serpent", name: "AK-47 | Fire Serpent" },
-    { skin: "ak47_asiimov", name: "AK-47 | Asiimov" },
-    { skin: "fireserpent_ak47", name: "AK-47 | Fire Serpent (Alt)" },
+    { skin: "asiimov", name: "AK-47 | Asiimov" },
+    { skin: "neon_revolution", name: "AK-47 | Neon Revolution" },
+    { skin: "phantom_disruptor", name: "AK-47 | Phantom Disruptor" },
   ];
 
   return (
@@ -193,10 +193,10 @@ export default function TestWeaponPage() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-neutral-800/90 backdrop-blur p-4 border-b border-neutral-700">
         <h1 className="font-display text-2xl font-bold text-white mb-2 uppercase">
-          🎨 CS2 Skin Test - Baked Textures
+          🎨 CS2 Skin Test - Inspect3D Models
         </h1>
         <p className="text-neutral-400 text-sm mb-3">
-          Using pre-baked textures with position map UV unwrapping applied
+          Using Inspect3D GLTF models with proper UV mapping and pre-unwrapped textures
         </p>
 
         {/* Skin selector */}
@@ -291,7 +291,7 @@ export default function TestWeaponPage() {
           <strong className="text-white">Controls:</strong> Left click + drag to rotate | Scroll to zoom
         </p>
         <p className="text-neutral-400 text-xs mt-1">
-          Baked textures with correct UV mapping. Wear affects material properties. Seed changes pattern placement (offset + rotation).
+          Inspect3D GLTF models with perfect UV mapping. Wear affects material properties. Seed changes pattern placement.
         </p>
       </div>
     </div>
