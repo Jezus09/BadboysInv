@@ -12,7 +12,7 @@ import * as THREE from "three";
 /**
  * Test weapon component - loads GLB and applies CS2 skin texture
  */
-function TestWeapon({ skinName, wear }: { skinName: string | null; wear: number }) {
+function TestWeapon({ skinName, wear, seed }: { skinName: string | null; wear: number; seed: number }) {
   // Load weapon GLB model
   const gltf = useGLTF("/models/weapons/ak47_with_textures.glb");
 
@@ -23,7 +23,7 @@ function TestWeapon({ skinName, wear }: { skinName: string | null; wear: number 
       return;
     }
 
-    console.log(`Applying baked CS2 skin: ${skinName} (wear: ${wear.toFixed(2)})`);
+    console.log(`Applying baked CS2 skin: ${skinName} (wear: ${wear.toFixed(2)}, seed: ${seed})`);
     const textureLoader = new THREE.TextureLoader();
 
     // Load the pre-baked texture (position map already applied during baking)
@@ -35,6 +35,23 @@ function TestWeapon({ skinName, wear }: { skinName: string | null; wear: number 
         // Configure texture
         bakedTexture.colorSpace = THREE.SRGBColorSpace;
         bakedTexture.flipY = false; // CS2 textures don't need flipping
+
+        // Apply seed-based texture offset
+        // CS2 seed (0-1000) determines pattern placement on weapon
+        // Convert seed to normalized offset values
+        const seedNormalized = seed / 1000; // 0.0 - 1.0
+        bakedTexture.offset.set(
+          (seedNormalized * 0.5) % 1.0,  // X offset (max 50% shift)
+          (seedNormalized * 0.3) % 1.0   // Y offset (max 30% shift)
+        );
+
+        // Some skins also rotate slightly based on seed
+        bakedTexture.rotation = (seedNormalized * Math.PI * 0.1); // Max ±18 degrees
+        bakedTexture.center.set(0.5, 0.5); // Rotate around center
+
+        // Texture wrapping for seamless pattern
+        bakedTexture.wrapS = THREE.RepeatWrapping;
+        bakedTexture.wrapT = THREE.RepeatWrapping;
 
         gltf.scene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
@@ -66,8 +83,10 @@ function TestWeapon({ skinName, wear }: { skinName: string | null; wear: number 
 
             child.material = material;
             child.material.needsUpdate = true;
-            console.log(`✅ Applied baked skin with wear ${wear.toFixed(2)} to:`, child.name);
+            console.log(`✅ Applied baked skin to: ${child.name}`);
+            console.log(`   Wear: ${wear.toFixed(4)} | Seed: ${seed}`);
             console.log(`   Roughness: ${roughness.toFixed(2)}, Metalness: ${metalness.toFixed(2)}, Color: ${(colorMultiplier * 100).toFixed(0)}%`);
+            console.log(`   Texture offset: (${bakedTexture.offset.x.toFixed(3)}, ${bakedTexture.offset.y.toFixed(3)}), rotation: ${(bakedTexture.rotation * 180 / Math.PI).toFixed(1)}°`);
           }
         });
       },
@@ -77,7 +96,7 @@ function TestWeapon({ skinName, wear }: { skinName: string | null; wear: number 
         console.log("💡 Make sure to run: node scripts/bake-all-skins.mjs");
       }
     );
-  }, [gltf, skinName, wear]);
+  }, [gltf, skinName, wear, seed]);
 
   return (
     <primitive
@@ -91,7 +110,7 @@ function TestWeapon({ skinName, wear }: { skinName: string | null; wear: number 
 /**
  * Test scene with lighting
  */
-function TestScene({ skinName, wear }: { skinName: string | null; wear: number }) {
+function TestScene({ skinName, wear, seed }: { skinName: string | null; wear: number; seed: number }) {
   return (
     <>
       {/* Camera */}
@@ -105,7 +124,7 @@ function TestScene({ skinName, wear }: { skinName: string | null; wear: number }
 
       {/* Weapon */}
       <Suspense fallback={null}>
-        <TestWeapon skinName={skinName} wear={wear} />
+        <TestWeapon skinName={skinName} wear={wear} seed={seed} />
       </Suspense>
     </>
   );
@@ -117,6 +136,7 @@ function TestScene({ skinName, wear }: { skinName: string | null; wear: number }
 export default function TestWeaponPage() {
   const [skinName, setSkinName] = useState<string | null>(null);
   const [wear, setWear] = useState<number>(0.0); // 0.0 = Factory New, 1.0 = Battle-Scarred
+  const [seed, setSeed] = useState<number>(0); // 0-1000 pattern template
 
   // CS2 wear categories
   const getWearCategory = (wearValue: number): string => {
@@ -164,7 +184,7 @@ export default function TestWeaponPage() {
         </div>
 
         {/* Wear slider */}
-        <div className="bg-neutral-700/50 rounded p-3">
+        <div className="bg-neutral-700/50 rounded p-3 mb-3">
           <div className="flex items-center justify-between mb-2">
             <label className="text-white font-bold text-sm">
               Wear (Float Value)
@@ -191,6 +211,37 @@ export default function TestWeaponPage() {
             <span>1.00</span>
           </div>
         </div>
+
+        {/* Seed slider */}
+        <div className="bg-neutral-700/50 rounded p-3">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-white font-bold text-sm">
+              Seed (Pattern Template)
+            </label>
+            <span className="text-green-400 font-mono text-sm">
+              #{seed}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="1000"
+            step="1"
+            value={seed}
+            onChange={(e) => setSeed(parseInt(e.target.value))}
+            className="w-full h-2 bg-neutral-600 rounded-lg appearance-none cursor-pointer accent-green-600"
+          />
+          <div className="flex justify-between text-xs text-neutral-400 mt-1">
+            <span>0</span>
+            <span>250</span>
+            <span>500</span>
+            <span>750</span>
+            <span>1000</span>
+          </div>
+          <p className="text-xs text-neutral-500 mt-2">
+            💡 Different seeds produce different pattern placements on the weapon
+          </p>
+        </div>
       </div>
 
       {/* 3D Canvas */}
@@ -198,7 +249,7 @@ export default function TestWeaponPage() {
         className="w-full h-full"
         gl={{ antialias: true, alpha: true }}
       >
-        <TestScene skinName={skinName} wear={wear} />
+        <TestScene skinName={skinName} wear={wear} seed={seed} />
       </Canvas>
 
       {/* Instructions */}
@@ -207,7 +258,7 @@ export default function TestWeaponPage() {
           <strong className="text-white">Controls:</strong> Left click + drag to rotate | Scroll to zoom
         </p>
         <p className="text-neutral-400 text-xs mt-1">
-          Baked textures with correct UV mapping. Realistic wear system: roughness, metalness, and color change with wear float.
+          Baked textures with correct UV mapping. Wear affects material properties. Seed changes pattern placement (offset + rotation).
         </p>
       </div>
     </div>
