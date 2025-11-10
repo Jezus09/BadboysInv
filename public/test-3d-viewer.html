@@ -277,30 +277,37 @@
 
                 scene.add(currentModel);
 
-                // Debug materials
+                // Debug materials - collect info
+                let materialDebug = [];
                 currentModel.traverse((child) => {
                     if (child.isMesh && child.material) {
                         const mat = Array.isArray(child.material) ? child.material[0] : child.material;
-                        console.log('🔍 Material found:', {
+                        materialDebug.push({
                             name: mat.name,
-                            hasMap: !!mat.map,
-                            hasNormalMap: !!mat.normalMap,
-                            hasRoughnessMap: !!mat.roughnessMap,
-                            hasAoMap: !!mat.aoMap,
-                            hasMetalnessMap: !!mat.metalnessMap,
-                            roughness: mat.roughness,
-                            metalness: mat.metalness
+                            map: !!mat.map,
+                            normal: !!mat.normalMap,
+                            rough: !!mat.roughnessMap,
+                            ao: !!mat.aoMap,
+                            metal: !!mat.metalnessMap,
+                            roughVal: mat.roughness.toFixed(2),
+                            metalVal: mat.metalness.toFixed(2)
                         });
                     }
                 });
 
-                // Update info
+                // Update info with debug
                 modelInfo.innerHTML = `
                     <strong>📊 Model Info:</strong><br>
                     File: ${filename}<br>
-                    Size: ${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}<br>
                     Triangles: ${countTriangles(currentModel)}<br>
-                    Materials: ${countMaterials(currentModel)}
+                    Materials: ${countMaterials(currentModel)}<br>
+                    <br><strong>🔍 Material Debug:</strong><br>
+                    ${materialDebug.map(m => `
+                        ${m.name || 'unnamed'}<br>
+                        Map:${m.map?'✅':'❌'} Norm:${m.normal?'✅':'❌'} Rough:${m.rough?'✅':'❌'}<br>
+                        AO:${m.ao?'✅':'❌'} Metal:${m.metal?'✅':'❌'}<br>
+                        R:${m.roughVal} M:${m.metalVal}<br>
+                    `).join('<br>')}
                 `;
 
                 loading.style.display = 'none';
