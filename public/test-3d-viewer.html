@@ -26,7 +26,7 @@
             margin: 0 0 15px 0;
             font-size: 24px;
         }
-        #weaponSelect {
+        #weaponSelect, #skinSelect {
             padding: 10px 15px;
             font-size: 16px;
             background: #3a3a3a;
@@ -35,6 +35,7 @@
             border-radius: 5px;
             cursor: pointer;
             width: 300px;
+            margin-right: 10px;
         }
         #viewer {
             flex: 1;
@@ -68,17 +69,27 @@
 <body>
     <div id="container">
         <div id="controls">
-            <h1>🔫 CS2 Weapon Model Viewer</h1>
-            <select id="weaponSelect">
-                <option value="">-- Select Weapon --</option>
-                <option value="ak47/weapon_rif_ak47.glb">AK-47</option>
-                <option value="awp/weapon_snip_awp.glb">AWP</option>
-                <option value="m4a1_silencer/weapon_rif_m4a1_silencer.glb">M4A1-S</option>
-                <option value="m4a4/weapon_rif_m4a4.glb">M4A4</option>
-                <option value="deagle/weapon_pist_deagle.glb">Desert Eagle</option>
-                <option value="usp_silencer/weapon_pist_usp_silencer.glb">USP-S</option>
-                <option value="p250/weapon_pist_p250.glb">P250</option>
-            </select>
+            <h1>🔫 CS2 Weapon Model + Skin Viewer</h1>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <select id="weaponSelect">
+                    <option value="">-- Select Weapon --</option>
+                    <option value="ak47/weapon_rif_ak47.glb" data-weapon="ak47">AK-47</option>
+                    <option value="awp/weapon_snip_awp.glb" data-weapon="awp">AWP</option>
+                    <option value="m4a1_silencer/weapon_rif_m4a1_silencer.glb" data-weapon="m4a1s">M4A1-S</option>
+                    <option value="m4a4/weapon_rif_m4a4.glb" data-weapon="m4a4">M4A4</option>
+                    <option value="deagle/weapon_pist_deagle.glb" data-weapon="deagle">Desert Eagle</option>
+                    <option value="usp_silencer/weapon_pist_usp_silencer.glb" data-weapon="usps">USP-S</option>
+                    <option value="p250/weapon_pist_p250.glb" data-weapon="p250">P250</option>
+                </select>
+                <select id="skinSelect">
+                    <option value="">-- Default Skin --</option>
+                    <option value="ak47_asiimov" data-weapon="ak47">AK-47 | Asiimov</option>
+                    <option value="ak47_fire_serpent" data-weapon="ak47">AK-47 | Fire Serpent</option>
+                    <option value="awp_hyper_beast" data-weapon="awp">AWP | Hyper Beast</option>
+                    <option value="m4a1s_howl" data-weapon="m4a1s">M4A1-S | Howl</option>
+                    <option value="p250_asiimov" data-weapon="p250">P250 | Asiimov</option>
+                </select>
+            </div>
         </div>
         <div id="viewer">
             <div id="loading" class="loading" style="display: none;">Loading...</div>
@@ -106,9 +117,10 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        let scene, camera, renderer, controls, currentModel;
+        let scene, camera, renderer, controls, currentModel, currentSkin;
         const viewer = document.getElementById('viewer');
         const weaponSelect = document.getElementById('weaponSelect');
+        const skinSelect = document.getElementById('skinSelect');
         const loading = document.getElementById('loading');
         const modelInfo = document.getElementById('modelInfo');
 
@@ -134,18 +146,22 @@
             renderer.shadowMap.enabled = true;
             viewer.appendChild(renderer.domElement);
 
-            // Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            // Lights - Enhanced for PBR materials
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
             directionalLight.position.set(5, 10, 7.5);
             directionalLight.castShadow = true;
             scene.add(directionalLight);
 
-            const pointLight = new THREE.PointLight(0xffffff, 0.5);
-            pointLight.position.set(-5, 5, -5);
-            scene.add(pointLight);
+            const pointLight1 = new THREE.PointLight(0xffffff, 0.6);
+            pointLight1.position.set(-5, 5, -5);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0xffffff, 0.4);
+            pointLight2.position.set(5, -3, 5);
+            scene.add(pointLight2);
 
             // Controls
             controls = new OrbitControls(camera, renderer.domElement);
@@ -257,9 +273,66 @@
             return materials.size;
         }
 
+        // Apply skin texture to model
+        async function applySkinTexture(skinName) {
+            if (!currentModel || !skinName) return;
+
+            const textureLoader = new THREE.TextureLoader();
+            const skinPath = `/models/skins/${skinName}.png`;
+
+            try {
+                const skinTexture = await textureLoader.loadAsync(skinPath);
+                skinTexture.colorSpace = THREE.SRGBColorSpace;
+                skinTexture.flipY = false;
+
+                // Apply texture to all meshes
+                currentModel.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(mat => {
+                                mat.map = skinTexture;
+                                mat.needsUpdate = true;
+                            });
+                        } else {
+                            child.material.map = skinTexture;
+                            child.material.needsUpdate = true;
+                        }
+                    }
+                });
+
+                currentSkin = skinName;
+                console.log('✅ Skin applied:', skinName);
+                modelInfo.innerHTML += `<br><strong>Skin:</strong> ${skinName}`;
+            } catch (error) {
+                console.error('❌ Failed to load skin texture:', error);
+            }
+        }
+
+        // Filter skin options based on selected weapon
+        function updateSkinOptions() {
+            const selectedOption = weaponSelect.options[weaponSelect.selectedIndex];
+            const weaponType = selectedOption?.getAttribute('data-weapon');
+
+            Array.from(skinSelect.options).forEach(option => {
+                if (option.value === '') {
+                    option.style.display = 'block';
+                } else {
+                    const skinWeapon = option.getAttribute('data-weapon');
+                    option.style.display = (skinWeapon === weaponType) ? 'block' : 'none';
+                }
+            });
+
+            skinSelect.value = '';
+        }
+
         // Event listeners
         weaponSelect.addEventListener('change', (e) => {
             loadWeapon(e.target.value);
+            updateSkinOptions();
+        });
+
+        skinSelect.addEventListener('change', (e) => {
+            applySkinTexture(e.target.value);
         });
 
         // Initialize
