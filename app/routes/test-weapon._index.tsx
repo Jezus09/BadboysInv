@@ -55,6 +55,8 @@ function TestWeapon({ skinName, wear, seed }: { skinName: string | null; wear: n
 
         gltf.scene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
+            console.log(`🔍 Found mesh: "${child.name}", has UV: ${child.geometry.attributes.uv ? 'YES' : 'NO'}`);
+
             // Calculate wear-based material properties
             // Wear: 0.00 = Factory New (pristine)
             // Wear: 1.00 = Battle-Scarred (heavily worn)
@@ -65,28 +67,47 @@ function TestWeapon({ skinName, wear, seed }: { skinName: string | null; wear: n
             // Metalness decreases with wear (metallic -> matte)
             const metalness = 0.15 - (wear * 0.1); // 0.15 -> 0.05
 
-            // Color gets slightly darker with wear (subtle dirt accumulation)
-            const colorMultiplier = 1.0 - (wear * 0.2); // 1.0 -> 0.8
+            // Color gets slightly brighter for better visibility
+            const colorMultiplier = 1.1 - (wear * 0.15); // 1.1 -> 0.95 (brighter!)
 
             // Ambient occlusion intensity increases with wear
             const aoMapIntensity = 1.0 + (wear * 1.5); // 1.0 -> 2.5
 
-            // Use the properly unwrapped texture
-            const material = new THREE.MeshStandardMaterial({
-              map: bakedTexture,
-              metalness: metalness,
-              roughness: roughness,
-              side: THREE.DoubleSide,
-              color: new THREE.Color(colorMultiplier, colorMultiplier, colorMultiplier),
-              aoMapIntensity: aoMapIntensity,
-            });
+            // Clone the texture for each mesh to allow independent UV mapping
+            const meshTexture = bakedTexture.clone();
+            meshTexture.needsUpdate = true;
 
-            child.material = material;
+            // Fix texture flipping issues
+            meshTexture.flipY = false;
+
+            // Check if this mesh has proper UV coordinates
+            if (!child.geometry.attributes.uv) {
+              console.warn(`⚠️  Mesh "${child.name}" has no UV coordinates - using default material`);
+
+              // Apply neutral material for meshes without UVs
+              child.material = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(0.3, 0.3, 0.3), // Dark gray
+                metalness: metalness,
+                roughness: roughness,
+              });
+            } else {
+              // Use the properly unwrapped texture
+              const material = new THREE.MeshStandardMaterial({
+                map: meshTexture,
+                metalness: metalness,
+                roughness: roughness,
+                side: THREE.FrontSide, // Changed from DoubleSide to fix mirroring
+                color: new THREE.Color(colorMultiplier, colorMultiplier, colorMultiplier),
+                aoMapIntensity: aoMapIntensity,
+              });
+
+              child.material = material;
+            }
+
             child.material.needsUpdate = true;
-            console.log(`✅ Applied baked skin to: ${child.name}`);
+            console.log(`✅ Applied material to: ${child.name}`);
             console.log(`   Wear: ${wear.toFixed(4)} | Seed: ${seed}`);
             console.log(`   Roughness: ${roughness.toFixed(2)}, Metalness: ${metalness.toFixed(2)}, Color: ${(colorMultiplier * 100).toFixed(0)}%`);
-            console.log(`   Texture offset: (${bakedTexture.offset.x.toFixed(3)}, ${bakedTexture.offset.y.toFixed(3)}), rotation: ${(bakedTexture.rotation * 180 / Math.PI).toFixed(1)}°`);
           }
         });
       },
@@ -117,10 +138,22 @@ function TestScene({ skinName, wear, seed }: { skinName: string | null; wear: nu
       <PerspectiveCamera makeDefault position={[2, 1, 3]} fov={50} near={0.01} far={100} />
       <OrbitControls enableDamping dampingFactor={0.05} minDistance={0.5} maxDistance={10} />
 
-      {/* Lighting */}
-      <ambientLight intensity={1.5} />
-      <directionalLight position={[5, 5, 5]} intensity={2} />
-      <directionalLight position={[-5, 3, -5]} intensity={1} />
+      {/* Lighting - Multiple angles for better visibility */}
+      <ambientLight intensity={2.5} /> {/* Increased base light */}
+
+      {/* Key light (main) */}
+      <directionalLight position={[5, 5, 5]} intensity={3} castShadow />
+
+      {/* Fill lights (soften shadows) */}
+      <directionalLight position={[-5, 3, -5]} intensity={2} />
+      <directionalLight position={[0, -3, 5]} intensity={1.5} />
+
+      {/* Rim lights (edge definition) */}
+      <pointLight position={[3, 2, -3]} intensity={2} color="#ffffff" />
+      <pointLight position={[-3, 2, -3]} intensity={2} color="#ffffff" />
+
+      {/* Top light */}
+      <spotLight position={[0, 8, 0]} intensity={1.5} angle={0.5} penumbra={0.5} />
 
       {/* Weapon */}
       <Suspense fallback={null}>
