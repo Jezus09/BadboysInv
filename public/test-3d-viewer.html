@@ -277,6 +277,33 @@
 
                 scene.add(currentModel);
 
+                // Fix material values (GLB has wrong defaults)
+                currentModel.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        const materials = Array.isArray(child.material) ? child.material : [child.material];
+                        materials.forEach(mat => {
+                            // Fix roughness (CS2 default: 0.42, not 1.0!)
+                            if (mat.roughness === 1.0) {
+                                mat.roughness = 0.42;
+                            }
+
+                            // Fix metalness (CS2 default: 0.1, not 1.0!)
+                            if (mat.metalness === 1.0) {
+                                mat.metalness = 0.1;
+                            }
+
+                            // Enable proper PBR
+                            mat.envMapIntensity = 1.0;
+                            mat.aoMapIntensity = 1.0;
+
+                            // Fix color (should be white for textures to show properly)
+                            mat.color.setRGB(1, 1, 1);
+
+                            mat.needsUpdate = true;
+                        });
+                    }
+                });
+
                 // Debug materials - collect info
                 let materialDebug = [];
                 currentModel.traverse((child) => {
