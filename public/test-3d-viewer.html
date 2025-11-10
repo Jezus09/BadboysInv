@@ -152,6 +152,70 @@
         const loading = document.getElementById('loading');
         const modelInfo = document.getElementById('modelInfo');
 
+        // CS2 Composite Shader - Custom fragment shader for realistic wear
+        const cs2CompositeShader = {
+            vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+
+                void main() {
+                    vUv = uv;
+                    vNormal = normalize(normalMatrix * normal);
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    vViewPosition = -mvPosition.xyz;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D baseTexture;
+                uniform sampler2D normalMap;
+                uniform sampler2D roughnessMap;
+                uniform sampler2D aoMap;
+                uniform sampler2D grungeTexture;
+                uniform sampler2D wearMaskTexture;
+                uniform float wearAmount;
+                uniform float roughnessValue;
+                uniform vec3 ambientLightColor;
+
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+
+                void main() {
+                    // Sample base color (skin pattern)
+                    vec4 baseColor = texture2D(baseTexture, vUv);
+
+                    // Sample grunge texture (wear pattern)
+                    vec4 grunge = texture2D(grungeTexture, vUv * 1.5); // Scale up for detail
+
+                    // Sample wear mask (controls WHERE wear appears)
+                    vec4 wearMask = texture2D(wearMaskTexture, vUv);
+
+                    // Calculate wear factor: wear amount × mask intensity
+                    float wearFactor = wearAmount * wearMask.r;
+
+                    // Blend base color with grunge based on wear
+                    // Less worn = more base color, More worn = more grunge showing through
+                    vec3 wornColor = mix(baseColor.rgb, grunge.rgb * 0.5, wearFactor * 0.7);
+
+                    // Darken based on wear (simulates dirt/grime accumulation)
+                    float darkening = 1.0 - (wearFactor * 0.3);
+                    wornColor *= darkening;
+
+                    // Sample AO map for depth
+                    float ao = texture2D(aoMap, vUv).r;
+                    ao = mix(1.0, ao, 1.0 + wearAmount); // Increase AO with wear
+
+                    // Apply ambient occlusion
+                    wornColor *= ao;
+
+                    // Output final color
+                    gl_FragColor = vec4(wornColor, 1.0);
+                }
+            `
+        };
+
         // Initialize Three.js scene
         function init() {
             // Scene
@@ -393,6 +457,10 @@
         // Apply skin texture to model with CS2 composite shader
         async function applySkinTexture(skinName) {
             if (!currentModel || !skinName) return;
+            if (!grungeTexture || !wearTexture) {
+                console.error('❌ Shared textures not loaded yet!');
+                return;
+            }
 
             const textureLoader = new THREE.TextureLoader();
             const skinPath = `/models/skins/${skinName}.png`;
@@ -403,61 +471,62 @@
                 skinTexture.flipY = false;
                 skinTexture.wrapS = skinTexture.wrapT = THREE.RepeatWrapping;
 
-                // Apply composite material to all meshes
+                console.log('🎨 Applying CS2 composite shader with grunge blending...');
+
+                // Apply custom shader material to all meshes
                 currentModel.traverse((child) => {
                     if (child.isMesh && child.material) {
                         const materials = Array.isArray(child.material) ? child.material : [child.material];
 
-                        materials.forEach(mat => {
-                            // IMPORTANT: Keep the original GLB textures (normal, roughness, AO)
-                            // Only replace the BASE COLOR with skin pattern
-
-                            // Store original PBR maps if not already stored
-                            if (!mat.userData.originalNormalMap) {
-                                mat.userData.originalNormalMap = mat.normalMap;
-                                mat.userData.originalRoughnessMap = mat.roughnessMap;
-                                mat.userData.originalAoMap = mat.aoMap;
-                                mat.userData.originalMetalnessMap = mat.metalnessMap;
+                        materials.forEach((originalMat, idx) => {
+                            // Store original material if not already stored
+                            if (!originalMat.userData.originalMaterial) {
+                                originalMat.userData.originalMaterial = originalMat.clone();
                             }
 
-                            // Apply skin pattern as base color
-                            mat.map = skinTexture;
+                            // Get original textures from GLB
+                            const normalMap = originalMat.normalMap || originalMat.userData.originalNormalMap;
+                            const roughnessMap = originalMat.roughnessMap || originalMat.userData.originalRoughnessMap;
+                            const aoMap = originalMat.aoMap || originalMat.userData.originalAoMap;
 
-                            // Keep original PBR maps from GLB
-                            mat.normalMap = mat.userData.originalNormalMap;
-                            mat.aoMap = mat.userData.originalAoMap;
+                            // Create CS2 composite shader material
+                            const shaderMaterial = new THREE.ShaderMaterial({
+                                vertexShader: cs2CompositeShader.vertexShader,
+                                fragmentShader: cs2CompositeShader.fragmentShader,
+                                uniforms: {
+                                    baseTexture: { value: skinTexture },
+                                    normalMap: { value: normalMap },
+                                    roughnessMap: { value: roughnessMap },
+                                    aoMap: { value: aoMap || new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1) },
+                                    grungeTexture: { value: grungeTexture },
+                                    wearMaskTexture: { value: wearTexture },
+                                    wearAmount: { value: currentWear },
+                                    roughnessValue: { value: 0.42 + (currentWear * 0.4) },
+                                    ambientLightColor: { value: new THREE.Color(0xffffff) }
+                                },
+                                side: THREE.DoubleSide
+                            });
 
-                            // Mix roughness: original + wear effect
-                            if (mat.userData.originalRoughnessMap) {
-                                mat.roughnessMap = mat.userData.originalRoughnessMap;
+                            // Store shader material reference for wear updates
+                            shaderMaterial.userData.isCS2Shader = true;
+
+                            // Replace material with custom shader
+                            if (Array.isArray(child.material)) {
+                                child.material[idx] = shaderMaterial;
+                            } else {
+                                child.material = shaderMaterial;
                             }
-                            mat.roughness = 0.42 + (currentWear * 0.4); // CS2 default: 0.42
 
-                            // Metalness from original
-                            if (mat.userData.originalMetalnessMap) {
-                                mat.metalnessMap = mat.userData.originalMetalnessMap;
-                            }
-                            mat.metalness = 0.1;
-
-                            // Reset color to white (wear system will darken it)
-                            const brightness = 1.0 - (currentWear * 0.6);
-                            mat.color.setRGB(brightness, brightness, brightness);
-
-                            // Enable PBR with wear adjustments
-                            mat.envMapIntensity = 1.0 - (currentWear * 0.5);
-                            mat.aoMapIntensity = 1.0 + (currentWear * 1.5);
-                            mat.normalScale.set(1, 1);
-
-                            mat.needsUpdate = true;
+                            console.log(`  → Material ${idx}: Custom CS2 shader applied`);
                         });
                     }
                 });
 
                 currentSkin = skinName;
-                console.log('✅ Skin applied:', skinName, 'wear:', currentWear);
+                console.log('✅ CS2 composite shader applied with grunge blending!');
                 updateModelInfo();
             } catch (error) {
-                console.error('❌ Failed to load skin texture:', error);
+                console.error('❌ Failed to apply skin texture:', error);
             }
         }
 
@@ -474,28 +543,34 @@
                     const materials = Array.isArray(child.material) ? child.material : [child.material];
 
                     materials.forEach(mat => {
-                        // CS2 wear formula: roughness increases with wear
-                        // FN (0.00) = 0.42 roughness (shiny)
-                        // BS (1.00) = 0.82 roughness (very rough/matt)
-                        mat.roughness = 0.42 + (wearAmount * 0.4);
+                        // Check if this is our custom CS2 shader
+                        if (mat.userData.isCS2Shader && mat.uniforms) {
+                            // Update shader uniforms for CS2 composite wear
+                            mat.uniforms.wearAmount.value = wearAmount;
+                            mat.uniforms.roughnessValue.value = 0.42 + (wearAmount * 0.4);
 
-                        // DRAMATIC WEAR EFFECT: Darken the model significantly
-                        // This creates a VERY VISIBLE effect so we can confirm it's working
-                        const brightness = 1.0 - (wearAmount * 0.6); // 1.0 → 0.4
-                        mat.color.setRGB(brightness, brightness, brightness);
+                            console.log(`  → CS2 Shader: wearAmount=${wearAmount.toFixed(2)}, roughness=${mat.uniforms.roughnessValue.value.toFixed(2)}`);
+                        } else {
+                            // Fallback for standard materials (base model without skin)
+                            mat.roughness = 0.42 + (wearAmount * 0.4);
 
-                        // Increase AO intensity to darken crevices more
-                        mat.aoMapIntensity = 1.0 + (wearAmount * 1.5); // 1.0 → 2.5
+                            // DRAMATIC WEAR EFFECT for visibility
+                            const brightness = 1.0 - (wearAmount * 0.6);
+                            mat.color.setRGB(brightness, brightness, brightness);
 
-                        // Reduce environment reflection for worn weapons
-                        mat.envMapIntensity = 1.0 - (wearAmount * 0.5); // 1.0 → 0.5
+                            // Increase AO intensity
+                            mat.aoMapIntensity = 1.0 + (wearAmount * 1.5);
 
-                        // Metalness should decrease (worn metal looks less metallic)
-                        mat.metalness = 0.1 - (wearAmount * 0.08); // 0.1 → 0.02
+                            // Reduce environment reflection
+                            mat.envMapIntensity = 1.0 - (wearAmount * 0.5);
 
-                        mat.needsUpdate = true;
+                            // Decrease metalness
+                            mat.metalness = 0.1 - (wearAmount * 0.08);
 
-                        console.log(`  → Material "${mat.name}": rough=${mat.roughness.toFixed(2)}, brightness=${brightness.toFixed(2)}, AO=${mat.aoMapIntensity.toFixed(2)}`);
+                            mat.needsUpdate = true;
+
+                            console.log(`  → Standard Material: rough=${mat.roughness.toFixed(2)}, brightness=${brightness.toFixed(2)}`);
+                        }
                     });
                 }
             });
