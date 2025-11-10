@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS2 Weapon Model Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #controls {
+            padding: 20px;
+            background: #2a2a2a;
+            border-bottom: 2px solid #3a3a3a;
+        }
+        #controls h1 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+        }
+        #weaponSelect {
+            padding: 10px 15px;
+            font-size: 16px;
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #4a4a4a;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 300px;
+        }
+        #viewer {
+            flex: 1;
+            position: relative;
+        }
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        #info p {
+            margin: 5px 0;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="controls">
+            <h1>🔫 CS2 Weapon Model Viewer</h1>
+            <select id="weaponSelect">
+                <option value="">-- Select Weapon --</option>
+                <option value="weapon_rif_ak47.glb">AK-47</option>
+                <option value="weapon_snip_awp.glb">AWP</option>
+                <option value="weapon_rif_m4a1_silencer.glb">M4A1-S</option>
+                <option value="weapon_rif_m4a4.glb">M4A4</option>
+                <option value="weapon_pist_deagle.glb">Desert Eagle</option>
+                <option value="weapon_pist_usp_silencer.glb">USP-S</option>
+                <option value="weapon_pist_p250.glb">P250</option>
+            </select>
+        </div>
+        <div id="viewer">
+            <div id="loading" class="loading" style="display: none;">Loading...</div>
+        </div>
+        <div id="info">
+            <p><strong>Controls:</strong></p>
+            <p>🖱️ Left Mouse: Rotate</p>
+            <p>🖱️ Right Mouse: Pan</p>
+            <p>🎡 Mouse Wheel: Zoom</p>
+            <p id="modelInfo"></p>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        let scene, camera, renderer, controls, currentModel;
+        const viewer = document.getElementById('viewer');
+        const weaponSelect = document.getElementById('weaponSelect');
+        const loading = document.getElementById('loading');
+        const modelInfo = document.getElementById('modelInfo');
+
+        // Initialize Three.js scene
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(
+                45,
+                viewer.clientWidth / viewer.clientHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 0.5, 2);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            viewer.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 7.5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            const pointLight = new THREE.PointLight(0xffffff, 0.5);
+            pointLight.position.set(-5, 5, -5);
+            scene.add(pointLight);
+
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0, 0);
+
+            // Grid helper
+            const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+            scene.add(gridHelper);
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize);
+
+            // Start animation loop
+            animate();
+        }
+
+        function onWindowResize() {
+            camera.aspect = viewer.clientWidth / viewer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Load weapon model
+        async function loadWeapon(filename) {
+            if (!filename) return;
+
+            loading.style.display = 'block';
+            modelInfo.textContent = '';
+
+            // Remove previous model
+            if (currentModel) {
+                scene.remove(currentModel);
+                currentModel = null;
+            }
+
+            const loader = new GLTFLoader();
+            const modelPath = `/models/weapons/${filename}`;
+
+            try {
+                const gltf = await loader.loadAsync(modelPath);
+                currentModel = gltf.scene;
+
+                // Center and scale the model
+                const box = new THREE.Box3().setFromObject(currentModel);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+
+                // Normalize scale to fit in view
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 1 / maxDim;
+                currentModel.scale.multiplyScalar(scale);
+
+                // Center the model
+                currentModel.position.sub(center.multiplyScalar(scale));
+
+                scene.add(currentModel);
+
+                // Update info
+                modelInfo.innerHTML = `
+                    <strong>📊 Model Info:</strong><br>
+                    File: ${filename}<br>
+                    Size: ${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}<br>
+                    Triangles: ${countTriangles(currentModel)}<br>
+                    Materials: ${countMaterials(currentModel)}
+                `;
+
+                loading.style.display = 'none';
+                console.log('✅ Model loaded successfully:', filename);
+                console.log('📦 GLTF Scene:', gltf.scene);
+                console.log('🎨 Materials:', gltf.scene.children.map(c => c.material?.name));
+            } catch (error) {
+                loading.style.display = 'none';
+                loading.className = 'loading error';
+                loading.textContent = `❌ Error loading ${filename}`;
+                console.error('Failed to load model:', error);
+            }
+        }
+
+        function countTriangles(object) {
+            let count = 0;
+            object.traverse((child) => {
+                if (child.isMesh && child.geometry) {
+                    const geometry = child.geometry;
+                    if (geometry.index) {
+                        count += geometry.index.count / 3;
+                    } else {
+                        count += geometry.attributes.position.count / 3;
+                    }
+                }
+            });
+            return Math.floor(count);
+        }
+
+        function countMaterials(object) {
+            const materials = new Set();
+            object.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    materials.add(child.material.uuid);
+                }
+            });
+            return materials.size;
+        }
+
+        // Event listeners
+        weaponSelect.addEventListener('change', (e) => {
+            loadWeapon(e.target.value);
+        });
+
+        // Initialize
+        init();
+        console.log('🎮 3D Viewer initialized');
+    </script>
+</body>
+</html>
