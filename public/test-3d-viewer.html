@@ -439,9 +439,13 @@
                             }
                             mat.metalness = 0.1;
 
-                            // Enable PBR
-                            mat.envMapIntensity = 1.0;
-                            mat.aoMapIntensity = 1.0;
+                            // Reset color to white (wear system will darken it)
+                            const brightness = 1.0 - (currentWear * 0.6);
+                            mat.color.setRGB(brightness, brightness, brightness);
+
+                            // Enable PBR with wear adjustments
+                            mat.envMapIntensity = 1.0 - (currentWear * 0.5);
+                            mat.aoMapIntensity = 1.0 + (currentWear * 1.5);
                             mat.normalScale.set(1, 1);
 
                             mat.needsUpdate = true;
@@ -463,26 +467,38 @@
 
             if (!currentModel) return;
 
+            console.log('🔧 Wear slider moved to:', wearAmount.toFixed(3));
+
             currentModel.traverse((child) => {
                 if (child.isMesh && child.material) {
                     const materials = Array.isArray(child.material) ? child.material : [child.material];
 
                     materials.forEach(mat => {
-                        // Adjust roughness based on wear
-                        mat.roughness = 0.4 + (wearAmount * 0.4);
+                        // CS2 wear formula: roughness increases with wear
+                        // FN (0.00) = 0.42 roughness (shiny)
+                        // BS (1.00) = 0.82 roughness (very rough/matt)
+                        mat.roughness = 0.42 + (wearAmount * 0.4);
 
-                        // Mix grunge texture visibility based on wear
-                        if (grungeTexture && wearAmount > 0) {
-                            mat.roughnessMap = grungeTexture;
-                            mat.aoMapIntensity = 0.5 + (wearAmount * 0.5); // More AO = more wear
-                        }
+                        // DRAMATIC WEAR EFFECT: Darken the model significantly
+                        // This creates a VERY VISIBLE effect so we can confirm it's working
+                        const brightness = 1.0 - (wearAmount * 0.6); // 1.0 → 0.4
+                        mat.color.setRGB(brightness, brightness, brightness);
+
+                        // Increase AO intensity to darken crevices more
+                        mat.aoMapIntensity = 1.0 + (wearAmount * 1.5); // 1.0 → 2.5
+
+                        // Reduce environment reflection for worn weapons
+                        mat.envMapIntensity = 1.0 - (wearAmount * 0.5); // 1.0 → 0.5
+
+                        // Metalness should decrease (worn metal looks less metallic)
+                        mat.metalness = 0.1 - (wearAmount * 0.08); // 0.1 → 0.02
 
                         mat.needsUpdate = true;
+
+                        console.log(`  → Material "${mat.name}": rough=${mat.roughness.toFixed(2)}, brightness=${brightness.toFixed(2)}, AO=${mat.aoMapIntensity.toFixed(2)}`);
                     });
                 }
             });
-
-            console.log('Wear updated:', wearAmount);
         }
 
         // Get wear condition label
@@ -497,10 +513,16 @@
         // Update model info display
         function updateModelInfo() {
             const wearLabel = getWearLabel(currentWear);
+            const brightness = (1.0 - (currentWear * 0.6)) * 100;
+            const roughness = 0.42 + (currentWear * 0.4);
+
             modelInfo.innerHTML = `
                 <strong>📊 Model Info:</strong><br>
                 ${currentSkin ? `Skin: ${currentSkin}<br>` : ''}
                 Wear: ${currentWear.toFixed(2)} (${wearLabel})<br>
+                <strong>🎨 Live Effects:</strong><br>
+                Brightness: ${brightness.toFixed(0)}%<br>
+                Roughness: ${roughness.toFixed(2)}<br>
                 Triangles: ${countTriangles(currentModel)}<br>
                 Materials: ${countMaterials(currentModel)}
             `;
