@@ -1,0 +1,324 @@
+═══════════════════════════════════════════════════════════════
+   CS2 3D WEAPON VIEWER - SESSION PROGRESS
+═══════════════════════════════════════════════════════════════
+
+Date: 2025-11-10
+Branch: new
+Project: BadboysInv (https://inventory.badboyscs2.site)
+Live URL: https://inventory.badboyscs2.site/test-3d-viewer.html
+
+───────────────────────────────────────────────────────────────
+ ✅ COMPLETED TASKS
+───────────────────────────────────────────────────────────────
+
+1. ✅ WEAPON MODELS EXPORTED (34 total)
+   Location: /tmp/cs2_export/all_weapons/
+
+   Categories:
+   - Rifles: AK-47, M4A4, M4A1-S, AUG, FAMAS, Galil AR, SG 553
+   - Pistols: Deagle, Glock, USP-S, P250, CZ75, Five-Seven, Duals, R8, Tec-9, P2000
+   - SMGs: P90, MP9, MP7, MP5-SD, UMP-45, MAC-10, PP-Bizon
+   - Snipers: AWP, SSG 08, G3SG1, SCAR-20
+   - Shotguns: Nova, MAG-7, Sawed-Off, XM1014
+   - Machine Guns: M249, Negev
+
+   In Repository (7 weapons):
+   - public/models/weapons/ak47/weapon_rif_ak47.glb
+   - public/models/weapons/awp/weapon_snip_awp.glb
+   - public/models/weapons/m4a1_silencer/weapon_rif_m4a1_silencer.glb
+   - public/models/weapons/m4a4/weapon_rif_m4a4.glb
+   - public/models/weapons/deagle/weapon_pist_deagle.glb
+   - public/models/weapons/usp_silencer/weapon_pist_usp_silencer.glb
+   - public/models/weapons/p250/weapon_pist_p250.glb
+
+2. ✅ SKIN TEXTURES EXPORTED (5 skins)
+   Location: public/models/skins/
+
+   Skins:
+   - ak47_asiimov.png (3.9 MB) - AK-47 | Asiimov
+   - ak47_fire_serpent.png (3.3 MB) - AK-47 | Fire Serpent
+   - awp_hyper_beast.png (2.4 MB) - AWP | Hyper Beast
+   - m4a1s_howl.png (4.9 MB) - M4A1-S | Howl
+   - p250_asiimov.png (4.0 MB) - P250 | Asiimov
+
+   Shared Textures (CS2 Composite System):
+   - gun_grunge.png (11 MB) - Wear/scratch patterns
+   - paint_wear.png (2.4 MB) - Wear mask (controls where wear appears)
+   - metalness.png (80 bytes) - Default metalness
+   - glitter_mask.png (30 KB) - Glitter effect
+
+3. ✅ 3D VIEWER BUILT
+   File: public/test-3d-viewer.html
+
+   Features:
+   - Weapon selector dropdown (7 weapons)
+   - Skin selector dropdown (5 skins)
+   - Wear slider (0.00 - 1.00 float)
+   - Wear condition labels (FN/MW/FT/WW/BS)
+   - Interactive 3D controls (rotate, zoom, pan)
+   - Live stats display (Brightness, Roughness, Triangles, Materials)
+
+   Tech Stack:
+   - Three.js (3D rendering)
+   - GLTFLoader (model loading)
+   - OrbitControls (camera controls)
+   - Custom GLSL shaders (PBR + CS2 composite)
+
+4. ✅ WEAR SYSTEM IMPLEMENTED - PHASE 1 (Dramatic Darkening)
+   Commit: 834f26e
+
+   Problem: Wear slider had no visible effect
+   Solution: Added dramatic darkening effect
+
+   Changes:
+   - Brightness: 100% (FN) → 40% (BS)
+   - AO Intensity: 1.0 → 2.5
+   - Environment reflections: 1.0 → 0.5
+   - Metalness: 0.1 → 0.02
+   - Live stats display in UI
+
+   Result: Wear slider now produces VERY visible changes
+
+5. ✅ WEAR SYSTEM UPGRADED - PHASE 2 (CS2 Composite Shader)
+   Commit: 49a8dbd
+
+   Problem: Simple darkening not realistic - no texture patterns
+   Solution: Custom GLSL shader with grunge texture blending
+
+   Implementation:
+   - Created cs2CompositeShader (vertex + fragment shader)
+   - Blends base skin texture with gun_grunge.png
+   - Uses paint_wear.png mask to control where wear appears
+   - Natural scratches/dirt instead of uniform darkening
+
+   Shader Formula:
+   ```glsl
+   wearFactor = wearAmount × wearMask.r
+   wornColor = mix(baseColor, grunge × 0.5, wearFactor × 0.7)
+   darkening = 1.0 - (wearFactor × 0.3)
+   finalColor = wornColor × darkening × ao
+   ```
+
+   Behavior:
+   - Base model (no skin): Uses Phase 1 dramatic darkening
+   - With skin applied: Uses Phase 2 CS2 composite shader
+   - Wear patterns follow mask texture (realistic)
+
+───────────────────────────────────────────────────────────────
+ 📂 FILE STRUCTURE
+───────────────────────────────────────────────────────────────
+
+/tmp/badboys-inventory/
+├── public/
+│   ├── models/
+│   │   ├── weapons/
+│   │   │   ├── ak47/weapon_rif_ak47.glb (3.2 MB)
+│   │   │   ├── awp/weapon_snip_awp.glb (5.8 MB)
+│   │   │   ├── m4a1_silencer/weapon_rif_m4a1_silencer.glb (3.4 MB)
+│   │   │   ├── m4a4/weapon_rif_m4a4.glb (3.6 MB)
+│   │   │   ├── deagle/weapon_pist_deagle.glb (2.8 MB)
+│   │   │   ├── usp_silencer/weapon_pist_usp_silencer.glb (2.4 MB)
+│   │   │   └── p250/weapon_pist_p250.glb (2.1 MB)
+│   │   └── skins/
+│   │       ├── ak47_asiimov.png
+│   │       ├── ak47_fire_serpent.png
+│   │       ├── awp_hyper_beast.png
+│   │       ├── m4a1s_howl.png
+│   │       ├── p250_asiimov.png
+│   │       └── shared/
+│   │           ├── gun_grunge.png (11 MB)
+│   │           ├── paint_wear.png (2.4 MB)
+│   │           ├── metalness.png
+│   │           └── glitter_mask.png
+│   ├── test-3d-viewer.html (Main 3D viewer)
+│   ├── debug-materials.html (Material inspector)
+│   └── compare-textures.html (Texture comparison)
+├── CS2_WEAPON_EXPORT_SUMMARY.md (Export session documentation)
+├── WEAR_SYSTEM_FIX.md (Phase 1 wear system docs)
+└── SESSION_PROGRESS.txt (This file)
+
+/tmp/cs2_export/
+└── all_weapons/ (34 weapons × ~5 MB = 170 MB total)
+    └── weapons/models/{weapon}/weapon_{type}_{name}.glb
+
+───────────────────────────────────────────────────────────────
+ 🔧 TECHNICAL DETAILS
+───────────────────────────────────────────────────────────────
+
+CS2 Composite Shader System:
+
+In CS2, weapons use the "csgo_customweapon.vfx" shader:
+├─ TextureColor1 (base weapon color) ← from GLB model
+├─ TexturePattern (skin design) ← from .vmat export
+├─ TextureGrunge (wear overlay) ← shared texture
+├─ TextureWear (wear mask) ← shared texture
+├─ TextureRoughness1 (material roughness) ← from GLB model
+├─ TextureMetalness1 (metal areas) ← from GLB model
+├─ TextureAmbientOcclusion1 (AO) ← from GLB model
+└─ Parameters:
+   ├─ g_flPaintRoughness: 0.42
+   ├─ g_flWearAmount: 0.0-1.0
+   └─ g_flWeaponLength1: weapon-specific
+
+Our Implementation:
+
+1. Base Model Load (loadWeapon):
+   - Load GLB file with embedded PBR textures
+   - Fix incorrect material values (roughness 1.0→0.42, metalness 1.0→0.1)
+   - Use MeshStandardMaterial
+
+2. Skin Application (applySkinTexture):
+   - Load skin texture (e.g., ak47_asiimov.png)
+   - Create ShaderMaterial with custom GLSL code
+   - Pass textures as uniforms:
+     * baseTexture: skin pattern
+     * grungeTexture: gun_grunge.png
+     * wearMaskTexture: paint_wear.png
+     * normalMap, roughnessMap, aoMap: from GLB
+   - Replace mesh materials with shader
+
+3. Wear Update (updateWear):
+   - If CS2 shader active: update uniforms
+     * wearAmount: 0.0 - 1.0
+     * roughnessValue: 0.42 + (wear × 0.4)
+   - If standard material: apply Phase 1 darkening
+
+───────────────────────────────────────────────────────────────
+ 🧪 TESTING INSTRUCTIONS
+───────────────────────────────────────────────────────────────
+
+Live Site: https://inventory.badboyscs2.site/test-3d-viewer.html
+
+Test Scenario 1 - Base Model Wear:
+1. Select weapon: AK-47
+2. DO NOT select a skin
+3. Move wear slider 0.00 → 1.00
+4. Expected: Weapon darkens dramatically (100% → 40% brightness)
+
+Test Scenario 2 - CS2 Composite Shader:
+1. Select weapon: AK-47
+2. Select skin: ak47_asiimov or ak47_fire_serpent
+3. Move wear slider 0.00 → 1.00
+4. Expected:
+   - Grunge texture appears where wear mask indicates
+   - Scratches/dirt patterns visible
+   - Natural wear progression (not uniform)
+   - Roughness increases (0.42 → 0.82)
+
+Test Scenario 3 - Multiple Skins:
+1. Load AK-47 with Asiimov skin
+2. Set wear to 0.50 (Field-Tested)
+3. Switch to Fire Serpent skin
+4. Expected: Wear value persists, new skin loads with same wear
+
+Browser Console Logs:
+- "✅ Shared textures loaded" (on page load)
+- "🎨 Applying CS2 composite shader with grunge blending..." (when skin selected)
+- "🔧 Wear slider moved to: X.XX" (when slider moves)
+- "  → CS2 Shader: wearAmount=X.XX, roughness=X.XX" (per material)
+
+───────────────────────────────────────────────────────────────
+ 📊 CURRENT STATUS
+───────────────────────────────────────────────────────────────
+
+✅ WORKING:
+- Weapon model loading (7 weapons in repo)
+- Skin texture application (5 skins)
+- Wear slider UI (0.00-1.00 with labels)
+- Phase 1 wear system (dramatic darkening for base models)
+- Phase 2 wear system (CS2 composite shader for skins)
+- Live stats display (Brightness, Roughness)
+- 3D controls (rotate, zoom, pan)
+
+⚠️ NEEDS TESTING:
+- CS2 shader with actual wear mask blending
+- Shader performance on mobile devices
+- Cache busting for live deployment
+- All 5 skins with different wear values
+- Switching between skins while model loaded
+
+📋 TODO:
+- Test shader on live site (may need cache clear)
+- Verify grunge texture blending works correctly
+- Fine-tune wear blending parameters if needed
+- Add remaining 27 weapons to repository
+- Export more popular skins (Doppler, Fade, etc.)
+- Optimize shader for mobile performance
+
+───────────────────────────────────────────────────────────────
+ 💾 RECENT COMMITS
+───────────────────────────────────────────────────────────────
+
+49a8dbd - Implement CS2 composite shader with realistic grunge texture blending
+21609ef - Add documentation for wear system fix
+834f26e - Make wear system DRAMATICALLY visible - Darken weapon as wear increases
+6eaf55b - debug: Add logging to wear slider
+f1730c7 - feat: Add PBR environment mapping and better rendering
+af848a1 - debug: Add texture comparison page
+
+───────────────────────────────────────────────────────────────
+ 📚 DOCUMENTATION FILES
+───────────────────────────────────────────────────────────────
+
+CS2_WEAPON_EXPORT_SUMMARY.md
+- Complete export process documentation
+- All 34 weapon models listed
+- Skin texture export method
+- CS2 composite shader explanation
+- File structure overview
+
+WEAR_SYSTEM_FIX.md
+- Phase 1 wear system (dramatic darkening)
+- Problem/solution breakdown
+- Before/after code comparison
+- Testing instructions
+
+SESSION_PROGRESS.txt (this file)
+- Complete session overview
+- All completed tasks
+- Technical implementation details
+- Testing scenarios
+- Current status
+
+───────────────────────────────────────────────────────────────
+ 🎯 NEXT SESSION GOALS
+───────────────────────────────────────────────────────────────
+
+When continuing this project:
+
+1. Clear browser cache and test CS2 shader on live site
+2. Verify grunge texture blending shows realistic wear patterns
+3. Test all 5 skins with various wear values (0.00, 0.25, 0.50, 0.75, 1.00)
+4. Fine-tune shader blending parameters if wear looks too subtle/strong
+5. Copy remaining 27 weapons from /tmp/cs2_export/ to repository
+6. Update weapon selector dropdown with all weapons
+7. Export more popular skins from CS2
+8. Consider mobile optimization (shader complexity, texture sizes)
+9. Add sticker support (position, rotation, scale on weapon surface)
+
+───────────────────────────────────────────────────────────────
+ 🔗 USEFUL REFERENCES
+───────────────────────────────────────────────────────────────
+
+Steam Guide:
+https://steamcommunity.com/sharedfiles/filedetails/?id=3599755887
+
+Valve Workshop Docs:
+https://developer.valvesoftware.com/wiki/Counter-Strike_2_Workshop_Tools/Weapon_Finishes
+
+Source2Viewer GitHub:
+https://github.com/ValveResourceFormat/ValveResourceFormat
+
+Three.js Documentation:
+https://threejs.org/docs/
+
+GLSL Shader Reference:
+https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language
+
+───────────────────────────────────────────────────────────────
+
+Last Updated: 2025-11-10
+Session Status: CS2 composite shader implemented, awaiting live test
+Branch: new (commit 49a8dbd)
+
+═══════════════════════════════════════════════════════════════
