@@ -37,6 +37,26 @@
             width: 300px;
             margin-right: 10px;
         }
+        .wear-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .wear-control label {
+            font-size: 14px;
+            min-width: 100px;
+        }
+        #wearSlider {
+            flex: 1;
+            max-width: 300px;
+        }
+        #wearValue {
+            font-size: 14px;
+            color: #4CAF50;
+            font-weight: bold;
+            min-width: 80px;
+        }
         #viewer {
             flex: 1;
             position: relative;
@@ -90,6 +110,11 @@
                     <option value="p250_asiimov" data-weapon="p250">P250 | Asiimov</option>
                 </select>
             </div>
+            <div class="wear-control">
+                <label for="wearSlider">Wear (Float):</label>
+                <input type="range" id="wearSlider" min="0" max="1" step="0.01" value="0">
+                <span id="wearValue">0.00 (FN)</span>
+            </div>
         </div>
         <div id="viewer">
             <div id="loading" class="loading" style="display: none;">Loading...</div>
@@ -117,10 +142,13 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        let scene, camera, renderer, controls, currentModel, currentSkin;
+        let scene, camera, renderer, controls, currentModel, currentSkin, currentWear = 0;
+        let grungeTexture, wearTexture, metalnessTexture;
         const viewer = document.getElementById('viewer');
         const weaponSelect = document.getElementById('weaponSelect');
         const skinSelect = document.getElementById('skinSelect');
+        const wearSlider = document.getElementById('wearSlider');
+        const wearValue = document.getElementById('wearValue');
         const loading = document.getElementById('loading');
         const modelInfo = document.getElementById('modelInfo');
 
@@ -176,8 +204,30 @@
             // Handle window resize
             window.addEventListener('resize', onWindowResize);
 
+            // Load shared textures
+            loadSharedTextures();
+
             // Start animation loop
             animate();
+        }
+
+        // Load shared CS2 composite textures
+        async function loadSharedTextures() {
+            const textureLoader = new THREE.TextureLoader();
+
+            try {
+                grungeTexture = await textureLoader.loadAsync('/models/skins/shared/gun_grunge.png');
+                grungeTexture.wrapS = grungeTexture.wrapT = THREE.RepeatWrapping;
+
+                wearTexture = await textureLoader.loadAsync('/models/skins/shared/paint_wear.png');
+                wearTexture.wrapS = wearTexture.wrapT = THREE.RepeatWrapping;
+
+                metalnessTexture = await textureLoader.loadAsync('/models/skins/shared/metalness.png');
+
+                console.log('✅ Shared textures loaded');
+            } catch (error) {
+                console.error('❌ Failed to load shared textures:', error);
+            }
         }
 
         function onWindowResize() {
@@ -273,7 +323,7 @@
             return materials.size;
         }
 
-        // Apply skin texture to model
+        // Apply skin texture to model with CS2 composite shader
         async function applySkinTexture(skinName) {
             if (!currentModel || !skinName) return;
 
@@ -284,28 +334,91 @@
                 const skinTexture = await textureLoader.loadAsync(skinPath);
                 skinTexture.colorSpace = THREE.SRGBColorSpace;
                 skinTexture.flipY = false;
+                skinTexture.wrapS = skinTexture.wrapT = THREE.RepeatWrapping;
 
-                // Apply texture to all meshes
+                // Apply composite material to all meshes
                 currentModel.traverse((child) => {
                     if (child.isMesh && child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(mat => {
-                                mat.map = skinTexture;
-                                mat.needsUpdate = true;
-                            });
-                        } else {
-                            child.material.map = skinTexture;
-                            child.material.needsUpdate = true;
-                        }
+                        const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                        materials.forEach(mat => {
+                            // Base skin texture
+                            mat.map = skinTexture;
+
+                            // Add wear/grunge layers if available
+                            if (grungeTexture && currentWear > 0) {
+                                mat.roughnessMap = grungeTexture;
+                                mat.roughness = 0.4 + (currentWear * 0.4); // 0.4-0.8 based on wear
+                            }
+
+                            // Metalness
+                            if (metalnessTexture) {
+                                mat.metalnessMap = metalnessTexture;
+                                mat.metalness = 0.1;
+                            }
+
+                            // Enable better material properties
+                            mat.envMapIntensity = 1.0;
+                            mat.needsUpdate = true;
+                        });
                     }
                 });
 
                 currentSkin = skinName;
-                console.log('✅ Skin applied:', skinName);
-                modelInfo.innerHTML += `<br><strong>Skin:</strong> ${skinName}`;
+                console.log('✅ Skin applied:', skinName, 'wear:', currentWear);
+                updateModelInfo();
             } catch (error) {
                 console.error('❌ Failed to load skin texture:', error);
             }
+        }
+
+        // Update wear value on model
+        function updateWear(wearAmount) {
+            currentWear = wearAmount;
+
+            if (!currentModel) return;
+
+            currentModel.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+                    materials.forEach(mat => {
+                        // Adjust roughness based on wear
+                        mat.roughness = 0.4 + (wearAmount * 0.4);
+
+                        // Mix grunge texture visibility based on wear
+                        if (grungeTexture && wearAmount > 0) {
+                            mat.roughnessMap = grungeTexture;
+                            mat.aoMapIntensity = 0.5 + (wearAmount * 0.5); // More AO = more wear
+                        }
+
+                        mat.needsUpdate = true;
+                    });
+                }
+            });
+
+            console.log('Wear updated:', wearAmount);
+        }
+
+        // Get wear condition label
+        function getWearLabel(wear) {
+            if (wear < 0.07) return 'FN';
+            if (wear < 0.15) return 'MW';
+            if (wear < 0.38) return 'FT';
+            if (wear < 0.45) return 'WW';
+            return 'BS';
+        }
+
+        // Update model info display
+        function updateModelInfo() {
+            const wearLabel = getWearLabel(currentWear);
+            modelInfo.innerHTML = `
+                <strong>📊 Model Info:</strong><br>
+                ${currentSkin ? `Skin: ${currentSkin}<br>` : ''}
+                Wear: ${currentWear.toFixed(2)} (${wearLabel})<br>
+                Triangles: ${countTriangles(currentModel)}<br>
+                Materials: ${countMaterials(currentModel)}
+            `;
         }
 
         // Filter skin options based on selected weapon
@@ -335,9 +448,16 @@
             applySkinTexture(e.target.value);
         });
 
+        wearSlider.addEventListener('input', (e) => {
+            const wear = parseFloat(e.target.value);
+            currentWear = wear;
+            wearValue.textContent = `${wear.toFixed(2)} (${getWearLabel(wear)})`;
+            updateWear(wear);
+        });
+
         // Initialize
         init();
-        console.log('🎮 3D Viewer initialized');
+        console.log('🎮 3D Viewer initialized with wear system');
     </script>
 </body>
 </html>
