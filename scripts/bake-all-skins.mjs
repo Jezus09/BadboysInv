@@ -36,7 +36,14 @@ async function bakeTexture(positionMapPath, paintKitPath, outputPath, options = 
   const {
     resolution = 2048,
     tileScale = 4.0, // CS2 typically uses 4x4 tiling
+    skipExisting = true, // Skip if output already exists
   } = options;
+
+  // Skip if output already exists (optimization)
+  if (skipExisting && existsSync(outputPath)) {
+    console.log(`\n⏭️  Skipping (already exists): ${outputPath}`);
+    return 'skipped';
+  }
 
   console.log(`\n📸 Baking texture:`);
   console.log(`   Position: ${positionMapPath}`);
@@ -170,6 +177,7 @@ async function processWeapon(weapon) {
 
   let success = 0;
   let failed = 0;
+  let skipped = 0;
 
   for (const skinFile of skinFiles) {
     const paintKitPath = join(skinsDir, skinFile);
@@ -178,16 +186,19 @@ async function processWeapon(weapon) {
     const result = await bakeTexture(positionMapPath, paintKitPath, outputPath, {
       resolution: 2048,
       tileScale: 4.0,
+      skipExisting: true, // Enable caching
     });
 
-    if (result) {
+    if (result === 'skipped') {
+      skipped++;
+    } else if (result) {
       success++;
     } else {
       failed++;
     }
   }
 
-  return { success, failed, skipped: 0 };
+  return { success, failed, skipped };
 }
 
 /**
