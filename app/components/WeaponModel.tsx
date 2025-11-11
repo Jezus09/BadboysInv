@@ -67,6 +67,13 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
             patternTexture.magFilter = THREE.LinearFilter;
             patternTexture.anisotropy = 16;
 
+            // CS2 sampling mode 0 = CLAMP (no repeat)
+            patternTexture.wrapS = THREE.ClampToEdgeWrapping;
+            patternTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+            // Try flipping texture - sometimes CS2 exports are inverted
+            // patternTexture.flipY = true;
+
             // SIMPLE APPROACH: Use model's UV coordinates directly
             // No position map needed - CS2 already baked correct UVs into the GLTF model!
             const shaderMaterial = new THREE.ShaderMaterial({
@@ -94,8 +101,28 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec3 vNormal;
 
                 void main() {
+                  // DEBUG MODE 1: Show UV coordinates as colors
+                  // Uncomment to see UV mapping (R=U, G=V)
+                  // gl_FragColor = vec4(vUv.x, vUv.y, 0.0, 1.0);
+                  // return;
+
+                  // DEBUG MODE 2: Try different UV transformations
+                  vec2 uv = vUv;
+
+                  // Option A: Flip V coordinate (common in OpenGL vs DirectX)
+                  uv.y = 1.0 - uv.y;
+
+                  // Option B: Flip U coordinate
+                  // uv.x = 1.0 - uv.x;
+
+                  // Option C: Rotate 90 degrees
+                  // uv = vec2(uv.y, 1.0 - uv.x);
+
+                  // Option D: Rotate 180 degrees
+                  // uv = vec2(1.0 - uv.x, 1.0 - uv.y);
+
                   // DIRECT UV MAPPING - Use model UVs as-is!
-                  vec4 patternColor = texture2D(patternTexture, vUv);
+                  vec4 patternColor = texture2D(patternTexture, uv);
 
                   // Apply wear-based brightness
                   vec3 finalColor = patternColor.rgb * brightness;
