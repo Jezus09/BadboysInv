@@ -39,9 +39,9 @@
     <div id="info">
         <h2>🔫 AK-47 Asiimov Test</h2>
         <p>Status: <span id="status">Loading...</span></p>
-        <button onclick="debugMode(0)">Normal Render</button>
-        <button onclick="debugMode(1)">Show Position Map</button>
-        <button onclick="debugMode(2)">Show UV Colors</button>
+        <button onclick="debugMode(0)">Normal Render (Lighting)</button>
+        <button onclick="debugMode(1)">Show UV Colors</button>
+        <button onclick="debugMode(2)">Show Alpha Channel</button>
         <button onclick="debugMode(3)">Show Pattern Only</button>
         <br>
         <button onclick="toggleRotation()">Toggle Rotation</button>
@@ -110,15 +110,6 @@
             const gltfLoader = new THREE.GLTFLoader();
 
             // Load textures
-            const positionMapPromise = new Promise((resolve, reject) => {
-                textureLoader.load(
-                    '/textures/ak47_position_map.png',
-                    resolve,
-                    undefined,
-                    reject
-                );
-            });
-
             const patternPromise = new Promise((resolve, reject) => {
                 textureLoader.load(
                     '/textures/skins/asiimov_pattern.png',
@@ -142,10 +133,10 @@
                 );
             });
 
-            Promise.all([positionMapPromise, patternPromise, modelPromise])
-                .then(([positionMap, patternTexture, gltf]) => {
+            Promise.all([patternPromise, modelPromise])
+                .then(([patternTexture, gltf]) => {
                     status.textContent = 'Assets loaded! Applying shader...';
-                    setupModel(gltf, positionMap, patternTexture);
+                    setupModel(gltf, patternTexture);
                 })
                 .catch((error) => {
                     status.textContent = 'ERROR: ' + error.message;
@@ -153,7 +144,7 @@
                 });
         }
 
-        function setupModel(gltf, positionMap, patternTexture) {
+        function setupModel(gltf, patternTexture) {
             weaponModel = gltf.scene;
 
             // Center and scale the model
@@ -170,15 +161,14 @@
             console.log('Model dimensions:', size);
             console.log('Scale factor:', scale);
 
-            // Apply shader to body meshes
+            // Apply shader to body meshes AND magazine (clip)
             weaponModel.traverse((child) => {
-                if (child.isMesh && (child.name.includes('body_legacy') || child.name.includes('body_hd'))) {
+                if (child.isMesh && (child.name.includes('body_legacy') || child.name.includes('body_hd') || child.name.includes('clip'))) {
                     console.log('Applying shader to:', child.name);
 
                     shaderMaterial = new THREE.ShaderMaterial({
                         uniforms: {
                             patternTexture: { value: patternTexture },
-                            positionMap: { value: positionMap },
                             brightness: { value: 1.0 },
                             debugMode: { value: currentDebugMode }
                         },
@@ -194,7 +184,6 @@
                         `,
                         fragmentShader: `
                             uniform sampler2D patternTexture;
-                            uniform sampler2D positionMap;
                             uniform float brightness;
                             uniform int debugMode;
 
@@ -202,17 +191,20 @@
                             varying vec3 vNormal;
 
                             void main() {
-                                vec4 posData = texture2D(positionMap, vUv);
-                                vec2 patternUV = posData.rg;
-                                vec4 patternColor = texture2D(patternTexture, patternUV);
+                                // UV transformation - flip V coordinate
+                                vec2 uv = vUv;
+                                uv.y = 1.0 - uv.y;
+
+                                // Sample pattern texture
+                                vec4 patternColor = texture2D(patternTexture, uv);
 
                                 // Debug modes
                                 if (debugMode == 1) {
-                                    // Show position map
-                                    gl_FragColor = vec4(posData.rgb, 1.0);
-                                } else if (debugMode == 2) {
                                     // Show UV as colors
-                                    gl_FragColor = vec4(patternUV.r, patternUV.g, 0.0, 1.0);
+                                    gl_FragColor = vec4(uv.x, uv.y, 0.0, 1.0);
+                                } else if (debugMode == 2) {
+                                    // Show alpha channel
+                                    gl_FragColor = vec4(vec3(patternColor.a), 1.0);
                                 } else if (debugMode == 3) {
                                     // Show pattern only (no lighting)
                                     gl_FragColor = vec4(patternColor.rgb, 1.0);
@@ -241,7 +233,7 @@
             currentDebugMode = mode;
             shaderMaterial.uniforms.debugMode.value = mode;
 
-            const modes = ['Normal Render', 'Position Map', 'UV Colors', 'Pattern Only'];
+            const modes = ['Normal Render (Lighting)', 'UV Colors', 'Alpha Channel', 'Pattern Only'];
             status.textContent = 'Debug Mode: ' + modes[mode];
         }
 
