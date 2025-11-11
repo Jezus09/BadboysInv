@@ -22,8 +22,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const paintKitIdNum = parseInt(paintKitId);
 
   if (defIndex === 7 && paintKitIdNum === 524) {
-    // AK-47 Asiimov - Use BAKED texture (pre-composited)
-    skinPatternUrl = "/models/ak47/ak47_asiimov_baked.png";
+    // AK-47 Asiimov - Use PATTERN texture (with composite shader)
+    skinPatternUrl = "/models/ak47/asiimov_pattern.png";
   }
 
   return {
@@ -53,7 +53,7 @@ export default function InspectPage() {
       </div>
 
       <ClientOnly fallback={<div className="flex h-full items-center justify-center text-white">Loading 3D viewer...</div>}>
-        {() => <Scene3D defIndex={defIndex} paintSeed={paintSeed} wear={wear} skinTextureUrl={skinPatternUrl} />}
+        {() => <Scene3D defIndex={defIndex} paintSeed={paintSeed} wear={wear} skinPatternUrl={skinPatternUrl} />}
       </ClientOnly>
     </div>
   );

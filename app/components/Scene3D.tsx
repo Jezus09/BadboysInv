@@ -6,10 +6,10 @@ interface Scene3DProps {
   defIndex: number;
   paintSeed: number;
   wear: number;
-  skinTextureUrl?: string;
+  skinPatternUrl?: string;
 }
 
-export function Scene3D({ defIndex, paintSeed, wear, skinTextureUrl }: Scene3DProps) {
+export function Scene3D({ defIndex, paintSeed, wear, skinPatternUrl }: Scene3DProps) {
   return (
     <div className="h-full w-full">
       <Canvas
@@ -31,7 +31,7 @@ export function Scene3D({ defIndex, paintSeed, wear, skinTextureUrl }: Scene3DPr
           defIndex={defIndex}
           paintSeed={paintSeed}
           wear={wear}
-          skinTextureUrl={skinTextureUrl}
+          skinPatternUrl={skinPatternUrl}
         />
 
         {/* Camera Controls */}

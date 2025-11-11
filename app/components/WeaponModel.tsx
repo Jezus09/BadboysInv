@@ -8,24 +8,26 @@ interface WeaponModelProps {
   defIndex: number;
   paintSeed: number;
   wear: number;
-  skinTextureUrl?: string;
+  skinPatternUrl?: string; // Pattern texture (e.g., asiimov_pattern.png)
 }
 
-export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: WeaponModelProps) {
+export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: WeaponModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [modelPath, setModelPath] = useState<string>("/models/ak47/weapon_rif_ak47.gltf");
 
   // Load GLTF model
   const gltf = useLoader(GLTFLoader, modelPath);
 
-  // Load baked skin texture (simple texture swap approach)
-  const skinTexture = skinTextureUrl ? useLoader(TextureLoader, skinTextureUrl) : null;
+  // Load textures for composite shader approach
+  const positionMap = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/position_map_normalized.png") : null;
+  const maskMap = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/mask.png") : null;
+  const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
   useEffect(() => {
     if (!gltf) return;
 
     console.log("✅ GLTF loaded:", gltf);
-    console.log("🎨 Skin texture:", skinTextureUrl ? "YES" : "NO");
+    console.log("🎨 Skin pattern:", skinPatternUrl ? "YES" : "NO");
 
     // Center and scale the model
     const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -35,53 +37,93 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
     // Center the model
     gltf.scene.position.sub(center);
 
-    // Scale to fit - EVEN SMALLER (1.5 units instead of 2)
+    // Scale to fit
     const maxDim = Math.max(size.x, size.y, size.z);
     const scale = 1.5 / maxDim;
     gltf.scene.scale.setScalar(scale);
 
-    console.log("📏 Model size:", {
-      originalSize: size,
-      maxDim,
-      scale,
-      finalSize: {
-        x: size.x * scale,
-        y: size.y * scale,
-        z: size.z * scale
-      }
-    });
+    console.log("📏 Model size:", { maxDim, scale });
 
-    // Apply materials - SIMPLIFIED (no complex shader)
+    // Apply materials
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
-        console.log(`Found mesh: "${mesh.name}"`);
 
         // Apply to body meshes
         if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
-          const material = mesh.material as THREE.MeshStandardMaterial;
+          const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
 
-          // Simple texture swap - Use baked skin texture if available
-          if (skinTexture) {
-            console.log(`🎨 Applying baked skin texture to: ${mesh.name}`);
-            material.map = skinTexture;
-            material.needsUpdate = true;
+          if (skinPatternUrl && positionMap && maskMap && patternTexture) {
+            // COMPOSITE SHADER APPROACH with normalized position map
+            console.log(`🎨 Applying composite shader to: ${mesh.name}`);
+
+            const customMaterial = new THREE.ShaderMaterial({
+              uniforms: {
+                baseTexture: { value: originalMaterial.map },
+                patternTexture: { value: patternTexture },
+                positionMap: { value: positionMap },
+                maskMap: { value: maskMap },
+                wearAmount: { value: wear },
+                brightness: { value: 1.0 - wear * 0.6 },
+              },
+              vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+
+                void main() {
+                  vUv = uv;
+                  vNormal = normalize(normalMatrix * normal);
+                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+              `,
+              fragmentShader: `
+                uniform sampler2D baseTexture;
+                uniform sampler2D patternTexture;
+                uniform sampler2D positionMap;
+                uniform sampler2D maskMap;
+                uniform float wearAmount;
+                uniform float brightness;
+
+                varying vec2 vUv;
+                varying vec3 vNormal;
+
+                void main() {
+                  // Sample position map (normalized UV coordinates in R/G channels)
+                  vec4 posData = texture2D(positionMap, vUv);
+                  vec2 patternUV = posData.rg; // Already normalized to 0-1
+
+                  // Sample textures
+                  vec4 baseColor = texture2D(baseTexture, vUv);
+                  vec4 patternColor = texture2D(patternTexture, patternUV);
+                  float maskValue = texture2D(maskMap, vUv).r;
+
+                  // Blend base + pattern using mask
+                  vec4 finalColor = mix(baseColor, patternColor, maskValue);
+
+                  // Apply wear-based brightness
+                  finalColor.rgb *= brightness;
+
+                  // Simple directional lighting
+                  vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+                  float NdotL = max(dot(vNormal, lightDir), 0.0);
+                  finalColor.rgb *= 0.5 + 0.5 * NdotL;
+
+                  gl_FragColor = finalColor;
+                }
+              `,
+            });
+
+            mesh.material = customMaterial;
+          } else {
+            // NO SKIN - Simple material modification
+            const brightness = 1.0 - wear * 0.6;
+            originalMaterial.color.setRGB(brightness, brightness, brightness);
+            originalMaterial.roughness = 0.42 + wear * 0.4;
           }
-
-          // Apply wear effect (brightness and roughness)
-          const brightness = 1.0 - wear * 0.6; // FN=1.0, BS=0.4
-          material.color.setRGB(brightness, brightness, brightness);
-          material.roughness = 0.42 + wear * 0.4; // FN=0.42, BS=0.82
-
-          console.log(`Material ${mesh.name}:`, {
-            hasSkin: !!skinTexture,
-            brightness: brightness.toFixed(2),
-            roughness: material.roughness.toFixed(2),
-          });
         }
       }
     });
-  }, [gltf, wear, skinTexture]);
+  }, [gltf, wear, skinPatternUrl, positionMap, maskMap, patternTexture]);
 
   // Rotate model slowly
   useFrame((state, delta) => {
