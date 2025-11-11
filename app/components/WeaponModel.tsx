@@ -76,9 +76,14 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
 
             // SIMPLE APPROACH: Use model's UV coordinates directly
             // No position map needed - CS2 already baked correct UVs into the GLTF model!
+
+            // Get base texture from original material
+            const baseTexture = originalMaterial.map;
+
             const shaderMaterial = new THREE.ShaderMaterial({
               uniforms: {
                 patternTexture: { value: patternTexture },
+                baseTexture: { value: baseTexture },
                 wearAmount: { value: wear },
                 brightness: { value: 1.0 - wear * 0.6 },
               },
@@ -94,6 +99,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               `,
               fragmentShader: `
                 uniform sampler2D patternTexture;
+                uniform sampler2D baseTexture;
                 uniform float wearAmount;
                 uniform float brightness;
 
@@ -101,31 +107,25 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec3 vNormal;
 
                 void main() {
-                  // DEBUG MODE 1: Show UV coordinates as colors
-                  // Uncomment to see UV mapping (R=U, G=V)
-                  // gl_FragColor = vec4(vUv.x, vUv.y, 0.0, 1.0);
-                  // return;
-
-                  // DEBUG MODE 2: Try different UV transformations
+                  // UV transformation - flip V coordinate for correct orientation
                   vec2 uv = vUv;
-
-                  // Option A: Flip V coordinate (common in OpenGL vs DirectX)
                   uv.y = 1.0 - uv.y;
 
-                  // Option B: Flip U coordinate
-                  // uv.x = 1.0 - uv.x;
-
-                  // Option C: Rotate 90 degrees
-                  // uv = vec2(uv.y, 1.0 - uv.x);
-
-                  // Option D: Rotate 180 degrees
-                  // uv = vec2(1.0 - uv.x, 1.0 - uv.y);
-
-                  // DIRECT UV MAPPING - Use model UVs as-is!
+                  // Sample pattern texture (has alpha channel!)
                   vec4 patternColor = texture2D(patternTexture, uv);
 
+                  // Sample base texture (original weapon texture)
+                  vec4 baseColor = baseTexture != null
+                    ? texture2D(baseTexture, vUv)
+                    : vec4(0.5, 0.5, 0.5, 1.0); // Gray fallback
+
+                  // Blend pattern with base using pattern's alpha channel
+                  // Alpha = 1.0 → full pattern
+                  // Alpha = 0.0 → full base texture (magazine, wood parts)
+                  vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, patternColor.a);
+
                   // Apply wear-based brightness
-                  vec3 finalColor = patternColor.rgb * brightness;
+                  vec3 finalColor = blendedColor * brightness;
 
                   // Simple directional lighting
                   vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
