@@ -23,11 +23,11 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const maskMap = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/mask.png") : null;
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
+  // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
     if (!gltf) return;
 
-    console.log("✅ GLTF loaded:", gltf);
-    console.log("🎨 Skin pattern:", skinPatternUrl ? "YES" : "NO");
+    console.log("✅ GLTF loaded - applying scale");
 
     // Center and scale the model
     const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -42,7 +42,14 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     const scale = 1.5 / maxDim;
     gltf.scene.scale.setScalar(scale);
 
-    console.log("📏 Model size:", { maxDim, scale });
+    console.log("📏 Model scaled:", { maxDim, scale });
+  }, [gltf]);
+
+  // Separate effect for materials - runs when textures change
+  useEffect(() => {
+    if (!gltf) return;
+
+    console.log("🎨 Applying materials, skin:", skinPatternUrl ? "YES" : "NO");
 
     // Apply materials
     gltf.scene.traverse((child) => {
@@ -53,46 +60,20 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
           const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
 
-          if (skinPatternUrl && positionMap && maskMap && patternTexture) {
-            // SIMPLIFIED TEST: Just show pattern texture with position map remapping
-            console.log(`🎨 Applying SIMPLIFIED shader to: ${mesh.name}`);
-            console.log(`  - Pattern texture:`, patternTexture);
-            console.log(`  - Position map:`, positionMap);
+          if (skinPatternUrl && patternTexture) {
+            // ULTRA SIMPLE TEST: Just apply pattern as basic texture (NO position map)
+            console.log(`🎨 TEST: Applying pattern as simple texture to: ${mesh.name}`);
+            console.log(`  - Pattern texture loaded:`, !!patternTexture);
+            console.log(`  - Pattern texture image:`, patternTexture.image);
 
-            const customMaterial = new THREE.ShaderMaterial({
-              uniforms: {
-                patternTexture: { value: patternTexture },
-                positionMap: { value: positionMap },
-              },
-              vertexShader: `
-                varying vec2 vUv;
-
-                void main() {
-                  vUv = uv;
-                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-              `,
-              fragmentShader: `
-                uniform sampler2D patternTexture;
-                uniform sampler2D positionMap;
-
-                varying vec2 vUv;
-
-                void main() {
-                  // Sample position map to get pattern UV coordinates
-                  vec4 posData = texture2D(positionMap, vUv);
-                  vec2 patternUV = posData.rg; // R=U, G=V (normalized 0-1)
-
-                  // Sample Asiimov pattern texture at remapped UV
-                  vec4 patternColor = texture2D(patternTexture, patternUV);
-
-                  // Show pattern directly (no mask blending for now)
-                  gl_FragColor = patternColor;
-                }
-              `,
+            // Create new material with pattern texture
+            const testMaterial = new THREE.MeshStandardMaterial({
+              map: patternTexture,
+              roughness: 0.5,
+              metalness: 0.1,
             });
 
-            mesh.material = customMaterial;
+            mesh.material = testMaterial;
           } else {
             // NO SKIN - Simple material modification
             const brightness = 1.0 - wear * 0.6;
