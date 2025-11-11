@@ -36,9 +36,9 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     // Center the model
     gltf.scene.position.sub(center);
 
-    // Scale to fit
+    // Scale to fit - smaller for better viewport
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 1.5 / maxDim;
+    const scale = 0.5 / maxDim; // Reduced from 1.5 to 0.5
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
@@ -98,23 +98,31 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 void main() {
                   // Sample position map to get pattern UV coordinates
                   vec4 posData = texture2D(positionMap, vUv);
+
+                  // DEBUG: Visualize position map directly
+                  // Uncomment to see position map colors
+                  // gl_FragColor = vec4(posData.rgb, 1.0);
+                  // return;
+
                   vec2 patternUV = posData.rg; // R=U, G=V
 
                   // Sample pattern at remapped UV
                   vec4 patternColor = texture2D(patternTexture, patternUV);
 
-                  // Sample base texture
-                  vec4 baseColor = texture2D(baseTexture, vUv);
+                  // DEBUG: Show pattern texture only (no base blend)
+                  // gl_FragColor = patternColor;
+                  // return;
 
-                  // Blend base + pattern (simple mix)
-                  vec4 finalColor = mix(baseColor, patternColor, 0.9);
+                  // Use pattern directly instead of blending with base
+                  // (base texture may be too dark/different)
+                  vec4 finalColor = patternColor;
 
                   // Apply wear-based brightness
                   finalColor.rgb *= brightness;
 
                   // Simple directional lighting
                   vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
-                  float diff = max(dot(vNormal, lightDir), 0.3);
+                  float diff = max(dot(vNormal, lightDir), 0.5); // Increased ambient from 0.3 to 0.5
                   finalColor.rgb *= diff;
 
                   gl_FragColor = finalColor;
