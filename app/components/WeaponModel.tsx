@@ -36,9 +36,9 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     // Center the model
     gltf.scene.position.sub(center);
 
-    // Scale to fit - smaller for better viewport
+    // Scale to fit viewport properly
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 0.5 / maxDim; // Reduced from 1.5 to 0.5
+    const scale = 1.0 / maxDim; // Balanced size
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
