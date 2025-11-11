@@ -54,65 +54,36 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
           const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
 
           if (skinPatternUrl && positionMap && maskMap && patternTexture) {
-            // COMPOSITE SHADER APPROACH with normalized position map
-            console.log(`🎨 Applying composite shader to: ${mesh.name}`);
+            // SIMPLIFIED TEST: Just show pattern texture with position map remapping
+            console.log(`🎨 Applying SIMPLIFIED shader to: ${mesh.name}`);
+            console.log(`  - Pattern texture:`, patternTexture);
+            console.log(`  - Position map:`, positionMap);
 
             const customMaterial = new THREE.ShaderMaterial({
               uniforms: {
-                baseTexture: { value: originalMaterial.map },
                 patternTexture: { value: patternTexture },
                 positionMap: { value: positionMap },
-                maskMap: { value: maskMap },
-                wearAmount: { value: wear },
-                brightness: { value: 1.0 - wear * 0.6 },
               },
               vertexShader: `
                 varying vec2 vUv;
-                varying vec3 vNormal;
 
                 void main() {
                   vUv = uv;
-                  vNormal = normalize(normalMatrix * normal);
                   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
               `,
               fragmentShader: `
-                uniform sampler2D baseTexture;
                 uniform sampler2D patternTexture;
                 uniform sampler2D positionMap;
-                uniform sampler2D maskMap;
-                uniform float wearAmount;
-                uniform float brightness;
 
                 varying vec2 vUv;
-                varying vec3 vNormal;
 
                 void main() {
-                  // Sample position map (normalized UV coordinates in R/G channels)
+                  // DEBUG: Show position map as color
                   vec4 posData = texture2D(positionMap, vUv);
-                  vec2 patternUV = posData.rg; // Already normalized to 0-1
 
-                  // Sample pattern texture
-                  vec4 patternColor = texture2D(patternTexture, patternUV);
-
-                  // Sample mask
-                  float maskValue = texture2D(maskMap, vUv).r;
-
-                  // Use pattern color directly (ignore base texture for now)
-                  vec4 finalColor = patternColor;
-
-                  // Apply mask blending with gray for areas without pattern
-                  finalColor = mix(vec4(0.5, 0.5, 0.5, 1.0), patternColor, maskValue);
-
-                  // Apply wear-based brightness
-                  finalColor.rgb *= brightness;
-
-                  // Simple directional lighting
-                  vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-                  float NdotL = max(dot(vNormal, lightDir), 0.0);
-                  finalColor.rgb *= 0.5 + 0.5 * NdotL;
-
-                  gl_FragColor = finalColor;
+                  // Show position map R/G channels directly (should be colorful)
+                  gl_FragColor = vec4(posData.rg, 0.0, 1.0);
                 }
               `,
             });
