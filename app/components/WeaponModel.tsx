@@ -68,15 +68,11 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
             patternTexture.magFilter = THREE.LinearFilter;
             patternTexture.anisotropy = 16;
 
-            // CS2 weapon parameters (from .vmat file)
-            const weaponLength = 32.0; // g_flWeaponLength1 from cu_ak47_asiimov.vmat
-
-            // Create custom shader material with proper position map handling
+            // Create custom shader material with normalized position map
             const shaderMaterial = new THREE.ShaderMaterial({
               uniforms: {
                 patternTexture: { value: patternTexture },
                 positionMap: { value: positionMap },
-                weaponLength: { value: weaponLength },
                 wearAmount: { value: wear },
                 brightness: { value: 1.0 - wear * 0.6 },
               },
@@ -95,7 +91,6 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               fragmentShader: `
                 uniform sampler2D patternTexture;
                 uniform sampler2D positionMap;
-                uniform float weaponLength;
                 uniform float wearAmount;
                 uniform float brightness;
 
@@ -104,22 +99,11 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec3 vPosition;
 
                 void main() {
-                  // Sample position map (values are in absolute coordinates, not 0-1!)
+                  // Sample position map (ALREADY NORMALIZED to 0-1!)
                   vec4 posData = texture2D(positionMap, vUv);
 
-                  // CS2 position map format:
-                  // R channel: X coordinate (range: -56 to 56 mm)
-                  // G channel: Y coordinate (range: -366 to 370 mm)
-                  // We need to normalize these to 0-1 UV space
-
-                  // Normalize to 0-1 range based on weapon length
-                  float u = (posData.r + weaponLength) / (weaponLength * 2.0);
-                  float v = (posData.g + 370.0) / (370.0 + 366.0); // Y range from position map
-
-                  vec2 patternUV = vec2(u, v);
-
-                  // Clamp to 0-1 to avoid texture wrapping issues
-                  patternUV = clamp(patternUV, 0.0, 1.0);
+                  // Position map R/G channels are already 0-1 UV coordinates
+                  vec2 patternUV = posData.rg;
 
                   // Sample pattern at remapped UV
                   vec4 patternColor = texture2D(patternTexture, patternUV);
