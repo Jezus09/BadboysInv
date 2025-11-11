@@ -15,9 +15,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const item = CS2Economy.getById(defIndex);
 
-  // Use Asiimov pattern texture for composite shader
-  // TODO: Add dynamic skin pattern loading based on item paint kit
-  const skinPatternUrl = "/models/ak47/asiimov_pattern.png";
+  // No skin patterns for now - just basic AK-47
+  const skinPatternUrl = undefined;
 
   return {
     defIndex,
@@ -39,7 +38,6 @@ export default function InspectPage() {
           <div>Def Index: {defIndex}</div>
           <div>Paint Seed: {paintSeed}</div>
           <div>Wear: {wear.toFixed(4)}</div>
-          <div className="text-xs opacity-50">Pattern: Asiimov</div>
         </div>
       </div>
 
