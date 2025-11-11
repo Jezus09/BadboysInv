@@ -1,20 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { TextureLoader } from "three";
 import * as THREE from "three";
 
 interface WeaponModelProps {
   defIndex: number;
   paintSeed: number;
   wear: number;
+  skinTextureUrl?: string; // Optional skin texture URL
 }
 
-export function WeaponModel({ defIndex, paintSeed, wear }: WeaponModelProps) {
+export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: WeaponModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [modelPath, setModelPath] = useState<string>("/models/ak47/weapon_rif_ak47.gltf");
 
   // Load GLTF model
   const gltf = useLoader(GLTFLoader, modelPath);
+
+  // Load skin texture if provided
+  const skinTexture = skinTextureUrl ? useLoader(TextureLoader, skinTextureUrl) : null;
 
   useEffect(() => {
     if (!gltf) return;
@@ -37,12 +42,19 @@ export function WeaponModel({ defIndex, paintSeed, wear }: WeaponModelProps) {
 
     console.log("Model centered and scaled:", { center, size, scale });
 
-    // Apply wear to materials
+    // Apply wear to materials and skin texture
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         if (mesh.material) {
           const material = mesh.material as THREE.MeshStandardMaterial;
+
+          // Apply skin texture if available
+          if (skinTexture) {
+            console.log("🎨 Applying skin texture to material:", material.name);
+            material.map = skinTexture;
+            material.needsUpdate = true;
+          }
 
           // Apply wear effect (brightness and roughness)
           const brightness = 1.0 - wear * 0.6; // FN=1.0, BS=0.4
@@ -52,11 +64,12 @@ export function WeaponModel({ defIndex, paintSeed, wear }: WeaponModelProps) {
           console.log(`Material ${material.name || "unnamed"}:`, {
             brightness: brightness.toFixed(2),
             roughness: material.roughness.toFixed(2),
+            hasSkinTexture: !!skinTexture,
           });
         }
       }
     });
-  }, [gltf, wear]);
+  }, [gltf, wear, skinTexture]);
 
   // Rotate model slowly
   useFrame((state, delta) => {

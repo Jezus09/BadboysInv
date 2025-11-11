@@ -6,9 +6,10 @@ interface Scene3DProps {
   defIndex: number;
   paintSeed: number;
   wear: number;
+  skinTextureUrl?: string;
 }
 
-export function Scene3D({ defIndex, paintSeed, wear }: Scene3DProps) {
+export function Scene3D({ defIndex, paintSeed, wear, skinTextureUrl }: Scene3DProps) {
   return (
     <div className="h-full w-full">
       <Canvas
@@ -26,7 +27,12 @@ export function Scene3D({ defIndex, paintSeed, wear }: Scene3DProps) {
         <Environment preset="city" />
 
         {/* Weapon Model */}
-        <WeaponModel defIndex={defIndex} paintSeed={paintSeed} wear={wear} />
+        <WeaponModel
+          defIndex={defIndex}
+          paintSeed={paintSeed}
+          wear={wear}
+          skinTextureUrl={skinTextureUrl}
+        />
 
         {/* Camera Controls */}
         <OrbitControls
