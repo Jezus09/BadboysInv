@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 import { TextureLoader } from "three";
 import * as THREE from "three";
 
@@ -19,10 +18,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
   // Load GLTF model
   const gltf = useLoader(GLTFLoader, modelPath);
 
-  // Load textures for composite shader (only if skinTextureUrl provided)
-  const patternTexture = skinTextureUrl ? useLoader(TextureLoader, skinTextureUrl) : null;
-  const positionMap = skinTextureUrl ? useLoader(EXRLoader, "/models/ak47/position_map.exr") : null;
-  const maskTexture = skinTextureUrl ? useLoader(TextureLoader, "/models/ak47/mask.png") : null;
+  // Load baked skin texture (simple texture swap approach)
+  const skinTexture = skinTextureUrl ? useLoader(TextureLoader, skinTextureUrl) : null;
 
   useEffect(() => {
     if (!gltf) return;
@@ -54,97 +51,37 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
       }
     });
 
-    // Apply materials
+    // Apply materials - SIMPLIFIED (no complex shader)
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         console.log(`Found mesh: "${mesh.name}"`);
 
-        // Apply to BOTH body meshes
+        // Apply to body meshes
         if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
-          if (patternTexture && positionMap && maskTexture) {
-            // COMPOSITE SHADER MODE
-            console.log(`🎨 Applying composite shader to: ${mesh.name}`);
+          const material = mesh.material as THREE.MeshStandardMaterial;
 
-            const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
-            const baseTexture = originalMaterial.map;
-
-            // Custom shader material
-            const shaderMaterial = new THREE.ShaderMaterial({
-              uniforms: {
-                baseTexture: { value: baseTexture },
-                patternTexture: { value: patternTexture },
-                positionMap: { value: positionMap },
-                maskMap: { value: maskTexture },
-                wearAmount: { value: wear },
-                brightness: { value: 1.0 - wear * 0.6 }
-              },
-              vertexShader: `
-                varying vec2 vUv;
-                varying vec3 vNormal;
-                varying vec3 vPosition;
-
-                void main() {
-                  vUv = uv;
-                  vNormal = normalize(normalMatrix * normal);
-                  vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
-                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-              `,
-              fragmentShader: `
-                uniform sampler2D baseTexture;
-                uniform sampler2D patternTexture;
-                uniform sampler2D positionMap;
-                uniform sampler2D maskMap;
-                uniform float wearAmount;
-                uniform float brightness;
-
-                varying vec2 vUv;
-                varying vec3 vNormal;
-                varying vec3 vPosition;
-
-                void main() {
-                  // DEBUG MODE: Try direct UV mapping first (no position map)
-                  // Sample textures
-                  vec4 baseColor = texture2D(baseTexture, vUv);
-                  vec4 patternColor = texture2D(patternTexture, vUv); // Direct UV (no position map)
-                  float maskValue = texture2D(maskMap, vUv).r;
-
-                  // Blend base and pattern using mask
-                  vec3 finalColor = mix(baseColor.rgb, patternColor.rgb, maskValue * 0.8);
-
-                  // Apply wear-based brightness
-                  finalColor *= brightness;
-
-                  // Simple directional lighting
-                  vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-                  float diff = max(dot(vNormal, lightDir), 0.0);
-                  finalColor *= (0.5 + 0.5 * diff);
-
-                  gl_FragColor = vec4(finalColor, 1.0);
-                }
-              `,
-              side: THREE.DoubleSide
-            });
-
-            mesh.material = shaderMaterial;
-            console.log(`✅ Shader applied to ${mesh.name}`);
-          } else {
-            // SIMPLE MODE (no skin)
-            const material = mesh.material as THREE.MeshStandardMaterial;
-            const brightness = 1.0 - wear * 0.6;
-            material.color.setRGB(brightness, brightness, brightness);
-            material.roughness = 0.42 + wear * 0.4;
-
-            console.log(`Simple material on ${mesh.name}:`, {
-              brightness: brightness.toFixed(2),
-              roughness: material.roughness.toFixed(2),
-            });
+          // Simple texture swap - Use baked skin texture if available
+          if (skinTexture) {
+            console.log(`🎨 Applying baked skin texture to: ${mesh.name}`);
+            material.map = skinTexture;
+            material.needsUpdate = true;
           }
+
+          // Apply wear effect (brightness and roughness)
+          const brightness = 1.0 - wear * 0.6; // FN=1.0, BS=0.4
+          material.color.setRGB(brightness, brightness, brightness);
+          material.roughness = 0.42 + wear * 0.4; // FN=0.42, BS=0.82
+
+          console.log(`Material ${mesh.name}:`, {
+            hasSkin: !!skinTexture,
+            brightness: brightness.toFixed(2),
+            roughness: material.roughness.toFixed(2),
+          });
         }
       }
     });
-  }, [gltf, wear, patternTexture, positionMap, maskTexture, skinTextureUrl]);
+  }, [gltf, wear, skinTexture]);
 
   // Rotate model slowly
   useFrame((state, delta) => {

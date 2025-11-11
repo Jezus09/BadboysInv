@@ -22,8 +22,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const paintKitIdNum = parseInt(paintKitId);
 
   if (defIndex === 7 && paintKitIdNum === 524) {
-    // AK-47 Asiimov
-    skinPatternUrl = "/models/ak47/asiimov_pattern.png";
+    // AK-47 Asiimov - Use BAKED texture (pre-composited)
+    skinPatternUrl = "/models/ak47/ak47_asiimov_baked.png";
   }
 
   return {
