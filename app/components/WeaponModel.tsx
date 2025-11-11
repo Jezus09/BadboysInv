@@ -36,9 +36,9 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     // Center the model
     gltf.scene.position.sub(center);
 
-    // Scale to fit viewport properly
+    // Scale to fit viewport - much smaller
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 1.0 / maxDim; // Balanced size
+    const scale = 0.3 / maxDim; // Small size for close camera
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
@@ -102,12 +102,28 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   // Sample position map (ALREADY NORMALIZED to 0-1!)
                   vec4 posData = texture2D(positionMap, vUv);
 
+                  // DEBUG MODE 1: Show position map directly
+                  // Uncomment to see if position map is loading correctly
+                  // gl_FragColor = vec4(posData.rgb, 1.0);
+                  // return;
+
                   // Position map R/G channels are already 0-1 UV coordinates
                   vec2 patternUV = posData.rg;
+
+                  // DEBUG MODE 2: Visualize UV coordinates as colors
+                  // Uncomment to see UV mapping
+                  // gl_FragColor = vec4(patternUV.r, patternUV.g, 0.0, 1.0);
+                  // return;
 
                   // Sample pattern at remapped UV
                   vec4 patternColor = texture2D(patternTexture, patternUV);
 
+                  // DEBUG MODE 3: Show pattern texture without any processing
+                  // Uncomment to see if pattern loads correctly
+                  gl_FragColor = vec4(patternColor.rgb, 1.0);
+                  return;
+
+                  /* FULL RENDERING (disabled for debug)
                   // Apply wear-based brightness
                   vec3 finalColor = patternColor.rgb * brightness;
 
@@ -117,6 +133,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   finalColor *= diff;
 
                   gl_FragColor = vec4(finalColor, 1.0);
+                  */
                 }
               `,
             });
