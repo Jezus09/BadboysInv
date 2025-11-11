@@ -117,26 +117,20 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   // Sample base texture (original weapon texture)
                   vec4 baseColor = texture2D(baseTexture, vUv);
 
-                  // ALPHA BLENDING OPTIONS - Try different approaches:
+                  // ALPHA BLENDING - Final approach after testing:
 
-                  // Option A: Binary threshold at 0.8 (CS2 uses ~0.77 for unpaintable areas)
-                  // Based on CS2 workshop docs: alpha ~196/255 = magazine/grip areas
-                  float alphaMask = step(0.8, patternColor.a);
-                  vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, alphaMask);
+                  // SIMPLE: Show pattern only (ignore alpha blending)
+                  // Pattern texture already has correct colors where it should appear
+                  // Magazine and grip will show pattern colors (not ideal but works)
+                  vec3 blendedColor = patternColor.rgb;
 
-                  // Option B: Lower threshold (0.3) - More pattern visible
+                  // DEBUG OPTIONS (uncomment to test):
+                  // Show alpha as grayscale (to visualize mask)
+                  // vec3 blendedColor = vec3(patternColor.a);
+
+                  // Binary threshold at 0.3 (shows more pattern, less base)
                   // float alphaMask = step(0.3, patternColor.a);
                   // vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, alphaMask);
-
-                  // Option C: Higher threshold (0.8) - More base texture visible
-                  // float alphaMask = step(0.8, patternColor.a);
-                  // vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, alphaMask);
-
-                  // Option D: Show pattern only (ignore base texture)
-                  // vec3 blendedColor = patternColor.rgb;
-
-                  // Option E: Show alpha as grayscale (debug - see alpha map)
-                  // vec3 blendedColor = vec3(patternColor.a);
 
                   // Apply wear-based brightness
                   vec3 finalColor = blendedColor * brightness;
