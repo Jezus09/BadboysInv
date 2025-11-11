@@ -54,8 +54,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
 
-        // Apply to body meshes
-        if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
+        // Apply to body meshes AND magazine (clip)
+        if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd") || mesh.name.includes("clip")) {
           const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
 
           if (skinPatternUrl && patternTexture) {
