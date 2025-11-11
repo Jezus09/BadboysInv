@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
+import { TextureLoader } from "three";
 import * as THREE from "three";
 
 interface WeaponModelProps {
@@ -17,12 +19,18 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
   // Load GLTF model
   const gltf = useLoader(GLTFLoader, modelPath);
 
+  // Load textures for composite shader (only if skinTextureUrl provided)
+  const patternTexture = skinTextureUrl ? useLoader(TextureLoader, skinTextureUrl) : null;
+  const positionMap = skinTextureUrl ? useLoader(EXRLoader, "/models/ak47/position_map.exr") : null;
+  const maskTexture = skinTextureUrl ? useLoader(TextureLoader, "/models/ak47/mask.png") : null;
+
   useEffect(() => {
     if (!gltf) return;
 
     console.log("✅ GLTF loaded:", gltf);
+    console.log("🎨 Skin texture:", skinTextureUrl ? "YES" : "NO");
 
-    // Center and scale the model - SMALLER SIZE
+    // Center and scale the model
     const box = new THREE.Box3().setFromObject(gltf.scene);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -30,36 +38,107 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
     // Center the model
     gltf.scene.position.sub(center);
 
-    // Scale to fit - MUCH SMALLER (2 units instead of 5)
+    // Scale to fit - SMALLER (2 units)
     const maxDim = Math.max(size.x, size.y, size.z);
     const scale = 2 / maxDim;
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model size:", { center, size, scale });
 
-    // Simple material modifications - NO COMPOSITE SHADER
+    // Apply materials
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
-
         console.log(`Found mesh: "${mesh.name}"`);
 
-        if (mesh.material) {
-          const material = mesh.material as THREE.MeshStandardMaterial;
+        // Apply to BOTH body meshes
+        if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
+          if (patternTexture && positionMap && maskTexture) {
+            // COMPOSITE SHADER MODE
+            console.log(`🎨 Applying composite shader to: ${mesh.name}`);
 
-          // Apply wear effect (brightness and roughness)
-          const brightness = 1.0 - wear * 0.6; // FN=1.0, BS=0.4
-          material.color.setRGB(brightness, brightness, brightness);
-          material.roughness = 0.42 + wear * 0.4; // FN=0.42, BS=0.82
+            const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
+            const baseTexture = originalMaterial.map;
 
-          console.log(`Material ${material.name || "unnamed"}:`, {
-            brightness: brightness.toFixed(2),
-            roughness: material.roughness.toFixed(2),
-          });
+            // Custom shader material
+            const shaderMaterial = new THREE.ShaderMaterial({
+              uniforms: {
+                baseTexture: { value: baseTexture },
+                patternTexture: { value: patternTexture },
+                positionMap: { value: positionMap },
+                maskMap: { value: maskTexture },
+                wearAmount: { value: wear },
+                brightness: { value: 1.0 - wear * 0.6 }
+              },
+              vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vPosition;
+
+                void main() {
+                  vUv = uv;
+                  vNormal = normalize(normalMatrix * normal);
+                  vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+              `,
+              fragmentShader: `
+                uniform sampler2D baseTexture;
+                uniform sampler2D patternTexture;
+                uniform sampler2D positionMap;
+                uniform sampler2D maskMap;
+                uniform float wearAmount;
+                uniform float brightness;
+
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vPosition;
+
+                void main() {
+                  // Sample position map to get pattern UV coordinates
+                  vec4 posData = texture2D(positionMap, vUv);
+                  vec2 patternUV = posData.rg;
+
+                  // Sample textures
+                  vec4 baseColor = texture2D(baseTexture, vUv);
+                  vec4 patternColor = texture2D(patternTexture, patternUV);
+                  float maskValue = texture2D(maskMap, vUv).r;
+
+                  // Blend base and pattern using mask
+                  vec3 finalColor = mix(baseColor.rgb, patternColor.rgb, maskValue);
+
+                  // Apply wear-based brightness
+                  finalColor *= brightness;
+
+                  // Simple directional lighting
+                  vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+                  float diff = max(dot(vNormal, lightDir), 0.0);
+                  finalColor *= (0.5 + 0.5 * diff);
+
+                  gl_FragColor = vec4(finalColor, 1.0);
+                }
+              `,
+              side: THREE.DoubleSide
+            });
+
+            mesh.material = shaderMaterial;
+            console.log(`✅ Shader applied to ${mesh.name}`);
+          } else {
+            // SIMPLE MODE (no skin)
+            const material = mesh.material as THREE.MeshStandardMaterial;
+            const brightness = 1.0 - wear * 0.6;
+            material.color.setRGB(brightness, brightness, brightness);
+            material.roughness = 0.42 + wear * 0.4;
+
+            console.log(`Simple material on ${mesh.name}:`, {
+              brightness: brightness.toFixed(2),
+              roughness: material.roughness.toFixed(2),
+            });
+          }
         }
       }
     });
-  }, [gltf, wear]);
+  }, [gltf, wear, patternTexture, positionMap, maskTexture, skinTextureUrl]);
 
   // Rotate model slowly
   useFrame((state, delta) => {

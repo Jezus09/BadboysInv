@@ -15,8 +15,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const item = CS2Economy.getById(defIndex);
 
-  // No skin patterns for now - just basic AK-47
-  const skinPatternUrl = undefined;
+  // TODO: Dynamic skin loading based on defIndex + paintKitId
+  // For now, test with AK-47 Asiimov if seed=661 is provided
+  let skinPatternUrl = undefined;
+  if (defIndex === 7 && parseInt(paintSeed) === 661) {
+    // AK-47 Asiimov test
+    skinPatternUrl = "/models/ak47/asiimov_pattern.png";
+  }
 
   return {
     defIndex,
