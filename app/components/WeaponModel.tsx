@@ -115,9 +115,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   vec4 patternColor = texture2D(patternTexture, uv);
 
                   // Sample base texture (original weapon texture)
-                  vec4 baseColor = baseTexture != null
-                    ? texture2D(baseTexture, vUv)
-                    : vec4(0.5, 0.5, 0.5, 1.0); // Gray fallback
+                  vec4 baseColor = texture2D(baseTexture, vUv);
 
                   // Blend pattern with base using pattern's alpha channel
                   // Alpha = 1.0 → full pattern
