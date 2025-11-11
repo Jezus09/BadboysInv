@@ -92,13 +92,17 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   vec4 posData = texture2D(positionMap, vUv);
                   vec2 patternUV = posData.rg; // Already normalized to 0-1
 
-                  // Sample textures
-                  vec4 baseColor = texture2D(baseTexture, vUv);
+                  // Sample pattern texture
                   vec4 patternColor = texture2D(patternTexture, patternUV);
+
+                  // Sample mask
                   float maskValue = texture2D(maskMap, vUv).r;
 
-                  // Blend base + pattern using mask
-                  vec4 finalColor = mix(baseColor, patternColor, maskValue);
+                  // Use pattern color directly (ignore base texture for now)
+                  vec4 finalColor = patternColor;
+
+                  // Apply mask blending with gray for areas without pattern
+                  finalColor = mix(vec4(0.5, 0.5, 0.5, 1.0), patternColor, maskValue);
 
                   // Apply wear-based brightness
                   finalColor.rgb *= brightness;
