@@ -60,20 +60,65 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
           const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
 
-          if (skinPatternUrl && patternTexture) {
-            // ULTRA SIMPLE TEST: Just apply pattern as basic texture (NO position map)
-            console.log(`🎨 TEST: Applying pattern as simple texture to: ${mesh.name}`);
-            console.log(`  - Pattern texture loaded:`, !!patternTexture);
-            console.log(`  - Pattern texture image:`, patternTexture.image);
+          if (skinPatternUrl && patternTexture && positionMap && maskMap) {
+            // FINAL VERSION: Pattern texture with position map UV remapping
+            console.log(`🎨 Applying composite shader with position map to: ${mesh.name}`);
 
-            // Create new material with pattern texture
-            const testMaterial = new THREE.MeshStandardMaterial({
-              map: patternTexture,
-              roughness: 0.5,
-              metalness: 0.1,
+            const customMaterial = new THREE.ShaderMaterial({
+              uniforms: {
+                patternTexture: { value: patternTexture },
+                positionMap: { value: positionMap },
+                maskMap: { value: maskMap },
+                brightness: { value: 1.0 - wear * 0.6 },
+              },
+              vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+
+                void main() {
+                  vUv = uv;
+                  vNormal = normalize(normalMatrix * normal);
+                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+              `,
+              fragmentShader: `
+                uniform sampler2D patternTexture;
+                uniform sampler2D positionMap;
+                uniform sampler2D maskMap;
+                uniform float brightness;
+
+                varying vec2 vUv;
+                varying vec3 vNormal;
+
+                void main() {
+                  // Sample position map to get remapped UV coordinates
+                  vec4 posData = texture2D(positionMap, vUv);
+                  vec2 patternUV = posData.rg; // Normalized 0-1 coordinates
+
+                  // Sample Asiimov pattern at remapped UV
+                  vec4 patternColor = texture2D(patternTexture, patternUV);
+
+                  // Sample mask (defines where pattern is applied)
+                  float maskValue = texture2D(maskMap, vUv).r;
+
+                  // Blend: gray base for non-pattern areas, full pattern where mask=1
+                  vec4 baseColor = vec4(0.3, 0.3, 0.3, 1.0);
+                  vec4 finalColor = mix(baseColor, patternColor, maskValue);
+
+                  // Apply wear brightness
+                  finalColor.rgb *= brightness;
+
+                  // Simple lighting
+                  vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+                  float NdotL = max(dot(vNormal, lightDir), 0.0);
+                  finalColor.rgb *= 0.6 + 0.4 * NdotL;
+
+                  gl_FragColor = finalColor;
+                }
+              `,
             });
 
-            mesh.material = testMaterial;
+            mesh.material = customMaterial;
           } else {
             // NO SKIN - Simple material modification
             const brightness = 1.0 - wear * 0.6;
