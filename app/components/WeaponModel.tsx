@@ -18,7 +18,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   // Load GLTF model
   const gltf = useLoader(GLTFLoader, modelPath);
 
-  // Load pattern texture (simple approach - no position map)
+  // Load pattern texture + AK-47 specific position map
+  const positionMap = skinPatternUrl ? useLoader(TextureLoader, "/textures/ak47_position_map.png") : null;
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
   // Separate effect for scaling - runs once when GLTF loads
@@ -58,24 +59,86 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
           const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
 
-          if (skinPatternUrl && patternTexture) {
-            // SIMPLE APPROACH: Apply texture directly without position map
-            console.log(`🎨 Applying pattern texture directly to: ${mesh.name}`);
+          if (skinPatternUrl && patternTexture && positionMap) {
+            // CS2 COMPOSITE SHADER with CORRECT position map scaling
+            console.log(`🎨 Applying CS2 composite shader to: ${mesh.name}`);
 
             // Set texture filtering for better quality
             patternTexture.minFilter = THREE.LinearFilter;
             patternTexture.magFilter = THREE.LinearFilter;
-            patternTexture.anisotropy = 16; // Max anisotropic filtering
+            patternTexture.anisotropy = 16;
 
-            // Create simple material with pattern
-            const simpleMaterial = new THREE.MeshStandardMaterial({
-              map: patternTexture,
-              roughness: 0.42,
-              metalness: 0.1,
+            // CS2 weapon parameters (from .vmat file)
+            const weaponLength = 32.0; // g_flWeaponLength1 from cu_ak47_asiimov.vmat
+
+            // Create custom shader material with proper position map handling
+            const shaderMaterial = new THREE.ShaderMaterial({
+              uniforms: {
+                patternTexture: { value: patternTexture },
+                positionMap: { value: positionMap },
+                weaponLength: { value: weaponLength },
+                wearAmount: { value: wear },
+                brightness: { value: 1.0 - wear * 0.6 },
+              },
+              vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vPosition;
+
+                void main() {
+                  vUv = uv;
+                  vNormal = normalize(normalMatrix * normal);
+                  vPosition = position;
+                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+              `,
+              fragmentShader: `
+                uniform sampler2D patternTexture;
+                uniform sampler2D positionMap;
+                uniform float weaponLength;
+                uniform float wearAmount;
+                uniform float brightness;
+
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vPosition;
+
+                void main() {
+                  // Sample position map (values are in absolute coordinates, not 0-1!)
+                  vec4 posData = texture2D(positionMap, vUv);
+
+                  // CS2 position map format:
+                  // R channel: X coordinate (range: -56 to 56 mm)
+                  // G channel: Y coordinate (range: -366 to 370 mm)
+                  // We need to normalize these to 0-1 UV space
+
+                  // Normalize to 0-1 range based on weapon length
+                  float u = (posData.r + weaponLength) / (weaponLength * 2.0);
+                  float v = (posData.g + 370.0) / (370.0 + 366.0); // Y range from position map
+
+                  vec2 patternUV = vec2(u, v);
+
+                  // Clamp to 0-1 to avoid texture wrapping issues
+                  patternUV = clamp(patternUV, 0.0, 1.0);
+
+                  // Sample pattern at remapped UV
+                  vec4 patternColor = texture2D(patternTexture, patternUV);
+
+                  // Apply wear-based brightness
+                  vec3 finalColor = patternColor.rgb * brightness;
+
+                  // Simple directional lighting
+                  vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
+                  float diff = max(dot(vNormal, lightDir), 0.5);
+                  finalColor *= diff;
+
+                  gl_FragColor = vec4(finalColor, 1.0);
+                }
+              `,
             });
 
-            mesh.material = simpleMaterial;
-            console.log(`✅ Pattern texture applied directly (NO position map)`);
+            mesh.material = shaderMaterial;
+            console.log(`✅ CS2 composite shader with AK-47 specific position map`);
           } else {
             // NO SKIN - Simple material modification
             const brightness = 1.0 - wear * 0.6;
@@ -85,7 +148,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         }
       }
     });
-  }, [gltf, wear, skinPatternUrl, patternTexture]);
+  }, [gltf, wear, skinPatternUrl, patternTexture, positionMap]);
 
   // Rotate model slowly
   useFrame((state, delta) => {
