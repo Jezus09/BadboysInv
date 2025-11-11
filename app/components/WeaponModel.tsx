@@ -18,8 +18,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   // Load GLTF model
   const gltf = useLoader(GLTFLoader, modelPath);
 
-  // Load textures for CS2 composite shader approach
-  const positionMap = skinPatternUrl ? useLoader(TextureLoader, "/textures/position_map.png") : null;
+  // Load pattern texture (simple approach - no position map)
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
   // Separate effect for scaling - runs once when GLTF loads
@@ -59,79 +58,24 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
           const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
 
-          if (skinPatternUrl && patternTexture && positionMap) {
-            // CS2 COMPOSITE SHADER: Use position map for UV remapping
-            console.log(`🎨 Applying CS2 composite shader to: ${mesh.name}`);
+          if (skinPatternUrl && patternTexture) {
+            // SIMPLE APPROACH: Apply texture directly without position map
+            console.log(`🎨 Applying pattern texture directly to: ${mesh.name}`);
 
-            // Get base texture from original material
-            const baseTexture = originalMaterial.map;
+            // Set texture filtering for better quality
+            patternTexture.minFilter = THREE.LinearFilter;
+            patternTexture.magFilter = THREE.LinearFilter;
+            patternTexture.anisotropy = 16; // Max anisotropic filtering
 
-            // Create custom shader material
-            const shaderMaterial = new THREE.ShaderMaterial({
-              uniforms: {
-                baseTexture: { value: baseTexture },
-                patternTexture: { value: patternTexture },
-                positionMap: { value: positionMap },
-                wearAmount: { value: wear },
-                brightness: { value: 1.0 - wear * 0.6 },
-              },
-              vertexShader: `
-                varying vec2 vUv;
-                varying vec3 vNormal;
-
-                void main() {
-                  vUv = uv;
-                  vNormal = normalize(normalMatrix * normal);
-                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-              `,
-              fragmentShader: `
-                uniform sampler2D baseTexture;
-                uniform sampler2D patternTexture;
-                uniform sampler2D positionMap;
-                uniform float wearAmount;
-                uniform float brightness;
-
-                varying vec2 vUv;
-                varying vec3 vNormal;
-
-                void main() {
-                  // Sample position map to get pattern UV coordinates
-                  vec4 posData = texture2D(positionMap, vUv);
-
-                  // DEBUG: Visualize position map directly
-                  // Uncomment to see position map colors
-                  // gl_FragColor = vec4(posData.rgb, 1.0);
-                  // return;
-
-                  vec2 patternUV = posData.rg; // R=U, G=V
-
-                  // Sample pattern at remapped UV
-                  vec4 patternColor = texture2D(patternTexture, patternUV);
-
-                  // DEBUG: Show pattern texture only (no base blend)
-                  // gl_FragColor = patternColor;
-                  // return;
-
-                  // Use pattern directly instead of blending with base
-                  // (base texture may be too dark/different)
-                  vec4 finalColor = patternColor;
-
-                  // Apply wear-based brightness
-                  finalColor.rgb *= brightness;
-
-                  // Simple directional lighting
-                  vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
-                  float diff = max(dot(vNormal, lightDir), 0.5); // Increased ambient from 0.3 to 0.5
-                  finalColor.rgb *= diff;
-
-                  gl_FragColor = finalColor;
-                }
-              `,
+            // Create simple material with pattern
+            const simpleMaterial = new THREE.MeshStandardMaterial({
+              map: patternTexture,
+              roughness: 0.42,
+              metalness: 0.1,
             });
 
-            mesh.material = shaderMaterial;
-            console.log(`✅ CS2 composite shader applied with position map UV remapping`);
+            mesh.material = simpleMaterial;
+            console.log(`✅ Pattern texture applied directly (NO position map)`);
           } else {
             // NO SKIN - Simple material modification
             const brightness = 1.0 - wear * 0.6;
@@ -141,7 +85,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         }
       }
     });
-  }, [gltf, wear, skinPatternUrl, positionMap, patternTexture]);
+  }, [gltf, wear, skinPatternUrl, patternTexture]);
 
   // Rotate model slowly
   useFrame((state, delta) => {
