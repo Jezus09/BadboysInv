@@ -18,9 +18,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   // Load GLTF model
   const gltf = useLoader(GLTFLoader, modelPath);
 
-  // Load textures for composite shader approach
-  const positionMap = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/position_map_normalized.png") : null;
-  const maskMap = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/mask.png") : null;
+  // Load textures for CS2 composite shader approach
+  const positionMap = skinPatternUrl ? useLoader(TextureLoader, "/textures/position_map.png") : null;
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
   // Separate effect for scaling - runs once when GLTF loads
@@ -60,18 +59,71 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
           const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
 
-          if (skinPatternUrl && patternTexture) {
-            // WORKING VERSION: Just apply pattern directly (wrong UV but VISIBLE)
-            console.log(`🎨 Applying pattern texture to: ${mesh.name}`);
+          if (skinPatternUrl && patternTexture && positionMap) {
+            // CS2 COMPOSITE SHADER: Use position map for UV remapping
+            console.log(`🎨 Applying CS2 composite shader to: ${mesh.name}`);
 
-            const simpleMaterial = new THREE.MeshStandardMaterial({
-              map: patternTexture,
-              roughness: 0.5,
-              metalness: 0.1,
+            // Get base texture from original material
+            const baseTexture = originalMaterial.map;
+
+            // Create custom shader material
+            const shaderMaterial = new THREE.ShaderMaterial({
+              uniforms: {
+                baseTexture: { value: baseTexture },
+                patternTexture: { value: patternTexture },
+                positionMap: { value: positionMap },
+                wearAmount: { value: wear },
+                brightness: { value: 1.0 - wear * 0.6 },
+              },
+              vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+
+                void main() {
+                  vUv = uv;
+                  vNormal = normalize(normalMatrix * normal);
+                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+              `,
+              fragmentShader: `
+                uniform sampler2D baseTexture;
+                uniform sampler2D patternTexture;
+                uniform sampler2D positionMap;
+                uniform float wearAmount;
+                uniform float brightness;
+
+                varying vec2 vUv;
+                varying vec3 vNormal;
+
+                void main() {
+                  // Sample position map to get pattern UV coordinates
+                  vec4 posData = texture2D(positionMap, vUv);
+                  vec2 patternUV = posData.rg; // R=U, G=V
+
+                  // Sample pattern at remapped UV
+                  vec4 patternColor = texture2D(patternTexture, patternUV);
+
+                  // Sample base texture
+                  vec4 baseColor = texture2D(baseTexture, vUv);
+
+                  // Blend base + pattern (simple mix)
+                  vec4 finalColor = mix(baseColor, patternColor, 0.9);
+
+                  // Apply wear-based brightness
+                  finalColor.rgb *= brightness;
+
+                  // Simple directional lighting
+                  vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
+                  float diff = max(dot(vNormal, lightDir), 0.3);
+                  finalColor.rgb *= diff;
+
+                  gl_FragColor = finalColor;
+                }
+              `,
             });
 
-            mesh.material = simpleMaterial;
-            console.log(`✅ Material applied successfully`);
+            mesh.material = shaderMaterial;
+            console.log(`✅ CS2 composite shader applied with position map UV remapping`);
           } else {
             // NO SKIN - Simple material modification
             const brightness = 1.0 - wear * 0.6;
@@ -81,7 +133,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         }
       }
     });
-  }, [gltf, wear, skinPatternUrl, positionMap, maskMap, patternTexture]);
+  }, [gltf, wear, skinPatternUrl, positionMap, patternTexture]);
 
   // Rotate model slowly
   useFrame((state, delta) => {
