@@ -22,8 +22,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const paintKitIdNum = parseInt(paintKitId);
 
   if (defIndex === 7 && paintKitIdNum === 524) {
-    // AK-47 Asiimov - Use PATTERN texture (with composite shader)
-    skinPatternUrl = "/models/ak47/asiimov_pattern.png";
+    // AK-47 Asiimov - Use exported CS2 pattern texture
+    skinPatternUrl = "/textures/skins/asiimov_pattern.png";
   }
 
   return {
