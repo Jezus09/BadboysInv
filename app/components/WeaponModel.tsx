@@ -38,12 +38,21 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
     // Center the model
     gltf.scene.position.sub(center);
 
-    // Scale to fit - SMALLER (2 units)
+    // Scale to fit - EVEN SMALLER (1.5 units instead of 2)
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 2 / maxDim;
+    const scale = 1.5 / maxDim;
     gltf.scene.scale.setScalar(scale);
 
-    console.log("📏 Model size:", { center, size, scale });
+    console.log("📏 Model size:", {
+      originalSize: size,
+      maxDim,
+      scale,
+      finalSize: {
+        x: size.x * scale,
+        y: size.y * scale,
+        z: size.z * scale
+      }
+    });
 
     // Apply materials
     gltf.scene.traverse((child) => {
@@ -95,17 +104,14 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
                 varying vec3 vPosition;
 
                 void main() {
-                  // Sample position map to get pattern UV coordinates
-                  vec4 posData = texture2D(positionMap, vUv);
-                  vec2 patternUV = posData.rg;
-
+                  // DEBUG MODE: Try direct UV mapping first (no position map)
                   // Sample textures
                   vec4 baseColor = texture2D(baseTexture, vUv);
-                  vec4 patternColor = texture2D(patternTexture, patternUV);
+                  vec4 patternColor = texture2D(patternTexture, vUv); // Direct UV (no position map)
                   float maskValue = texture2D(maskMap, vUv).r;
 
                   // Blend base and pattern using mask
-                  vec3 finalColor = mix(baseColor.rgb, patternColor.rgb, maskValue);
+                  vec3 finalColor = mix(baseColor.rgb, patternColor.rgb, maskValue * 0.8);
 
                   // Apply wear-based brightness
                   finalColor *= brightness;
