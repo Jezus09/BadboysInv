@@ -21,6 +21,9 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   // Load pattern texture (direct UV mapping, no position map needed!)
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
+  // Load grunge texture for realistic wear effect
+  const grungeTexture = useLoader(TextureLoader, "/textures/gun_grunge.png");
+
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
     if (!gltf) return;
@@ -84,6 +87,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               uniforms: {
                 patternTexture: { value: patternTexture },
                 baseTexture: { value: baseTexture },
+                grungeTexture: { value: grungeTexture },
                 wearAmount: { value: wear },
                 brightness: { value: 1.0 - wear * 0.6 },
               },
@@ -100,6 +104,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               fragmentShader: `
                 uniform sampler2D patternTexture;
                 uniform sampler2D baseTexture;
+                uniform sampler2D grungeTexture;
                 uniform float wearAmount;
                 uniform float brightness;
 
@@ -111,31 +116,22 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   vec2 uv = vUv;
                   uv.y = 1.0 - uv.y;
 
-                  // Sample pattern texture (has alpha channel!)
+                  // Sample textures
                   vec4 patternColor = texture2D(patternTexture, uv);
-
-                  // Sample base texture (original weapon texture)
                   vec4 baseColor = texture2D(baseTexture, vUv);
+                  float grunge = texture2D(grungeTexture, vUv).r;
 
-                  // ALPHA BLENDING - Final approach after testing:
+                  // CS2 Composite Shader:
+                  // 1. Blend pattern with base using alpha
+                  vec3 blended = mix(baseColor.rgb, patternColor.rgb, patternColor.a);
 
-                  // SIMPLE: Show pattern only (ignore alpha blending)
-                  // Pattern texture already has correct colors where it should appear
-                  // Magazine and grip will show pattern colors (not ideal but works)
-                  vec3 blendedColor = patternColor.rgb;
+                  // 2. Apply grunge overlay (darken/lighten for realism)
+                  blended *= mix(0.85, 1.15, grunge);
 
-                  // DEBUG OPTIONS (uncomment to test):
-                  // Show alpha as grayscale (to visualize mask)
-                  // vec3 blendedColor = vec3(patternColor.a);
+                  // 3. Apply wear-based brightness
+                  vec3 finalColor = blended * brightness;
 
-                  // Binary threshold at 0.3 (shows more pattern, less base)
-                  // float alphaMask = step(0.3, patternColor.a);
-                  // vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, alphaMask);
-
-                  // Apply wear-based brightness
-                  vec3 finalColor = blendedColor * brightness;
-
-                  // Simple directional lighting
+                  // 4. Simple directional lighting
                   vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
                   float diff = max(dot(vNormal, lightDir), 0.5);
                   finalColor *= diff;
@@ -156,7 +152,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         }
       }
     });
-  }, [gltf, wear, skinPatternUrl, patternTexture]);
+  }, [gltf, wear, skinPatternUrl, patternTexture, grungeTexture]);
 
   // Rotate model slowly
   useFrame((state, delta) => {
