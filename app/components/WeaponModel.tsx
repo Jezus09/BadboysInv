@@ -46,9 +46,9 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
     // Center the model
     gltf.scene.position.sub(center);
 
-    // Scale to fit (target size ~10 units)
+    // Scale to fit (target size ~5 units for better camera view)
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 10 / maxDim;
+    const scale = 5 / maxDim;
     gltf.scene.scale.setScalar(scale);
 
     console.log("Model centered and scaled:", { center, size, scale });
@@ -61,9 +61,12 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinTextureUrl }: Weapo
         if ((child as THREE.Mesh).isMesh) {
           const mesh = child as THREE.Mesh;
 
-          // Only apply to the main weapon mesh (skip magazines, attachments, etc.)
-          if (mesh.material && mesh.name.toLowerCase().includes("weapon")) {
-            console.log(`Applying composite shader to mesh: ${mesh.name}`);
+          // Log all mesh names for debugging
+          console.log(`Found mesh: "${mesh.name}" (material: ${mesh.material ? "✅" : "❌"})`);
+
+          // Apply shader to ALL meshes with materials (not just "weapon" named ones)
+          if (mesh.material) {
+            console.log(`🎨 Applying composite shader to mesh: ${mesh.name}`);
 
             // Create custom shader material
             const shaderMaterial = new THREE.ShaderMaterial({

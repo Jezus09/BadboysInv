@@ -13,7 +13,7 @@ export function Scene3D({ defIndex, paintSeed, wear, skinTextureUrl }: Scene3DPr
   return (
     <div className="h-full w-full">
       <Canvas
-        camera={{ position: [0, 0, 50], fov: 35 }}
+        camera={{ position: [0, 0, 15], fov: 50 }}
         gl={{ preserveDrawingBuffer: true }}
       >
         <color attach="background" args={["#000814"]} />
@@ -39,8 +39,8 @@ export function Scene3D({ defIndex, paintSeed, wear, skinTextureUrl }: Scene3DPr
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
-          minDistance={20}
-          maxDistance={100}
+          minDistance={5}
+          maxDistance={30}
           target={[0, 0, 0]}
         />
       </Canvas>
