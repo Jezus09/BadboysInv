@@ -15,20 +15,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const item = CS2Economy.getById(defIndex);
 
-  // Generate skin image URL if item exists
-  const skinImageUrl = item ? item.getImage(parseFloat(wear)) : undefined;
+  // Use Asiimov pattern texture for composite shader
+  // TODO: Add dynamic skin pattern loading based on item paint kit
+  const skinPatternUrl = "/models/ak47/asiimov_pattern.png";
 
   return {
     defIndex,
     itemName: item?.name || "Unknown",
     paintSeed: parseInt(paintSeed),
     wear: parseFloat(wear),
-    skinImageUrl,
+    skinPatternUrl,
   };
 }
 
 export default function InspectPage() {
-  const { defIndex, itemName, paintSeed, wear, skinImageUrl } = useLoaderData<typeof loader>();
+  const { defIndex, itemName, paintSeed, wear, skinPatternUrl } = useLoaderData<typeof loader>();
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -38,12 +39,12 @@ export default function InspectPage() {
           <div>Def Index: {defIndex}</div>
           <div>Paint Seed: {paintSeed}</div>
           <div>Wear: {wear.toFixed(4)}</div>
-          {skinImageUrl && <div className="text-xs opacity-50">Skin: {skinImageUrl.substring(0, 50)}...</div>}
+          <div className="text-xs opacity-50">Pattern: Asiimov</div>
         </div>
       </div>
 
       <ClientOnly fallback={<div className="flex h-full items-center justify-center text-white">Loading 3D viewer...</div>}>
-        {() => <Scene3D defIndex={defIndex} paintSeed={paintSeed} wear={wear} skinTextureUrl={skinImageUrl} />}
+        {() => <Scene3D defIndex={defIndex} paintSeed={paintSeed} wear={wear} skinTextureUrl={skinPatternUrl} />}
       </ClientOnly>
     </div>
   );
