@@ -79,11 +79,15 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec2 vUv;
 
                 void main() {
-                  // DEBUG: Show position map as color
+                  // Sample position map to get pattern UV coordinates
                   vec4 posData = texture2D(positionMap, vUv);
+                  vec2 patternUV = posData.rg; // R=U, G=V (normalized 0-1)
 
-                  // Show position map R/G channels directly (should be colorful)
-                  gl_FragColor = vec4(posData.rg, 0.0, 1.0);
+                  // Sample Asiimov pattern texture at remapped UV
+                  vec4 patternColor = texture2D(patternTexture, patternUV);
+
+                  // Show pattern directly (no mask blending for now)
+                  gl_FragColor = patternColor;
                 }
               `,
             });
