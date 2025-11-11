@@ -117,22 +117,26 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   // Sample base texture (original weapon texture)
                   vec4 baseColor = texture2D(baseTexture, vUv);
 
-                  // DEBUG: Check what's causing darkness
-                  // Option 1: Show pattern only (ignore alpha)
-                  // vec3 blendedColor = patternColor.rgb;
+                  // ALPHA BLENDING OPTIONS - Try different approaches:
 
-                  // Option 2: Show base only
-                  // vec3 blendedColor = baseColor.rgb;
-
-                  // Option 3: Show alpha as grayscale
-                  // vec3 blendedColor = vec3(patternColor.a);
-
-                  // Option 4: Threshold alpha (binary mask: < 0.5 = base, >= 0.5 = pattern)
-                  float alphaMask = step(0.5, patternColor.a);
+                  // Option A: Binary threshold at 0.8 (CS2 uses ~0.77 for unpaintable areas)
+                  // Based on CS2 workshop docs: alpha ~196/255 = magazine/grip areas
+                  float alphaMask = step(0.8, patternColor.a);
                   vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, alphaMask);
 
-                  // Option 5: Original smooth blend (causes darkness)
-                  // vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, patternColor.a);
+                  // Option B: Lower threshold (0.3) - More pattern visible
+                  // float alphaMask = step(0.3, patternColor.a);
+                  // vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, alphaMask);
+
+                  // Option C: Higher threshold (0.8) - More base texture visible
+                  // float alphaMask = step(0.8, patternColor.a);
+                  // vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, alphaMask);
+
+                  // Option D: Show pattern only (ignore base texture)
+                  // vec3 blendedColor = patternColor.rgb;
+
+                  // Option E: Show alpha as grayscale (debug - see alpha map)
+                  // vec3 blendedColor = vec3(patternColor.a);
 
                   // Apply wear-based brightness
                   vec3 finalColor = blendedColor * brightness;
