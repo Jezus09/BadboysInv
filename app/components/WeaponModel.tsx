@@ -117,10 +117,22 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   // Sample base texture (original weapon texture)
                   vec4 baseColor = texture2D(baseTexture, vUv);
 
-                  // Blend pattern with base using pattern's alpha channel
-                  // Alpha = 1.0 → full pattern
-                  // Alpha = 0.0 → full base texture (magazine, wood parts)
-                  vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, patternColor.a);
+                  // DEBUG: Check what's causing darkness
+                  // Option 1: Show pattern only (ignore alpha)
+                  // vec3 blendedColor = patternColor.rgb;
+
+                  // Option 2: Show base only
+                  // vec3 blendedColor = baseColor.rgb;
+
+                  // Option 3: Show alpha as grayscale
+                  // vec3 blendedColor = vec3(patternColor.a);
+
+                  // Option 4: Threshold alpha (binary mask: < 0.5 = base, >= 0.5 = pattern)
+                  float alphaMask = step(0.5, patternColor.a);
+                  vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, alphaMask);
+
+                  // Option 5: Original smooth blend (causes darkness)
+                  // vec3 blendedColor = mix(baseColor.rgb, patternColor.rgb, patternColor.a);
 
                   // Apply wear-based brightness
                   vec3 finalColor = blendedColor * brightness;
