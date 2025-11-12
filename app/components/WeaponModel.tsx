@@ -124,7 +124,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec3 vNormal;
 
                 void main() {
-                  // SIMPLE DIRECT UV - No position map (for debugging)
+                  // DIRECT UV with MASK - No position map remapping
 
                   // Flip V coordinate (CS2 textures are often inverted)
                   vec2 uv = vec2(vUv.x, 1.0 - vUv.y);
@@ -132,14 +132,12 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   // Sample textures with direct UV
                   vec4 patternColor = texture2D(patternTexture, uv);
                   vec4 baseColor = texture2D(baseTexture, vUv);
+                  float mask = texture2D(maskTexture, vUv).r;  // Mask determines where pattern goes
 
-                  // Simple alpha blending - if pattern has alpha, use it
-                  vec3 blended;
-                  if (patternColor.a > 0.1) {
-                    blended = patternColor.rgb;
-                  } else {
-                    blended = baseColor.rgb * 1.5;  // Brighten base
-                  }
+                  // Use mask to blend - this prevents pattern bleeding to magazine/grip
+                  // mask = 1.0 (white) = full pattern
+                  // mask = 0.0 (black) = full base texture
+                  vec3 blended = mix(baseColor.rgb, patternColor.rgb, mask * patternColor.a);
 
                   // Apply wear-based brightness
                   vec3 finalColor = blended * brightness;
