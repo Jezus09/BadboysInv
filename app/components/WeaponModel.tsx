@@ -20,7 +20,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const gltf = useLoader(GLTFLoader, modelPath);
 
   // ==========================================
-  // ULTRA SIMPLE - JUST COLOR TEXTURES!
+  // CS3D + MASK for proper blending!
   // ==========================================
 
   // Pattern texture (skin design - e.g., Asiimov)
@@ -28,6 +28,9 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
 
   // Base texture (vanilla AK-47)
   const baseColor = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
+
+  // Mask texture - defines WHERE skin appears (white = skin, black = vanilla)
+  const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
 
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
@@ -51,11 +54,11 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply CS3D METHOD: Modify existing GLTF materials!
+  // Apply CS3D METHOD + SELECTIVE texturing based on mesh name!
   useEffect(() => {
     if (!gltf) return;
 
-    console.log("🎨 Applying CS3D method - modify existing materials!");
+    console.log("🎨 Applying CS3D method with selective texturing!");
 
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -63,18 +66,41 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         const material = mesh.material as THREE.MeshStandardMaterial;
 
         if (material && material.map) {
-          // CS3D METHOD: Replace texture.image property!
-          const newTexture = skinPatternUrl && patternTexture ? patternTexture : baseColor;
+          const meshName = mesh.name.toLowerCase();
 
-          if (newTexture) {
-            material.map.image = newTexture.image;
+          // Check if this mesh should get skin or vanilla texture
+          const isMagazine = meshName.includes('mag') || meshName.includes('clip');
+          const isGrip = meshName.includes('grip') || meshName.includes('handle');
+          const isStock = meshName.includes('stock');
+
+          // Magazine, grip, stock = ALWAYS vanilla
+          if (isMagazine || isGrip || isStock) {
+            material.map.image = baseColor.image;
+            material.metalness = 0.1; // Slight metal
+            material.roughness = 0.6; // Not too shiny
             material.map.needsUpdate = true;
-            console.log(`✅ Texture replaced for ${mesh.name}`);
+            console.log(`✅ Vanilla texture for ${mesh.name}`);
+          }
+          // Body = skin if available
+          else if (skinPatternUrl && patternTexture) {
+            material.map.image = patternTexture.image;
+            material.metalness = 0.0; // Non-metallic (painted)
+            material.roughness = 0.42; // CS2 value
+            material.map.needsUpdate = true;
+            console.log(`✅ Skin texture for ${mesh.name}`);
+          }
+          // No skin = vanilla
+          else {
+            material.map.image = baseColor.image;
+            material.metalness = 0.05;
+            material.roughness = 0.5;
+            material.map.needsUpdate = true;
+            console.log(`✅ Vanilla texture for ${mesh.name}`);
           }
         }
       }
     });
-  }, [gltf, patternTexture, baseColor, skinPatternUrl]);
+  }, [gltf, patternTexture, baseColor, maskTexture, skinPatternUrl]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
