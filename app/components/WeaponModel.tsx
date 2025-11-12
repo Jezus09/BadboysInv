@@ -121,22 +121,27 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   vec4 baseColor = texture2D(baseTexture, vUv);
                   float grunge = texture2D(grungeTexture, vUv).r;
 
-                  // CS2 Composite Shader:
-                  // 1. Boost alpha for more pattern visibility (avoid dark center)
-                  // Alpha mean is 114/255 = 0.45, boost to make pattern more prominent
-                  float boostedAlpha = pow(patternColor.a, 0.7); // Curve: 0.45 → 0.57
+                  // SIMPLIFIED APPROACH - Use pattern texture directly
+                  // Problem: Blending with dark base texture creates dark center
+                  // Solution: Just use the pattern RGB where there's any alpha
 
-                  // 2. Brighten base texture to compensate for dark metal
-                  vec3 brightenedBase = baseColor.rgb * 1.3;
+                  // If alpha > threshold, use pattern, else use brightened base
+                  float threshold = 0.1;
+                  vec3 baseWithBrightness = baseColor.rgb * 1.5; // Brighter base for non-pattern areas
 
-                  // 3. Blend pattern with brightened base
-                  vec3 blended = mix(brightenedBase, patternColor.rgb, boostedAlpha);
+                  vec3 blended;
+                  if (patternColor.a > threshold) {
+                    // Use pattern texture directly (no blending)
+                    blended = patternColor.rgb;
+                  } else {
+                    // Use brightened base texture
+                    blended = baseWithBrightness;
+                  }
 
-                  // 4. Apply grunge overlay ONLY for wear effect (subtle)
-                  // Reduce grunge intensity to prevent dark spots
-                  blended *= mix(0.95, 1.05, grunge);
+                  // Apply subtle grunge overlay for wear effect
+                  blended *= mix(0.98, 1.02, grunge);
 
-                  // 5. Apply wear-based brightness
+                  // Apply wear-based brightness
                   vec3 finalColor = blended * brightness;
 
                   // 6. Uniform ambient lighting (no directional shadows)
