@@ -37,7 +37,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
 
     // Scale to fit viewport
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 0.6 / maxDim; // Medium size - balanced
+    const scale = 1.8 / maxDim; // Larger size - easy to inspect
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
