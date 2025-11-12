@@ -162,6 +162,17 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
             originalMaterial.color.setRGB(brightness, brightness, brightness);
             originalMaterial.roughness = 0.42 + wear * 0.4;
           }
+        } else if (mesh.name.includes("clip") || mesh.name.includes("mag")) {
+          // Magazine/Clip meshes - brighten them to avoid dark appearance
+          const originalMaterial = mesh.material as THREE.MeshStandardMaterial;
+          if (originalMaterial.map) {
+            // Has texture - just increase brightness
+            originalMaterial.color.setRGB(1.5, 1.5, 1.5); // 50% brighter
+          } else {
+            // No texture - set to medium gray
+            originalMaterial.color.setRGB(0.3, 0.3, 0.3);
+          }
+          console.log(`🔧 Magazine brightened: ${mesh.name}`);
         }
       }
     });
