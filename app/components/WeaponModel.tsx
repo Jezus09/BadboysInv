@@ -20,19 +20,14 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const gltf = useLoader(GLTFLoader, modelPath);
 
   // ==========================================
-  // CS.MONEY STYLE - NO POSITION MAP!
+  // ULTRA SIMPLE - JUST COLOR TEXTURES!
   // ==========================================
 
   // Pattern texture (skin design - e.g., Asiimov)
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
-  // Material mask - defines paintable areas (like CS.MONEY)
-  const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
-
-  // Base textures (vanilla AK-47)
+  // Base texture (vanilla AK-47)
   const baseColor = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
-  const normalMap = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_normal.png");
-  const roughnessMap = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_rough.png");
 
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
@@ -56,16 +51,14 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply CS.MONEY-style MeshStandardMaterial with simple texture (NO complex blending!)
+  // Apply ULTRA SIMPLE material (JUST COLOR MAP!)
   useEffect(() => {
     if (!gltf || !baseColor) return;
 
-    console.log("🎨 Applying CS.MONEY-style materials");
+    console.log("🎨 Applying ULTRA SIMPLE materials");
 
     // Configure textures
     baseColor.flipY = false;
-    normalMap.flipY = false;
-    roughnessMap.flipY = false;
 
     if (patternTexture) {
       patternTexture.flipY = false;
@@ -75,22 +68,20 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
 
-        // Create MeshStandardMaterial (CS.MONEY uses this!)
+        // ULTRA SIMPLE - JUST color map!
         const material = new THREE.MeshStandardMaterial({
           map: skinPatternUrl && patternTexture ? patternTexture : baseColor,
-          normalMap: normalMap,
-          roughnessMap: roughnessMap,
-          metalness: 0.0, // CS.MONEY value
-          roughness: 0.42, // CS.MONEY value
+          metalness: 0.0,
+          roughness: 0.5,
         });
 
         mesh.material = material;
         mesh.material.needsUpdate = true;
 
-        console.log(`✅ Material applied to ${mesh.name}: ${skinPatternUrl ? 'SKIN' : 'VANILLA'}`);
+        console.log(`✅ Simple material to ${mesh.name}`);
       }
     });
-  }, [gltf, patternTexture, baseColor, normalMap, roughnessMap, skinPatternUrl]);
+  }, [gltf, patternTexture, baseColor, skinPatternUrl]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
