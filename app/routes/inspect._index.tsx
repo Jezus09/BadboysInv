@@ -17,14 +17,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const item = CS2Economy.getById(defIndex);
 
-  // TODO: Dynamic skin loading based on defIndex + paintKitId
-  // For now, test with AK-47 Asiimov (paint kit ID = 524)
+  // Dynamic skin loading based on defIndex + paintKitId
   let skinPatternUrl = undefined;
   const paintKitIdNum = parseInt(paintKitId);
 
-  if (defIndex === 7 && paintKitIdNum === 524) {
-    // AK-47 Asiimov - Use exported CS2 pattern texture
-    skinPatternUrl = "/textures/skins/asiimov_pattern.png";
+  // AK-47 (defIndex = 7) skin patterns
+  if (defIndex === 7) {
+    const skinMap: Record<number, string> = {
+      524: "/textures/skins/asiimov_pattern.png",      // Asiimov
+      180: "/textures/skins/fireserpent_pattern.png",  // Fire Serpent
+      // TODO: Add more skins here as we export them
+    };
+
+    skinPatternUrl = skinMap[paintKitIdNum];
   }
 
   return {
@@ -48,6 +53,7 @@ export default function InspectPage() {
   const availableSkins = [
     { id: 0, name: "Vanilla (No Skin)", url: undefined },
     { id: 524, name: "Asiimov", url: "/textures/skins/asiimov_pattern.png" },
+    { id: 180, name: "Fire Serpent", url: "/textures/skins/fireserpent_pattern.png" },
     // TODO: Add more skins here
   ];
 
