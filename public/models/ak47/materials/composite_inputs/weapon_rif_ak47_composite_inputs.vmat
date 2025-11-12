@@ -1,0 +1,32 @@
+"Layer0"
+{
+	"shader"	"csgo_composite_inputs.vfx"
+	"F_SEPARATE_CHANNEL_INPUTS"	"1"
+	"MaterialLayerReferenceShaderId_1"	"-1"
+	"g_flUvScale1"	"0.772"
+	"g_flWeaponLength1"	"37.287"
+	"TextureMig1"	"[0.000000 0.000000 0.000000 1.000000]"
+	"TextureCavity1"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_cavity.png"
+	"TextureAmbientOcclusion1"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_cavity_952ab3_ao.png"
+	"TextureNoPaint1"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_cavity_952ab3_nopaint.png"
+	"TextureColor1"	"weapons/models/ak47/materials/ak47_default_color.png"
+	"TextureMasks1"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png"
+	"TextureRoughness1"	"weapons/models/ak47/materials/ak47_default_rough.png"
+	"TextureMetalness1"	"weapons/models/ak47/materials/ak47_default_469dc584_metal.png"
+	"TexturePosition1"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos.png"
+	"TextureSurface1"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_surface.png"
+	"Compiled Textures"
+	{
+		"g_tAmbientOcclusion"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_cavity_psd_952ab3.vtex"
+		"g_tColor"	"weapons/models/ak47/materials/ak47_default_color_psd_5b66a23b.vtex"
+		"g_tMasks"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks_tga_dd37657.vtex"
+		"g_tMetalness"	"weapons/models/ak47/materials/ak47_default_rough_psd_469dc584.vtex"
+		"g_tPosition"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos_pfm_43e02a6c.vtex"
+		"g_tSurface"	"weapons/models/ak47/materials/composite_inputs/weapon_rif_ak47_surface_tga_76a17f31.vtex"
+	}
+	"Attributes"
+	{
+		"layer_name_1"	"weapon_rif_ak47.vmat"
+		"PreviewModel"	"weapons/models/ak47/weapon_rif_ak47.vmdl"
+	}
+}
