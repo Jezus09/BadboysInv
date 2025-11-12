@@ -47,7 +47,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
 
     // Scale to fit viewport - much smaller
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 0.3 / maxDim; // Small size for close camera
+    const scale = 1.5 / maxDim; // Bigger scale for better visibility
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
@@ -124,26 +124,30 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec3 vNormal;
 
                 void main() {
-                  // CS2 COMPOSITE SHADER - Use position map for UV remapping
+                  // SIMPLE DIRECT UV - No position map (for debugging)
 
-                  // 1. Sample position map (contains UV coordinates for pattern)
-                  vec4 posData = texture2D(positionMap, vUv);
-                  vec2 patternUV = posData.rg; // R and G channels = UV coordinates
+                  // Flip V coordinate (CS2 textures are often inverted)
+                  vec2 uv = vec2(vUv.x, 1.0 - vUv.y);
 
-                  // 2. Sample textures
-                  vec4 patternColor = texture2D(patternTexture, patternUV);
+                  // Sample textures with direct UV
+                  vec4 patternColor = texture2D(patternTexture, uv);
                   vec4 baseColor = texture2D(baseTexture, vUv);
-                  float mask = texture2D(maskTexture, vUv).r;
-                  float grunge = texture2D(grungeTexture, vUv).r;
 
-                  // 3. Blend using mask (0 = base, 1 = pattern)
-                  vec3 blended = mix(baseColor.rgb, patternColor.rgb, mask * patternColor.a);
+                  // Simple alpha blending - if pattern has alpha, use it
+                  vec3 blended;
+                  if (patternColor.a > 0.1) {
+                    blended = patternColor.rgb;
+                  } else {
+                    blended = baseColor.rgb * 1.5;  // Brighten base
+                  }
 
-                  // 4. Apply subtle grunge overlay for wear effect
-                  blended *= mix(0.98, 1.02, grunge);
-
-                  // 5. Apply wear-based brightness
+                  // Apply wear-based brightness
                   vec3 finalColor = blended * brightness;
+
+                  // Simple lighting
+                  vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+                  float diffuse = max(dot(vNormal, lightDir), 0.3);
+                  finalColor *= diffuse;
 
                   gl_FragColor = vec4(finalColor, 1.0);
                 }
