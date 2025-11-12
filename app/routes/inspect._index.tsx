@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { CS2Economy } from "@ianlucas/cs2-lib";
@@ -49,13 +49,19 @@ export default function InspectPage() {
   const [currentWear, setCurrentWear] = useState(loaderData.wear);
   const [currentPaintKit, setCurrentPaintKit] = useState(loaderData.paintKitId);
 
-  // Mobile console debug (Eruda)
-  if (typeof window !== 'undefined' && !window.eruda) {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/eruda';
-    script.onload = () => (window as any).eruda.init();
-    document.head.appendChild(script);
-  }
+  // Mobile console debug (Eruda) - load once on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !(window as any).eruda) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+      script.onload = () => {
+        if ((window as any).eruda) {
+          (window as any).eruda.init();
+        }
+      };
+      document.head.appendChild(script);
+    }
+  }, []);
 
   // Available skins (for testing)
   const availableSkins = [
