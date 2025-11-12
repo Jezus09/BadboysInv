@@ -122,17 +122,24 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   float grunge = texture2D(grungeTexture, vUv).r;
 
                   // CS2 Composite Shader:
-                  // 1. Blend pattern with base using alpha
-                  vec3 blended = mix(baseColor.rgb, patternColor.rgb, patternColor.a);
+                  // 1. Boost alpha for more pattern visibility (avoid dark center)
+                  // Alpha mean is 114/255 = 0.45, boost to make pattern more prominent
+                  float boostedAlpha = pow(patternColor.a, 0.7); // Curve: 0.45 → 0.57
 
-                  // 2. Apply grunge overlay ONLY for wear effect (subtle)
+                  // 2. Brighten base texture to compensate for dark metal
+                  vec3 brightenedBase = baseColor.rgb * 1.3;
+
+                  // 3. Blend pattern with brightened base
+                  vec3 blended = mix(brightenedBase, patternColor.rgb, boostedAlpha);
+
+                  // 4. Apply grunge overlay ONLY for wear effect (subtle)
                   // Reduce grunge intensity to prevent dark spots
                   blended *= mix(0.95, 1.05, grunge);
 
-                  // 3. Apply wear-based brightness
+                  // 5. Apply wear-based brightness
                   vec3 finalColor = blended * brightness;
 
-                  // 4. Uniform ambient lighting (no directional shadows)
+                  // 6. Uniform ambient lighting (no directional shadows)
                   // Removed directional lighting to prevent dark center
                   // Scene3D already has ambient + directional lights
 
