@@ -125,16 +125,16 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   // 1. Blend pattern with base using alpha
                   vec3 blended = mix(baseColor.rgb, patternColor.rgb, patternColor.a);
 
-                  // 2. Apply grunge overlay (darken/lighten for realism)
-                  blended *= mix(0.85, 1.15, grunge);
+                  // 2. Apply grunge overlay ONLY for wear effect (subtle)
+                  // Reduce grunge intensity to prevent dark spots
+                  blended *= mix(0.95, 1.05, grunge);
 
                   // 3. Apply wear-based brightness
                   vec3 finalColor = blended * brightness;
 
-                  // 4. Simple directional lighting
-                  vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
-                  float diff = max(dot(vNormal, lightDir), 0.5);
-                  finalColor *= diff;
+                  // 4. Uniform ambient lighting (no directional shadows)
+                  // Removed directional lighting to prevent dark center
+                  // Scene3D already has ambient + directional lights
 
                   gl_FragColor = vec4(finalColor, 1.0);
                 }
