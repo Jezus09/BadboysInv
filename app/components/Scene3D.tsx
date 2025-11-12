@@ -13,7 +13,7 @@ export function Scene3D({ defIndex, paintSeed, wear, skinPatternUrl }: Scene3DPr
   return (
     <div className="h-full w-full">
       <Canvas
-        camera={{ position: [5, 0, 0], fov: 60 }}
+        camera={{ position: [3, 1, 2], fov: 60 }}
         gl={{ preserveDrawingBuffer: true }}
       >
         <color attach="background" args={["#000814"]} />
