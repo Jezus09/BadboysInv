@@ -162,49 +162,16 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               varying vec3 vViewPosition;
 
               void main() {
-                // 1. Sample position map (RGB = 3D position in weapon space)
-                vec3 posData = texture2D(positionMap, vUv).rgb;
-
-                // 2. Convert position to UV coordinates (CS2 algorithm)
-                // X and Y positions map to UV, normalized by weapon length
-                vec2 patternUV = vec2(posData.x, posData.y) / weaponLength * uvScale;
-
-                // 3. Apply paint seed transformations (rotation + offset)
-                float cosR = cos(patternRotation);
-                float sinR = sin(patternRotation);
-                vec2 rotatedUV = vec2(
-                  patternUV.x * cosR - patternUV.y * sinR,
-                  patternUV.x * sinR + patternUV.y * cosR
-                );
-                rotatedUV = rotatedUV * patternScale + patternOffset;
-
-                // Wrap UV coordinates (repeat pattern)
-                rotatedUV = fract(rotatedUV);
-
-                // 4. Sample all textures
-                vec4 pattern = texture2D(patternTexture, rotatedUV);
+                // DEBUG: Just show base color for now
                 vec4 base = texture2D(baseColor, vUv);
-                float mask = texture2D(maskTexture, vUv).r;
-                vec4 grunge = texture2D(grungeTexture, rotatedUV);
-                float wearMask = texture2D(wearTexture, rotatedUV).r;
-                float cavityVal = texture2D(cavity, vUv).r;
-                float aoVal = texture2D(ao, vUv).r;
 
-                // 5. Blend pattern with base using mask
-                vec3 finalColor = mix(base.rgb, pattern.rgb, mask * pattern.a);
+                // Simple lighting
+                vec3 lightDirection = normalize(vec3(1.0, 1.0, 1.0));
+                float diffuse = max(dot(vNormal, lightDirection), 0.3);
 
-                // 6. Apply grunge/wear overlay
-                float wearFactor = wearAmount * wearMask;
-                finalColor = mix(finalColor, finalColor * grunge.rgb, wearFactor * 0.5);
+                vec3 finalColor = base.rgb * diffuse;
 
-                // 7. Apply cavity and AO
-                finalColor *= cavityVal * aoVal;
-
-                // 8. Simple lighting
-                float diffuse = max(dot(vNormal, lightDir), 0.3);
-                finalColor *= diffuse;
-
-                // 9. Brightness based on wear
+                // Wear brightness
                 float brightness = 1.0 - wearAmount * 0.6;
                 finalColor *= brightness;
 
