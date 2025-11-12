@@ -76,17 +76,22 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
             material.map = patternTexture;
             material.needsUpdate = true;
 
+            // PBR Material Properties (CS2 values from .vmat files)
+            material.metalness = 0.0; // CS2 weapon skins are NOT metallic!
+            material.roughness = 0.42 + wear * 0.4; // CS2 default: 0.42
+
             // Wear effect
             const brightness = 1.0 - wear * 0.6;
             material.color.setRGB(brightness, brightness, brightness);
-            material.roughness = 0.42 + wear * 0.4;
 
             console.log(`✅ Skin texture applied (simple map replacement)`);
           } else {
             // NO SKIN - Simple brightness modification
+            material.metalness = 0.0; // Non-metallic
+            material.roughness = 0.42 + wear * 0.4;
+
             const brightness = 1.0 - wear * 0.6;
             material.color.setRGB(brightness, brightness, brightness);
-            material.roughness = 0.42 + wear * 0.4;
           }
         } else if (mesh.name.includes("clip") || mesh.name.includes("mag")) {
           // Magazine/Clip meshes - brighten them
