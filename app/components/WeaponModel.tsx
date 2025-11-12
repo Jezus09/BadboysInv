@@ -33,8 +33,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   // Mask texture - defines where pattern should appear (white = pattern, black = base)
   const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
 
-  // Base texture (vanilla weapon)
-  const baseTexture = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
+  // Base texture (vanilla weapon) - ONLY load if skin is applied!
+  const baseTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png") : null;
 
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
