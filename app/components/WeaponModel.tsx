@@ -94,62 +94,44 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
           // CS.MONEY-style: blend pattern with base using mask
           console.log(`🎨 Applying skin blend to: ${mesh.name}`);
 
-          // Create canvas for blending
+          // Use THREE.js images directly (already loaded as HTMLImageElement)
           const canvas = document.createElement('canvas');
           canvas.width = 2048;
           canvas.height = 2048;
           const ctx = canvas.getContext('2d')!;
 
-          // Draw base
-          const baseImg = new Image();
-          baseImg.crossOrigin = 'anonymous';
-          baseImg.src = baseColor.image.src;
-          baseImg.onload = () => {
-            ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
+          // Draw base (texture.image is already loaded HTMLImageElement)
+          ctx.drawImage(baseColor.image, 0, 0, canvas.width, canvas.height);
 
-            // Draw pattern with mask
-            const patternImg = new Image();
-            patternImg.crossOrigin = 'anonymous';
-            patternImg.src = patternTexture.image.src;
-            patternImg.onload = () => {
-              const maskImg = new Image();
-              maskImg.crossOrigin = 'anonymous';
-              maskImg.src = maskTexture.image.src;
-              maskImg.onload = () => {
-                // Use mask as alpha
-                ctx.globalCompositeOperation = 'source-over';
+          // Create temp canvas for masked pattern
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = canvas.width;
+          tempCanvas.height = canvas.height;
+          const tempCtx = tempCanvas.getContext('2d')!;
 
-                // Create temp canvas for masked pattern
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
-                const tempCtx = tempCanvas.getContext('2d')!;
+          // Draw pattern
+          tempCtx.drawImage(patternTexture.image, 0, 0, tempCanvas.width, tempCanvas.height);
 
-                // Draw pattern
-                tempCtx.drawImage(patternImg, 0, 0, tempCanvas.width, tempCanvas.height);
+          // Apply mask
+          tempCtx.globalCompositeOperation = 'destination-in';
+          tempCtx.drawImage(maskTexture.image, 0, 0, tempCanvas.width, tempCanvas.height);
 
-                // Apply mask
-                tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(maskImg, 0, 0, tempCanvas.width, tempCanvas.height);
+          // Draw masked pattern on main canvas
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.drawImage(tempCanvas, 0, 0);
 
-                // Draw masked pattern on main canvas
-                ctx.drawImage(tempCanvas, 0, 0);
+          // Create texture from canvas
+          const blendedTexture = new THREE.CanvasTexture(canvas);
+          blendedTexture.flipY = false;
 
-                // Create texture from canvas
-                const blendedTexture = new THREE.CanvasTexture(canvas);
-                blendedTexture.flipY = false;
+          material.map = blendedTexture;
+          material.normalMap = normalMap;
+          material.roughnessMap = roughnessMap;
+          material.metalness = 0.0; // CS.MONEY value
+          material.roughness = 0.42; // CS.MONEY value
+          material.needsUpdate = true;
 
-                material.map = blendedTexture;
-                material.normalMap = normalMap;
-                material.roughnessMap = roughnessMap;
-                material.metalness = 0.0; // CS.MONEY value
-                material.roughness = 0.42; // CS.MONEY value
-                material.needsUpdate = true;
-
-                console.log(`✅ CS.MONEY-style blend applied to ${mesh.name}`);
-              };
-            };
-          };
+          console.log(`✅ CS.MONEY-style blend applied to ${mesh.name}`);
         } else {
           // Vanilla - just base textures
           material.map = baseColor;
