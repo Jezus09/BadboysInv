@@ -20,20 +20,19 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const gltf = useLoader(GLTFLoader, modelPath);
 
   // ==========================================
-  // CS2-EXACT POSITION MAP SHADER (LAYERED!)
+  // CS.MONEY STYLE - NO POSITION MAP!
   // ==========================================
 
   // Pattern texture (skin design - e.g., Asiimov)
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
-  // Position map (EXR) - from composite_inputs layer
-  const positionMap = skinPatternUrl ? useLoader(EXRLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos_pfm_43e02a6c.exr") : null;
-
-  // Mask texture - defines WHERE skin appears
+  // Material mask - defines paintable areas (like CS.MONEY)
   const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
 
-  // Base texture - vanilla AK-47
-  const baseTexture = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
+  // Base textures (vanilla AK-47)
+  const baseColor = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
+  const normalMap = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_normal.png");
+  const roughnessMap = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_rough.png");
 
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
@@ -49,162 +48,122 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     // Center the model
     gltf.scene.position.sub(center);
 
-    // Scale to fit viewport
+    // Scale to fit viewport (CS.MONEY size)
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 0.5 / maxDim; // MUCH smaller - not "bazi nagy"
+    const scale = 0.6 / maxDim; // CS.MONEY-like size
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply CS2-EXACT position map shader
+  // Apply CS.MONEY-style rendering (NO POSITION MAP!)
   useEffect(() => {
-    if (!gltf || !baseTexture) return;
+    if (!gltf || !baseColor || !normalMap || !roughnessMap) return;
 
-    // If no skin, use vanilla materials
-    if (!skinPatternUrl || !patternTexture || !positionMap || !maskTexture) {
-      console.log("🎨 No skin - using vanilla materials");
+    console.log("🎨 Applying CS.MONEY-style rendering (NO position map!)");
 
-      gltf.scene.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh;
-          const material = mesh.material as THREE.MeshStandardMaterial;
+    // Configure textures for GLTF
+    baseColor.flipY = false;
+    normalMap.flipY = false;
+    roughnessMap.flipY = false;
 
-          if (material) {
-            material.map = baseTexture;
-            material.metalness = 0.0;
-            material.roughness = 0.42;
-            material.needsUpdate = true;
-          }
-        }
-      });
-      return;
+    if (patternTexture) {
+      patternTexture.flipY = false;
+      patternTexture.wrapS = THREE.RepeatWrapping;
+      patternTexture.wrapT = THREE.RepeatWrapping;
     }
 
-    console.log("🎨 Applying CS2-EXACT position map shader!");
-
-    // CS2 EXACT VALUES from .vmat files
-    const weaponLength = 32.0;  // customweapon layer (cu_ak47_asiimov.vmat)
-    const uvScale = 1.0;         // customweapon layer
-
-    // Paint seed transformations
-    const seedNormalized = paintSeed / 1000.0;
-    const patternOffsetX = Math.sin(seedNormalized * Math.PI * 2) * 0.5;
-    const patternOffsetY = Math.cos(seedNormalized * Math.PI * 2) * 0.5;
-    const patternRotation = seedNormalized * Math.PI * 2;
+    if (maskTexture) {
+      maskTexture.flipY = false;
+    }
 
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
 
-        // Apply shader to weapon body only
-        if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
-          console.log(`🎨 Applying CS2-EXACT shader to: ${mesh.name}`);
+        // Create or get material
+        let material = mesh.material as THREE.MeshStandardMaterial;
 
-          const shaderMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-              positionMap: { value: positionMap },
-              patternTexture: { value: patternTexture },
-              maskTexture: { value: maskTexture },
-              baseTexture: { value: baseTexture },
-              weaponLength: { value: weaponLength },
-              uvScale: { value: uvScale },
-              patternOffset: { value: new THREE.Vector2(patternOffsetX, patternOffsetY) },
-              patternRotation: { value: patternRotation },
-              wearAmount: { value: wear },
-            },
-            vertexShader: `
-              varying vec2 vUv;
-              varying vec3 vNormal;
+        if (!material || !(material instanceof THREE.MeshStandardMaterial)) {
+          material = new THREE.MeshStandardMaterial();
+          mesh.material = material;
+        }
 
-              void main() {
-                vUv = uv;
-                vNormal = normalize(normalMatrix * normal);
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-              }
-            `,
-            fragmentShader: `
-              uniform sampler2D positionMap;
-              uniform sampler2D patternTexture;
-              uniform sampler2D maskTexture;
-              uniform sampler2D baseTexture;
-              uniform float weaponLength;
-              uniform float uvScale;
-              uniform vec2 patternOffset;
-              uniform float patternRotation;
-              uniform float wearAmount;
+        // Apply skin or vanilla
+        if (skinPatternUrl && patternTexture && maskTexture) {
+          // CS.MONEY-style: blend pattern with base using mask
+          console.log(`🎨 Applying skin blend to: ${mesh.name}`);
 
-              varying vec2 vUv;
-              varying vec3 vNormal;
+          // Create canvas for blending
+          const canvas = document.createElement('canvas');
+          canvas.width = 2048;
+          canvas.height = 2048;
+          const ctx = canvas.getContext('2d')!;
 
-              void main() {
-                // 1. Sample position map (RGB = 3D position in weapon space)
-                vec3 posData = texture2D(positionMap, vUv).rgb;
+          // Draw base
+          const baseImg = new Image();
+          baseImg.crossOrigin = 'anonymous';
+          baseImg.src = baseColor.image.src;
+          baseImg.onload = () => {
+            ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
 
-                // 2. CS2-EXACT UV conversion
-                // weaponLength = 32.0 (customweapon layer)
-                // uvScale = 1.0 (customweapon layer)
-                vec2 patternUV = vec2(posData.x, posData.y) / weaponLength * uvScale;
+            // Draw pattern with mask
+            const patternImg = new Image();
+            patternImg.crossOrigin = 'anonymous';
+            patternImg.src = patternTexture.image.src;
+            patternImg.onload = () => {
+              const maskImg = new Image();
+              maskImg.crossOrigin = 'anonymous';
+              maskImg.src = maskTexture.image.src;
+              maskImg.onload = () => {
+                // Use mask as alpha
+                ctx.globalCompositeOperation = 'source-over';
 
-                // 3. Apply paint seed transformations (rotation + offset)
-                float cosR = cos(patternRotation);
-                float sinR = sin(patternRotation);
-                vec2 rotatedUV = vec2(
-                  patternUV.x * cosR - patternUV.y * sinR,
-                  patternUV.x * sinR + patternUV.y * cosR
-                );
-                rotatedUV += patternOffset;
+                // Create temp canvas for masked pattern
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d')!;
 
-                // Wrap UV coordinates
-                rotatedUV = fract(rotatedUV);
+                // Draw pattern
+                tempCtx.drawImage(patternImg, 0, 0, tempCanvas.width, tempCanvas.height);
 
-                // 4. Sample textures
-                vec4 pattern = texture2D(patternTexture, rotatedUV);
-                vec4 base = texture2D(baseTexture, vUv);
-                float mask = texture2D(maskTexture, vUv).r;
+                // Apply mask
+                tempCtx.globalCompositeOperation = 'destination-in';
+                tempCtx.drawImage(maskImg, 0, 0, tempCanvas.width, tempCanvas.height);
 
-                // 5. CS2-style blending
-                // mask > 0.5 = paintable area
-                vec3 finalColor;
-                if (mask > 0.5) {
-                  finalColor = pattern.rgb;
-                } else {
-                  finalColor = base.rgb;
-                }
+                // Draw masked pattern on main canvas
+                ctx.drawImage(tempCanvas, 0, 0);
 
-                // 6. Simple lighting
-                vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-                float diffuse = max(dot(vNormal, lightDir), 0.4);
-                finalColor *= diffuse;
+                // Create texture from canvas
+                const blendedTexture = new THREE.CanvasTexture(canvas);
+                blendedTexture.flipY = false;
 
-                // 7. Brightness (wear)
-                float brightness = 1.0 - wearAmount * 0.3;
-                finalColor *= brightness;
+                material.map = blendedTexture;
+                material.normalMap = normalMap;
+                material.roughnessMap = roughnessMap;
+                material.metalness = 0.0; // CS.MONEY value
+                material.roughness = 0.42; // CS.MONEY value
+                material.needsUpdate = true;
 
-                gl_FragColor = vec4(finalColor, 1.0);
-              }
-            `,
-            lights: false,
-          });
-
-          mesh.material = shaderMaterial;
-          mesh.material.needsUpdate = true;
-
-          console.log(`✅ CS2-EXACT shader applied to ${mesh.name}`);
+                console.log(`✅ CS.MONEY-style blend applied to ${mesh.name}`);
+              };
+            };
+          };
         } else {
-          // Magazine, grip, other parts - use vanilla texture
-          const material = mesh.material as THREE.MeshStandardMaterial;
-          if (material) {
-            material.map = baseTexture;
-            material.metalness = 0.0;
-            material.roughness = 0.42;
-            material.needsUpdate = true;
-            console.log(`✅ Vanilla texture to ${mesh.name}`);
-          }
+          // Vanilla - just base textures
+          material.map = baseColor;
+          material.normalMap = normalMap;
+          material.roughnessMap = roughnessMap;
+          material.metalness = 0.0;
+          material.roughness = 0.42;
+          material.needsUpdate = true;
+
+          console.log(`✅ Vanilla textures applied to ${mesh.name}`);
         }
       }
     });
-  }, [gltf, patternTexture, positionMap, maskTexture, baseTexture, skinPatternUrl, paintSeed, wear]);
+  }, [gltf, patternTexture, maskTexture, baseColor, normalMap, roughnessMap, skinPatternUrl]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
