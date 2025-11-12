@@ -20,79 +20,12 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const gltf = useLoader(GLTFLoader, modelPath);
 
   // ==========================================
-  // FULL CS2 TEXTURE SYSTEM - ALL INPUTS
+  // SIMPLE DEBUG - ONLY BASE COLOR
   // ==========================================
 
-  // Pattern texture (skin design - e.g., Asiimov)
-  const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
-
-  // Position map (EXR) - RGB values = 3D positions → UV coordinates
-  const positionMap = useLoader(EXRLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos_pfm_43e02a6c.exr");
-
-  // Paint mask - defines paintable areas (white = pattern, black = base)
-  const maskTexture = useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png");
-
-  // Grunge texture - adds wear/dirt overlay
-  const grungeTexture = useLoader(TextureLoader, "/textures/skins/gun_grunge.png");
-
-  // Wear mask - controls where wear appears
-  const wearTexture = useLoader(TextureLoader, "/textures/skins/paint_wear.png");
-
-  // Base weapon textures (no-skin defaults)
-  const baseColor = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
-  const cavity = useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_cavity.png");
-  const ao = useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_cavity_952ab3_ao.png");
-
-  // Configure ALL textures for GLTF compatibility
-  useEffect(() => {
-    // Base textures - CRITICAL: flipY = false for GLTF!
-    if (baseColor) {
-      baseColor.flipY = false;
-      baseColor.colorSpace = THREE.SRGBColorSpace;
-      baseColor.needsUpdate = true;
-    }
-    if (cavity) {
-      cavity.flipY = false;
-      cavity.needsUpdate = true;
-    }
-    if (ao) {
-      ao.flipY = false;
-      ao.needsUpdate = true;
-    }
-
-    // Pattern texture
-    if (patternTexture) {
-      patternTexture.flipY = false;
-      patternTexture.wrapS = THREE.RepeatWrapping;
-      patternTexture.wrapT = THREE.RepeatWrapping;
-      patternTexture.colorSpace = THREE.SRGBColorSpace;
-      patternTexture.needsUpdate = true;
-    }
-
-    // Mask, grunge, wear textures
-    if (maskTexture) {
-      maskTexture.flipY = false;
-      maskTexture.needsUpdate = true;
-    }
-    if (grungeTexture) {
-      grungeTexture.flipY = false;
-      grungeTexture.wrapS = THREE.RepeatWrapping;
-      grungeTexture.wrapT = THREE.RepeatWrapping;
-      grungeTexture.needsUpdate = true;
-    }
-    if (wearTexture) {
-      wearTexture.flipY = false;
-      wearTexture.wrapS = THREE.RepeatWrapping;
-      wearTexture.wrapT = THREE.RepeatWrapping;
-      wearTexture.needsUpdate = true;
-    }
-    if (positionMap) {
-      positionMap.flipY = false;
-      positionMap.needsUpdate = true;
-    }
-
-    console.log("✅ All textures configured (flipY = false for GLTF)");
-  }, [baseColor, cavity, ao, patternTexture, maskTexture, grungeTexture, wearTexture, positionMap]);
+  // NO PATTERN - just testing base weapon texture
+  // NO POSITION MAP - too complex for now
+  // NO GRUNGE/WEAR - causing "kopott" appearance
 
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
@@ -110,136 +43,35 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
 
     // Scale to fit viewport
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 1.8 / maxDim; // Larger size - easy to inspect
+    const scale = 0.8 / maxDim; // Smaller size - not "giga nagy"
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply CS2-accurate position map shader
+  // ULTRA SIMPLE - Use GLTF's original materials (NO SHADER, NO MODIFICATIONS)
   useEffect(() => {
-    if (!gltf || !positionMap || !maskTexture) return;
+    if (!gltf) return;
 
-    console.log("🎨 Applying CS2-accurate position map shader");
+    console.log("🎨 Using original GLTF materials (no modifications)");
 
-    // CS2 material values from .vmat files
-    const weaponLength = 37.287; // g_flWeaponLength1 from composite_inputs.vmat
-    const uvScale = 0.772; // g_flUvScale1
-    const paintRoughness = 0.42; // g_flPaintRoughness
-
-    // Paint seed random transformations (0-1000 seed → random offset/rotation)
-    const seedNormalized = paintSeed / 1000.0;
-    const patternOffsetX = Math.sin(seedNormalized * Math.PI * 2) * 0.5;
-    const patternOffsetY = Math.cos(seedNormalized * Math.PI * 2) * 0.5;
-    const patternRotation = seedNormalized * Math.PI * 2;
-
+    // Just brighten materials slightly for better visibility
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
+        const material = mesh.material as THREE.MeshStandardMaterial;
 
-        // Apply shader to weapon body only
-        if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
-          console.log(`🎨 Applying position map shader to: ${mesh.name}`);
-
-          // Create custom shader material
-          const shaderMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-              // Position map - converts 3D positions to UV coordinates
-              positionMap: { value: positionMap },
-
-              // Pattern & paint system
-              patternTexture: { value: patternTexture || null },
-              maskTexture: { value: maskTexture },
-              grungeTexture: { value: grungeTexture },
-              wearTexture: { value: wearTexture },
-
-              // Base weapon textures
-              baseColor: { value: baseColor },
-              cavity: { value: cavity },
-              ao: { value: ao },
-
-              // CS2 parameters
-              weaponLength: { value: weaponLength },
-              uvScale: { value: uvScale },
-              paintRoughness: { value: paintRoughness },
-
-              // Paint seed transformations
-              patternOffset: { value: new THREE.Vector2(patternOffsetX, patternOffsetY) },
-              patternRotation: { value: patternRotation },
-              patternScale: { value: 1.0 },
-
-              // Wear
-              wearAmount: { value: wear },
-
-              // Lighting
-              lightDir: { value: new THREE.Vector3(1.0, 1.0, 1.0).normalize() },
-            },
-            vertexShader: `
-              varying vec2 vUv;
-              varying vec3 vNormal;
-              varying vec3 vViewPosition;
-
-              void main() {
-                vUv = uv;
-                vNormal = normalize(normalMatrix * normal);
-
-                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                vViewPosition = -mvPosition.xyz;
-
-                gl_Position = projectionMatrix * mvPosition;
-              }
-            `,
-            fragmentShader: `
-              uniform sampler2D positionMap;
-              uniform sampler2D patternTexture;
-              uniform sampler2D maskTexture;
-              uniform sampler2D grungeTexture;
-              uniform sampler2D wearTexture;
-              uniform sampler2D baseColor;
-              uniform sampler2D cavity;
-              uniform sampler2D ao;
-
-              uniform float weaponLength;
-              uniform float uvScale;
-              uniform float paintRoughness;
-              uniform vec2 patternOffset;
-              uniform float patternRotation;
-              uniform float patternScale;
-              uniform float wearAmount;
-              uniform vec3 lightDir;
-
-              varying vec2 vUv;
-              varying vec3 vNormal;
-              varying vec3 vViewPosition;
-
-              void main() {
-                // DEBUG: Just show base color for now
-                vec4 base = texture2D(baseColor, vUv);
-
-                // Simple lighting
-                vec3 lightDirection = normalize(vec3(1.0, 1.0, 1.0));
-                float diffuse = max(dot(vNormal, lightDirection), 0.3);
-
-                vec3 finalColor = base.rgb * diffuse;
-
-                // Wear brightness
-                float brightness = 1.0 - wearAmount * 0.6;
-                finalColor *= brightness;
-
-                gl_FragColor = vec4(finalColor, 1.0);
-              }
-            `,
-            lights: false,
-          });
-
-          mesh.material = shaderMaterial;
-          mesh.material.needsUpdate = true;
-
-          console.log(`✅ Position map shader applied to ${mesh.name}`);
+        // Set PBR properties (CS2 values)
+        if (material) {
+          material.metalness = 0.0; // Non-metallic
+          material.roughness = 0.42; // CS2 default
+          material.needsUpdate = true;
         }
+
+        console.log(`✅ Material configured for: ${mesh.name}`);
       }
     });
-  }, [gltf, positionMap, maskTexture, grungeTexture, wearTexture, baseColor, cavity, ao, patternTexture, paintSeed, wear]);
+  }, [gltf]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
