@@ -51,34 +51,27 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply ULTRA SIMPLE material (JUST COLOR MAP!)
+  // Apply CS3D METHOD: Modify existing GLTF materials!
   useEffect(() => {
-    if (!gltf || !baseColor) return;
+    if (!gltf) return;
 
-    console.log("🎨 Applying ULTRA SIMPLE materials");
-
-    // Configure textures
-    baseColor.flipY = false;
-
-    if (patternTexture) {
-      patternTexture.flipY = false;
-    }
+    console.log("🎨 Applying CS3D method - modify existing materials!");
 
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
+        const material = mesh.material as THREE.MeshStandardMaterial;
 
-        // ULTRA SIMPLE - JUST color map!
-        const material = new THREE.MeshStandardMaterial({
-          map: skinPatternUrl && patternTexture ? patternTexture : baseColor,
-          metalness: 0.0,
-          roughness: 0.5,
-        });
+        if (material && material.map) {
+          // CS3D METHOD: Replace texture.image property!
+          const newTexture = skinPatternUrl && patternTexture ? patternTexture : baseColor;
 
-        mesh.material = material;
-        mesh.material.needsUpdate = true;
-
-        console.log(`✅ Simple material to ${mesh.name}`);
+          if (newTexture) {
+            material.map.image = newTexture.image;
+            material.map.needsUpdate = true;
+            console.log(`✅ Texture replaced for ${mesh.name}`);
+          }
+        }
       }
     });
   }, [gltf, patternTexture, baseColor, skinPatternUrl]);
