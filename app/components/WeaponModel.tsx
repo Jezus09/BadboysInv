@@ -51,7 +51,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
 
     // Scale to fit viewport
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 1.2 / maxDim; // Good size for inspection
+    const scale = 0.8 / maxDim; // Smaller size - not too big
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
@@ -165,12 +165,19 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               varying vec3 vViewPosition;
 
               void main() {
+                // DEBUG: Simplify shader to test what's wrong
+
+                // Sample mask to see paintable areas
+                float mask = texture2D(maskTexture, vUv).r;
+
+                // Sample base texture (vanilla AK-47)
+                vec4 base = texture2D(baseColor, vUv);
+
                 // 1. Sample position map (RGB = 3D position in weapon space)
                 vec3 posData = texture2D(positionMap, vUv).rgb;
 
-                // 2. ⭐ CORRECT CS2 UV conversion formula with FIXED values!
-                // weaponLength = 32.0 (NOT 37.287!)
-                // uvScale = 1.0 (NOT 0.772!)
+                // 2. ⭐ CS2 UV conversion formula
+                // weaponLength = 32.0, uvScale = 1.0
                 vec2 patternUV = vec2(posData.x, posData.y) / weaponLength * uvScale;
 
                 // 3. Apply paint seed transformations (rotation + offset)
@@ -182,20 +189,25 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 );
                 rotatedUV = rotatedUV * patternScale + patternOffset;
 
-                // Wrap UV coordinates (repeat pattern)
+                // Wrap UV coordinates
                 rotatedUV = fract(rotatedUV);
 
-                // 4. Sample textures
+                // 4. Sample pattern texture
                 vec4 pattern = texture2D(patternTexture, rotatedUV);
-                vec4 base = texture2D(baseColor, vUv);
-                float mask = texture2D(maskTexture, vUv).r;
 
-                // 5. Blend pattern with base using mask
-                // mask: white (1.0) = pattern, black (0.0) = base
-                vec3 finalColor = mix(base.rgb, pattern.rgb, mask * pattern.a);
+                // 5. STRICT mask-based selection
+                // Only show pattern where mask is WHITE (paintable areas)
+                vec3 finalColor;
+                if (mask > 0.5) {
+                  // Paintable area - show pattern
+                  finalColor = pattern.rgb;
+                } else {
+                  // Non-paintable area (magazine, wood, metal) - show base
+                  finalColor = base.rgb;
+                }
 
-                // 6. Simple lighting (Lambertian)
-                float diffuse = max(dot(vNormal, lightDir), 0.3);
+                // 6. Simple lighting
+                float diffuse = max(dot(vNormal, lightDir), 0.4);
                 finalColor *= diffuse;
 
                 // 7. Brightness based on wear
