@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { TextureLoader } from "three";
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 import * as THREE from "three";
 
 interface WeaponModelProps {
@@ -20,17 +19,12 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const gltf = useLoader(GLTFLoader, modelPath);
 
   // ==========================================
-  // CS3D + MASK for proper blending!
+  // PURE CS3D METHOD - EXACT IMPLEMENTATION
   // ==========================================
 
   // Pattern texture (skin design - e.g., Asiimov)
+  // If skinPatternUrl is provided, load it. Otherwise, use null.
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
-
-  // Base texture (vanilla AK-47)
-  const baseColor = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
-
-  // Mask texture - defines WHERE skin appears (white = skin, black = vanilla)
-  const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
 
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
@@ -54,53 +48,37 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply CS3D METHOD + SELECTIVE texturing based on mesh name!
+  // Apply PURE CS3D METHOD - Exact implementation from CS3D/base/assets/js/render.js
   useEffect(() => {
     if (!gltf) return;
 
-    console.log("🎨 Applying CS3D method with selective texturing!");
+    // Only apply skin if skinPatternUrl is provided
+    if (!skinPatternUrl || !patternTexture) {
+      console.log("🎨 No skin - using vanilla GLTF textures");
+      return;
+    }
 
+    console.log("🎨 Applying PURE CS3D method - replacing texture.image on ALL meshes!");
+
+    // CS3D Method: Apply skin texture to ALL meshes in the model
+    // Source: CS3D/base/assets/js/render.js lines 97-102
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         const material = mesh.material as THREE.MeshStandardMaterial;
 
+        // CS3D does this: mesh.material.map.image = texture.image
         if (material && material.map) {
-          const meshName = mesh.name.toLowerCase();
-
-          // Check if this mesh should get skin or vanilla texture
-          const isMagazine = meshName.includes('mag') || meshName.includes('clip');
-          const isGrip = meshName.includes('grip') || meshName.includes('handle');
-          const isStock = meshName.includes('stock');
-
-          // Magazine, grip, stock = ALWAYS vanilla
-          if (isMagazine || isGrip || isStock) {
-            material.map.image = baseColor.image;
-            material.metalness = 0.1; // Slight metal
-            material.roughness = 0.6; // Not too shiny
-            material.map.needsUpdate = true;
-            console.log(`✅ Vanilla texture for ${mesh.name}`);
-          }
-          // Body = skin if available
-          else if (skinPatternUrl && patternTexture) {
-            material.map.image = patternTexture.image;
-            material.metalness = 0.0; // Non-metallic (painted)
-            material.roughness = 0.42; // CS2 value
-            material.map.needsUpdate = true;
-            console.log(`✅ Skin texture for ${mesh.name}`);
-          }
-          // No skin = vanilla
-          else {
-            material.map.image = baseColor.image;
-            material.metalness = 0.05;
-            material.roughness = 0.5;
-            material.map.needsUpdate = true;
-            console.log(`✅ Vanilla texture for ${mesh.name}`);
-          }
+          console.log(`🎨 Applying skin to mesh: ${mesh.name}`);
+          material.map.image = patternTexture.image;
+          material.map.needsUpdate = true;
+          // CS3D does NOT modify metalness/roughness - keeps GLTF defaults!
         }
       }
     });
-  }, [gltf, patternTexture, baseColor, maskTexture, skinPatternUrl]);
+
+    console.log("✅ PURE CS3D method applied!");
+  }, [gltf, patternTexture, skinPatternUrl]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
