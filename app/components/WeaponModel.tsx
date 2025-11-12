@@ -18,8 +18,14 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   // Load GLTF model
   const gltf = useLoader(GLTFLoader, modelPath);
 
-  // Load pattern texture (direct UV mapping, no position map needed!)
+  // Load pattern texture
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
+
+  // Load position map for UV remapping (CS2 composite shader)
+  const positionMap = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos_pfm_43e02a6c.exr") : null;
+
+  // Load mask texture (defines where pattern should be applied)
+  const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
 
   // Load grunge texture for realistic wear effect
   const grungeTexture = useLoader(TextureLoader, "/textures/gun_grunge.png");
@@ -88,6 +94,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               uniforms: {
                 patternTexture: { value: patternTexture },
                 baseTexture: { value: baseTexture },
+                positionMap: { value: positionMap },
+                maskTexture: { value: maskTexture },
                 grungeTexture: { value: grungeTexture },
                 wearAmount: { value: wear },
                 brightness: { value: 1.0 - wear * 0.6 },
@@ -105,6 +113,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               fragmentShader: `
                 uniform sampler2D patternTexture;
                 uniform sampler2D baseTexture;
+                uniform sampler2D positionMap;
+                uniform sampler2D maskTexture;
                 uniform sampler2D grungeTexture;
                 uniform float wearAmount;
                 uniform float brightness;
@@ -113,41 +123,26 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec3 vNormal;
 
                 void main() {
-                  // UV transformation - flip V coordinate for correct orientation
-                  vec2 uv = vUv;
-                  uv.y = 1.0 - uv.y;
+                  // CS2 COMPOSITE SHADER - Use position map for UV remapping
 
-                  // Sample textures
-                  vec4 patternColor = texture2D(patternTexture, uv);
+                  // 1. Sample position map (contains UV coordinates for pattern)
+                  vec4 posData = texture2D(positionMap, vUv);
+                  vec2 patternUV = posData.rg; // R and G channels = UV coordinates
+
+                  // 2. Sample textures
+                  vec4 patternColor = texture2D(patternTexture, patternUV);
                   vec4 baseColor = texture2D(baseTexture, vUv);
+                  float mask = texture2D(maskTexture, vUv).r;
                   float grunge = texture2D(grungeTexture, vUv).r;
 
-                  // SIMPLIFIED APPROACH - Use pattern texture directly
-                  // Problem: Blending with dark base texture creates dark center
-                  // Solution: Just use the pattern RGB where there's any alpha
+                  // 3. Blend using mask (0 = base, 1 = pattern)
+                  vec3 blended = mix(baseColor.rgb, patternColor.rgb, mask * patternColor.a);
 
-                  // If alpha > threshold, use pattern, else use brightened base
-                  float threshold = 0.1;
-                  vec3 baseWithBrightness = baseColor.rgb * 1.5; // Brighter base for non-pattern areas
-
-                  vec3 blended;
-                  if (patternColor.a > threshold) {
-                    // Use pattern texture directly (no blending)
-                    blended = patternColor.rgb;
-                  } else {
-                    // Use brightened base texture
-                    blended = baseWithBrightness;
-                  }
-
-                  // Apply subtle grunge overlay for wear effect
+                  // 4. Apply subtle grunge overlay for wear effect
                   blended *= mix(0.98, 1.02, grunge);
 
-                  // Apply wear-based brightness
+                  // 5. Apply wear-based brightness
                   vec3 finalColor = blended * brightness;
-
-                  // 6. Uniform ambient lighting (no directional shadows)
-                  // Removed directional lighting to prevent dark center
-                  // Scene3D already has ambient + directional lights
 
                   gl_FragColor = vec4(finalColor, 1.0);
                 }
@@ -176,7 +171,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         }
       }
     });
-  }, [gltf, wear, skinPatternUrl, patternTexture, grungeTexture]);
+  }, [gltf, wear, skinPatternUrl, patternTexture, positionMap, maskTexture, grungeTexture]);
 
   // Rotate model slowly (horizontal rotation around Z axis)
   useFrame((state, delta) => {
