@@ -47,7 +47,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
 
     // Scale to fit viewport
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 0.8 / maxDim; // Medium size, not too big
+    const scale = 0.3 / maxDim; // Much smaller - prevent "giga nagy" issue
     gltf.scene.scale.setScalar(scale);
 
     console.log("📏 Model scaled:", { maxDim, scale });
@@ -124,7 +124,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec3 vNormal;
 
                 void main() {
-                  // DIRECT UV with MASK - No position map remapping
+                  // BINARY TEXTURE SELECTION - Clean separation, no smooth blending
 
                   // Flip V coordinate (CS2 textures are often inverted)
                   vec2 uv = vec2(vUv.x, 1.0 - vUv.y);
@@ -134,13 +134,17 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   vec4 baseColor = texture2D(baseTexture, vUv);
                   float mask = texture2D(maskTexture, vUv).r;  // Mask determines where pattern goes
 
-                  // Use mask to blend - this prevents pattern bleeding to magazine/grip
-                  // mask = 1.0 (white) = full pattern
-                  // mask = 0.0 (black) = full base texture
-                  vec3 blended = mix(baseColor.rgb, patternColor.rgb, mask * patternColor.a);
+                  // BINARY SELECTION instead of smooth blending
+                  // This prevents "össze buggolva" texture mixing issues
+                  vec3 finalColor;
 
-                  // Apply wear-based brightness
-                  vec3 finalColor = blended * brightness;
+                  if (mask > 0.5 && patternColor.a > 0.1) {
+                    // Pattern area - use pattern texture directly
+                    finalColor = patternColor.rgb * brightness;
+                  } else {
+                    // Non-pattern area - use base texture with slight brightening
+                    finalColor = baseColor.rgb * brightness * 1.2;
+                  }
 
                   // Simple lighting
                   vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
