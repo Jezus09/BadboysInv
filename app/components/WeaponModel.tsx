@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { TextureLoader } from "three";
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 import * as THREE from "three";
 
 interface WeaponModelProps {
@@ -19,12 +20,15 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const gltf = useLoader(GLTFLoader, modelPath);
 
   // ==========================================
-  // CS3D METHOD + MASK BLENDING
+  // POSITION MAP + MASK BLENDING (OFFICIAL VALVE VALUES)
   // ==========================================
-  // Simple texture + mask to prevent pattern on mag/grip/stock
+  // weaponLength=32, uvScale=1 from cu_ak47_asiimov.vmat (OFFICIAL!)
 
   // Pattern texture (skin design - e.g., Asiimov)
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
+
+  // Position map (EXR) - UV remapping with ASIIMOV VMAT values
+  const positionMap = skinPatternUrl ? useLoader(EXRLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos_pfm_43e02a6c.exr") : null;
 
   // Mask texture - defines where pattern should appear (white = pattern, black = base)
   const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
@@ -54,17 +58,17 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply MASK BLENDING SHADER
+  // Apply POSITION MAP + MASK BLENDING SHADER
   useEffect(() => {
     if (!gltf) return;
 
     // Only apply skin if skinPatternUrl is provided
-    if (!skinPatternUrl || !patternTexture || !maskTexture) {
+    if (!skinPatternUrl || !patternTexture || !positionMap || !maskTexture) {
       console.log("🎨 No skin - using vanilla GLTF textures");
       return;
     }
 
-    console.log("🎨 Applying mask blending shader!");
+    console.log("🎨 Applying position map + mask blending shader!");
 
     // Configure textures
     patternTexture.flipY = false;
@@ -75,8 +79,10 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     maskTexture.flipY = false;
     baseTexture.flipY = false;
 
-    // CS2 material values
-    const paintRoughness = 0.42;
+    // OFFICIAL VALVE VALUES from cu_ak47_asiimov.vmat
+    const weaponLength = 32.0;    // g_flWeaponLength1
+    const uvScale = 1.0;           // g_flUvScale1
+    const paintRoughness = 0.42;   // g_flPaintRoughness
 
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -84,14 +90,17 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         const material = mesh.material as THREE.MeshStandardMaterial;
 
         if (material && material.map) {
-          console.log(`🎨 Applying mask shader to: ${mesh.name}`);
+          console.log(`🎨 Applying position map shader to: ${mesh.name}`);
 
-          // Create shader material with MASK BLENDING (NO position map!)
+          // Create shader material with POSITION MAP UV REMAPPING + MASK BLENDING
           const shaderMaterial = new THREE.ShaderMaterial({
             uniforms: {
+              positionMap: { value: positionMap },
               patternTexture: { value: patternTexture },
               maskTexture: { value: maskTexture },
               baseTexture: { value: baseTexture },
+              weaponLength: { value: weaponLength },
+              uvScale: { value: uvScale },
               wearAmount: { value: wear },
             },
             vertexShader: `
@@ -105,29 +114,39 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               }
             `,
             fragmentShader: `
+              uniform sampler2D positionMap;
               uniform sampler2D patternTexture;
               uniform sampler2D maskTexture;
               uniform sampler2D baseTexture;
+              uniform float weaponLength;
+              uniform float uvScale;
               uniform float wearAmount;
 
               varying vec2 vUv;
               varying vec3 vNormal;
 
               void main() {
-                // Sample textures (DIRECT UV - NO position map!)
-                vec4 pattern = texture2D(patternTexture, vUv);
-                vec4 base = texture2D(baseTexture, vUv);
+                // 1. Sample position map (RGB = 3D weapon position)
+                vec3 posData = texture2D(positionMap, vUv).rgb;
+
+                // 2. Convert 3D position → UV coordinates (OFFICIAL VALVE ALGORITHM)
+                //    weaponLength=32, uvScale=1 from cu_ak47_asiimov.vmat
+                vec2 patternUV = vec2(posData.x, posData.y) / weaponLength * uvScale;
+
+                // 3. Sample textures
+                vec4 pattern = texture2D(patternTexture, patternUV);  // ← Position map UV!
+                vec4 base = texture2D(baseTexture, vUv);              // ← Direct UV
                 float mask = texture2D(maskTexture, vUv).r;
 
-                // Blend: pattern where mask is WHITE, base where mask is BLACK
+                // 4. Blend: pattern where mask is WHITE, base where mask is BLACK
                 vec3 finalColor = mix(base.rgb, pattern.rgb, mask * pattern.a);
 
-                // Simple lighting
+                // 5. Simple lighting
                 vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
                 float diffuse = max(dot(vNormal, lightDir), 0.3);
                 finalColor *= diffuse;
 
-                // Wear darkening
+                // 6. Wear darkening
                 float brightness = 1.0 - wearAmount * 0.3;
                 finalColor *= brightness;
 
@@ -142,8 +161,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
       }
     });
 
-    console.log("✅ Mask blending shader applied!");
-  }, [gltf, patternTexture, maskTexture, baseTexture, skinPatternUrl, wear]);
+    console.log("✅ Position map + mask blending shader applied!");
+  }, [gltf, patternTexture, positionMap, maskTexture, baseTexture, skinPatternUrl, wear]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
