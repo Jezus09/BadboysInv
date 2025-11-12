@@ -20,16 +20,19 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const gltf = useLoader(GLTFLoader, modelPath);
 
   // ==========================================
-  // DIRECT UV + MASK (NO POSITION MAP!)
+  // CS2-EXACT POSITION MAP SHADER (LAYERED!)
   // ==========================================
 
   // Pattern texture (skin design - e.g., Asiimov)
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
-  // Mask texture - defines WHERE skin appears (white = skin, black = vanilla)
+  // Position map (EXR) - from composite_inputs layer
+  const positionMap = skinPatternUrl ? useLoader(EXRLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos_pfm_43e02a6c.exr") : null;
+
+  // Mask texture - defines WHERE skin appears
   const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
 
-  // Base texture - vanilla AK-47 texture for magazine/grip/wood
+  // Base texture - vanilla AK-47
   const baseTexture = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
 
   // Separate effect for scaling - runs once when GLTF loads
@@ -54,12 +57,12 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply DIRECT UV + MASK shader (NO position map!)
+  // Apply CS2-EXACT position map shader
   useEffect(() => {
     if (!gltf || !baseTexture) return;
 
     // If no skin, use vanilla materials
-    if (!skinPatternUrl || !patternTexture || !maskTexture) {
+    if (!skinPatternUrl || !patternTexture || !positionMap || !maskTexture) {
       console.log("🎨 No skin - using vanilla materials");
 
       gltf.scene.traverse((child) => {
@@ -78,7 +81,17 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
       return;
     }
 
-    console.log("🎨 Applying DIRECT UV + MASK shader (magazine/grip will be vanilla!)");
+    console.log("🎨 Applying CS2-EXACT position map shader!");
+
+    // CS2 EXACT VALUES from .vmat files
+    const weaponLength = 32.0;  // customweapon layer (cu_ak47_asiimov.vmat)
+    const uvScale = 1.0;         // customweapon layer
+
+    // Paint seed transformations
+    const seedNormalized = paintSeed / 1000.0;
+    const patternOffsetX = Math.sin(seedNormalized * Math.PI * 2) * 0.5;
+    const patternOffsetY = Math.cos(seedNormalized * Math.PI * 2) * 0.5;
+    const patternRotation = seedNormalized * Math.PI * 2;
 
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -86,14 +99,18 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
 
         // Apply shader to weapon body only
         if (mesh.name.includes("body_legacy") || mesh.name.includes("body_hd")) {
-          console.log(`🎨 Applying mask shader to: ${mesh.name}`);
+          console.log(`🎨 Applying CS2-EXACT shader to: ${mesh.name}`);
 
-          // Create simple mask shader (DIRECT UV, NO position map)
           const shaderMaterial = new THREE.ShaderMaterial({
             uniforms: {
+              positionMap: { value: positionMap },
               patternTexture: { value: patternTexture },
               maskTexture: { value: maskTexture },
               baseTexture: { value: baseTexture },
+              weaponLength: { value: weaponLength },
+              uvScale: { value: uvScale },
+              patternOffset: { value: new THREE.Vector2(patternOffsetX, patternOffsetY) },
+              patternRotation: { value: patternRotation },
               wearAmount: { value: wear },
             },
             vertexShader: `
@@ -107,26 +124,47 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
               }
             `,
             fragmentShader: `
+              uniform sampler2D positionMap;
               uniform sampler2D patternTexture;
               uniform sampler2D maskTexture;
               uniform sampler2D baseTexture;
+              uniform float weaponLength;
+              uniform float uvScale;
+              uniform vec2 patternOffset;
+              uniform float patternRotation;
               uniform float wearAmount;
 
               varying vec2 vUv;
               varying vec3 vNormal;
 
               void main() {
-                // Use DIRECT UV (no position map remapping!)
-                vec2 uv = vUv;
+                // 1. Sample position map (RGB = 3D position in weapon space)
+                vec3 posData = texture2D(positionMap, vUv).rgb;
 
-                // Sample textures
-                vec4 pattern = texture2D(patternTexture, uv);
-                vec4 base = texture2D(baseTexture, uv);
-                float mask = texture2D(maskTexture, uv).r;
+                // 2. CS2-EXACT UV conversion
+                // weaponLength = 32.0 (customweapon layer)
+                // uvScale = 1.0 (customweapon layer)
+                vec2 patternUV = vec2(posData.x, posData.y) / weaponLength * uvScale;
 
-                // STRICT mask selection
-                // White areas (mask > 0.5) = skin pattern
-                // Black areas (mask < 0.5) = vanilla texture (magazine, grip, wood)
+                // 3. Apply paint seed transformations (rotation + offset)
+                float cosR = cos(patternRotation);
+                float sinR = sin(patternRotation);
+                vec2 rotatedUV = vec2(
+                  patternUV.x * cosR - patternUV.y * sinR,
+                  patternUV.x * sinR + patternUV.y * cosR
+                );
+                rotatedUV += patternOffset;
+
+                // Wrap UV coordinates
+                rotatedUV = fract(rotatedUV);
+
+                // 4. Sample textures
+                vec4 pattern = texture2D(patternTexture, rotatedUV);
+                vec4 base = texture2D(baseTexture, vUv);
+                float mask = texture2D(maskTexture, vUv).r;
+
+                // 5. CS2-style blending
+                // mask > 0.5 = paintable area
                 vec3 finalColor;
                 if (mask > 0.5) {
                   finalColor = pattern.rgb;
@@ -134,12 +172,12 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                   finalColor = base.rgb;
                 }
 
-                // Simple lighting
+                // 6. Simple lighting
                 vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
                 float diffuse = max(dot(vNormal, lightDir), 0.4);
                 finalColor *= diffuse;
 
-                // Brightness (wear)
+                // 7. Brightness (wear)
                 float brightness = 1.0 - wearAmount * 0.3;
                 finalColor *= brightness;
 
@@ -152,7 +190,7 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
           mesh.material = shaderMaterial;
           mesh.material.needsUpdate = true;
 
-          console.log(`✅ Mask shader applied to ${mesh.name}`);
+          console.log(`✅ CS2-EXACT shader applied to ${mesh.name}`);
         } else {
           // Magazine, grip, other parts - use vanilla texture
           const material = mesh.material as THREE.MeshStandardMaterial;
@@ -161,12 +199,12 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
             material.metalness = 0.0;
             material.roughness = 0.42;
             material.needsUpdate = true;
-            console.log(`✅ Vanilla texture applied to ${mesh.name}`);
+            console.log(`✅ Vanilla texture to ${mesh.name}`);
           }
         }
       }
     });
-  }, [gltf, patternTexture, maskTexture, baseTexture, skinPatternUrl, wear]);
+  }, [gltf, patternTexture, positionMap, maskTexture, baseTexture, skinPatternUrl, paintSeed, wear]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
