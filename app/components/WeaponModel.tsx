@@ -154,10 +154,10 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     });
   }, [gltf, wear, skinPatternUrl, patternTexture, grungeTexture]);
 
-  // Rotate model slowly
+  // Rotate model slowly (horizontal rotation around Z axis)
   useFrame((state, delta) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.2;
+      groupRef.current.rotation.z += delta * 0.2;
     }
   });
 
