@@ -19,14 +19,18 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const gltf = useLoader(GLTFLoader, modelPath);
 
   // ==========================================
-  // CS3D METHOD - SIMPLE TEXTURE REPLACEMENT
+  // CS3D METHOD + MASK BLENDING
   // ==========================================
-  // Based on CS3D (SamJUK/CS3D): Simple material.map.image replacement
-  // NO position map, NO UV remapping, NO complex shader
-  // This is proven to work for most CS2 skins!
+  // Simple texture + mask to prevent pattern on mag/grip/stock
 
   // Pattern texture (skin design - e.g., Asiimov)
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
+
+  // Mask texture - defines where pattern should appear (white = pattern, black = base)
+  const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
+
+  // Base texture (vanilla weapon)
+  const baseTexture = useLoader(TextureLoader, "/models/ak47/materials/ak47_default_color.png");
 
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
@@ -50,26 +54,29 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply CS3D METHOD - Simple texture replacement
+  // Apply MASK BLENDING SHADER
   useEffect(() => {
     if (!gltf) return;
 
     // Only apply skin if skinPatternUrl is provided
-    if (!skinPatternUrl || !patternTexture) {
+    if (!skinPatternUrl || !patternTexture || !maskTexture) {
       console.log("🎨 No skin - using vanilla GLTF textures");
       return;
     }
 
-    console.log("🎨 Applying CS3D simple method!");
+    console.log("🎨 Applying mask blending shader!");
 
-    // Configure pattern texture (CRITICAL for GLTF compatibility!)
-    patternTexture.flipY = false;  // GLTF uses different Y-axis orientation
+    // Configure textures
+    patternTexture.flipY = false;
     patternTexture.minFilter = THREE.LinearFilter;
     patternTexture.magFilter = THREE.LinearFilter;
-    patternTexture.anisotropy = 16; // Better texture quality at angles
+    patternTexture.anisotropy = 16;
+
+    maskTexture.flipY = false;
+    baseTexture.flipY = false;
 
     // CS2 material values
-    const paintRoughness = 0.42;   // g_flPaintRoughness from .vmat
+    const paintRoughness = 0.42;
 
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -77,22 +84,66 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
         const material = mesh.material as THREE.MeshStandardMaterial;
 
         if (material && material.map) {
-          console.log(`🎨 Applying CS3D method to: ${mesh.name}`);
+          console.log(`🎨 Applying mask shader to: ${mesh.name}`);
 
-          // CS3D METHOD: Simply replace the material.map with pattern texture
-          // This is how CS3D, inspect3d, and CS.MONEY do it!
-          material.map = patternTexture;
-          material.needsUpdate = true;
+          // Create shader material with MASK BLENDING (NO position map!)
+          const shaderMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+              patternTexture: { value: patternTexture },
+              maskTexture: { value: maskTexture },
+              baseTexture: { value: baseTexture },
+              wearAmount: { value: wear },
+            },
+            vertexShader: `
+              varying vec2 vUv;
+              varying vec3 vNormal;
 
-          // CS2-accurate PBR properties (from .vmat files)
-          material.metalness = 0.0; // Weapon skins are NOT metallic!
-          material.roughness = paintRoughness + wear * 0.4; // Wear increases roughness
+              void main() {
+                vUv = uv;
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform sampler2D patternTexture;
+              uniform sampler2D maskTexture;
+              uniform sampler2D baseTexture;
+              uniform float wearAmount;
+
+              varying vec2 vUv;
+              varying vec3 vNormal;
+
+              void main() {
+                // Sample textures (DIRECT UV - NO position map!)
+                vec4 pattern = texture2D(patternTexture, vUv);
+                vec4 base = texture2D(baseTexture, vUv);
+                float mask = texture2D(maskTexture, vUv).r;
+
+                // Blend: pattern where mask is WHITE, base where mask is BLACK
+                vec3 finalColor = mix(base.rgb, pattern.rgb, mask * pattern.a);
+
+                // Simple lighting
+                vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+                float diffuse = max(dot(vNormal, lightDir), 0.3);
+                finalColor *= diffuse;
+
+                // Wear darkening
+                float brightness = 1.0 - wearAmount * 0.3;
+                finalColor *= brightness;
+
+                gl_FragColor = vec4(finalColor, 1.0);
+              }
+            `,
+          });
+
+          mesh.material = shaderMaterial;
+          mesh.material.needsUpdate = true;
         }
       }
     });
 
-    console.log("✅ CS3D simple method applied!");
-  }, [gltf, patternTexture, skinPatternUrl, wear]);
+    console.log("✅ Mask blending shader applied!");
+  }, [gltf, patternTexture, maskTexture, baseTexture, skinPatternUrl, wear]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
