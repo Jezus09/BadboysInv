@@ -43,6 +43,57 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   const cavity = useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_cavity.png");
   const ao = useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_cavity_952ab3_ao.png");
 
+  // Configure ALL textures for GLTF compatibility
+  useEffect(() => {
+    // Base textures - CRITICAL: flipY = false for GLTF!
+    if (baseColor) {
+      baseColor.flipY = false;
+      baseColor.colorSpace = THREE.SRGBColorSpace;
+      baseColor.needsUpdate = true;
+    }
+    if (cavity) {
+      cavity.flipY = false;
+      cavity.needsUpdate = true;
+    }
+    if (ao) {
+      ao.flipY = false;
+      ao.needsUpdate = true;
+    }
+
+    // Pattern texture
+    if (patternTexture) {
+      patternTexture.flipY = false;
+      patternTexture.wrapS = THREE.RepeatWrapping;
+      patternTexture.wrapT = THREE.RepeatWrapping;
+      patternTexture.colorSpace = THREE.SRGBColorSpace;
+      patternTexture.needsUpdate = true;
+    }
+
+    // Mask, grunge, wear textures
+    if (maskTexture) {
+      maskTexture.flipY = false;
+      maskTexture.needsUpdate = true;
+    }
+    if (grungeTexture) {
+      grungeTexture.flipY = false;
+      grungeTexture.wrapS = THREE.RepeatWrapping;
+      grungeTexture.wrapT = THREE.RepeatWrapping;
+      grungeTexture.needsUpdate = true;
+    }
+    if (wearTexture) {
+      wearTexture.flipY = false;
+      wearTexture.wrapS = THREE.RepeatWrapping;
+      wearTexture.wrapT = THREE.RepeatWrapping;
+      wearTexture.needsUpdate = true;
+    }
+    if (positionMap) {
+      positionMap.flipY = false;
+      positionMap.needsUpdate = true;
+    }
+
+    console.log("✅ All textures configured (flipY = false for GLTF)");
+  }, [baseColor, cavity, ao, patternTexture, maskTexture, grungeTexture, wearTexture, positionMap]);
+
   // Separate effect for scaling - runs once when GLTF loads
   useEffect(() => {
     if (!gltf) return;
