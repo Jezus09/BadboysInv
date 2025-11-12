@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 import { TextureLoader } from "three";
 import * as THREE from "three";
 
@@ -21,8 +22,8 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
   // Load pattern texture
   const patternTexture = skinPatternUrl ? useLoader(TextureLoader, skinPatternUrl) : null;
 
-  // Load position map for UV remapping (CS2 composite shader)
-  const positionMap = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos_pfm_43e02a6c.exr") : null;
+  // Load position map for UV remapping (CS2 composite shader) - EXR format requires EXRLoader!
+  const positionMap = skinPatternUrl ? useLoader(EXRLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_pos_pfm_43e02a6c.exr") : null;
 
   // Load mask texture (defines where pattern should be applied)
   const maskTexture = skinPatternUrl ? useLoader(TextureLoader, "/models/ak47/materials/composite_inputs/weapon_rif_ak47_masks.png") : null;
