@@ -56,96 +56,41 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     console.log("📏 Model scaled:", { maxDim, scale });
   }, [gltf]);
 
-  // Apply CS.MONEY-style rendering (NO POSITION MAP!)
+  // Apply CS.MONEY-style MeshStandardMaterial with simple texture (NO complex blending!)
   useEffect(() => {
-    if (!gltf || !baseColor || !normalMap || !roughnessMap) return;
+    if (!gltf || !baseColor) return;
 
-    console.log("🎨 Applying CS.MONEY-style rendering (NO position map!)");
+    console.log("🎨 Applying CS.MONEY-style materials");
 
-    // Configure textures for GLTF
+    // Configure textures
     baseColor.flipY = false;
     normalMap.flipY = false;
     roughnessMap.flipY = false;
 
     if (patternTexture) {
       patternTexture.flipY = false;
-      patternTexture.wrapS = THREE.RepeatWrapping;
-      patternTexture.wrapT = THREE.RepeatWrapping;
-    }
-
-    if (maskTexture) {
-      maskTexture.flipY = false;
     }
 
     gltf.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
 
-        // Create or get material
-        let material = mesh.material as THREE.MeshStandardMaterial;
+        // Create MeshStandardMaterial (CS.MONEY uses this!)
+        const material = new THREE.MeshStandardMaterial({
+          map: skinPatternUrl && patternTexture ? patternTexture : baseColor,
+          normalMap: normalMap,
+          roughnessMap: roughnessMap,
+          metalness: 0.0, // CS.MONEY value
+          roughness: 0.42, // CS.MONEY value
+        });
 
-        if (!material || !(material instanceof THREE.MeshStandardMaterial)) {
-          material = new THREE.MeshStandardMaterial();
-          mesh.material = material;
-        }
+        mesh.material = material;
+        mesh.material.needsUpdate = true;
 
-        // Apply skin or vanilla
-        if (skinPatternUrl && patternTexture && maskTexture) {
-          // CS.MONEY-style: blend pattern with base using mask
-          console.log(`🎨 Applying skin blend to: ${mesh.name}`);
-
-          // Use THREE.js images directly (already loaded as HTMLImageElement)
-          const canvas = document.createElement('canvas');
-          canvas.width = 2048;
-          canvas.height = 2048;
-          const ctx = canvas.getContext('2d')!;
-
-          // Draw base (texture.image is already loaded HTMLImageElement)
-          ctx.drawImage(baseColor.image, 0, 0, canvas.width, canvas.height);
-
-          // Create temp canvas for masked pattern
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = canvas.width;
-          tempCanvas.height = canvas.height;
-          const tempCtx = tempCanvas.getContext('2d')!;
-
-          // Draw pattern
-          tempCtx.drawImage(patternTexture.image, 0, 0, tempCanvas.width, tempCanvas.height);
-
-          // Apply mask
-          tempCtx.globalCompositeOperation = 'destination-in';
-          tempCtx.drawImage(maskTexture.image, 0, 0, tempCanvas.width, tempCanvas.height);
-
-          // Draw masked pattern on main canvas
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.drawImage(tempCanvas, 0, 0);
-
-          // Create texture from canvas
-          const blendedTexture = new THREE.CanvasTexture(canvas);
-          blendedTexture.flipY = false;
-
-          material.map = blendedTexture;
-          material.normalMap = normalMap;
-          material.roughnessMap = roughnessMap;
-          material.metalness = 0.0; // CS.MONEY value
-          material.roughness = 0.42; // CS.MONEY value
-          material.needsUpdate = true;
-
-          console.log(`✅ CS.MONEY-style blend applied to ${mesh.name}`);
-        } else {
-          // Vanilla - just base textures
-          material.map = baseColor;
-          material.normalMap = normalMap;
-          material.roughnessMap = roughnessMap;
-          material.metalness = 0.0;
-          material.roughness = 0.42;
-          material.needsUpdate = true;
-
-          console.log(`✅ Vanilla textures applied to ${mesh.name}`);
-        }
+        console.log(`✅ Material applied to ${mesh.name}: ${skinPatternUrl ? 'SKIN' : 'VANILLA'}`);
       }
     });
-  }, [gltf, patternTexture, maskTexture, baseColor, normalMap, roughnessMap, skinPatternUrl]);
+  }, [gltf, patternTexture, baseColor, normalMap, roughnessMap, skinPatternUrl]);
 
   // NO ROTATION - User requested to remove it
   // useFrame((state, delta) => {
