@@ -124,27 +124,28 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
                 varying vec3 vNormal;
 
                 void main() {
-                  // BINARY TEXTURE SELECTION - Clean separation, no smooth blending
+                  // ULTRA SIMPLE - CSAK PATTERN ALPHA, NINCS MASK!
 
                   // Flip V coordinate (CS2 textures are often inverted)
                   vec2 uv = vec2(vUv.x, 1.0 - vUv.y);
 
-                  // Sample textures with direct UV
+                  // Sample textures
                   vec4 patternColor = texture2D(patternTexture, uv);
                   vec4 baseColor = texture2D(baseTexture, vUv);
-                  float mask = texture2D(maskTexture, vUv).r;  // Mask determines where pattern goes
 
-                  // BINARY SELECTION instead of smooth blending
-                  // This prevents "össze buggolva" texture mixing issues
+                  // CSAK ALPHA alapján - NINCS MASK, NINCS BLENDING
                   vec3 finalColor;
 
-                  if (mask > 0.5 && patternColor.a > 0.1) {
-                    // Pattern area - use pattern texture directly
-                    finalColor = patternColor.rgb * brightness;
+                  if (patternColor.a > 0.5) {
+                    // Pattern van - használd a pattern-t
+                    finalColor = patternColor.rgb;
                   } else {
-                    // Non-pattern area - use base texture with slight brightening
-                    finalColor = baseColor.rgb * brightness * 1.2;
+                    // Nincs pattern - használd a base-t
+                    finalColor = baseColor.rgb * 1.3;
                   }
+
+                  // Apply wear
+                  finalColor *= brightness;
 
                   // Simple lighting
                   vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
@@ -180,12 +181,12 @@ export function WeaponModel({ defIndex, paintSeed, wear, skinPatternUrl }: Weapo
     });
   }, [gltf, wear, skinPatternUrl, patternTexture, positionMap, maskTexture, grungeTexture]);
 
-  // Rotate model slowly (horizontal rotation around Z axis)
-  useFrame((state, delta) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.z += delta * 0.2;
-    }
-  });
+  // NO ROTATION - User requested to remove it
+  // useFrame((state, delta) => {
+  //   if (groupRef.current) {
+  //     groupRef.current.rotation.z += delta * 0.2;
+  //   }
+  // });
 
   return (
     <group ref={groupRef}>
