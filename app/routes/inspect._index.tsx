@@ -49,6 +49,14 @@ export default function InspectPage() {
   const [currentWear, setCurrentWear] = useState(loaderData.wear);
   const [currentPaintKit, setCurrentPaintKit] = useState(loaderData.paintKitId);
 
+  // Mobile console debug (Eruda)
+  if (typeof window !== 'undefined' && !window.eruda) {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+    script.onload = () => (window as any).eruda.init();
+    document.head.appendChild(script);
+  }
+
   // Available skins (for testing)
   const availableSkins = [
     { id: 0, name: "Vanilla (No Skin)", url: undefined },
