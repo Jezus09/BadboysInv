@@ -60,7 +60,7 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
         deaths: ps.deaths,
         kd_ratio: typeof ps.kdRatio === 'object' ? parseFloat(ps.kdRatio.toString()) : ps.kdRatio,
         headshot_percentage: typeof ps.headshotPercentage === 'object' ? parseFloat(ps.headshotPercentage.toString()) : ps.headshotPercentage,
-        playtime_hours: 0 // TODO: Add playtime tracking
+        playtime_hours: ps.playtimeSeconds / 3600 // Convert seconds to hours
       }));
 
     return data({

@@ -81,8 +81,7 @@ export function ApplyItemSticker({
             <ItemImage className="m-auto max-w-[512px]" item={targetItem} />
             <div className="flex items-center justify-center">
               {targetItem.allStickers().map(([xslot, sticker]) =>
-                xslot === 4 ? undefined : sticker !== undefined ||
-                  xslot === slot ? (
+                sticker !== undefined || xslot === slot ? (
                   <ItemImage
                     key={xslot}
                     className="w-[168px]"

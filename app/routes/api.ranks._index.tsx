@@ -20,14 +20,14 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
   try {
     const ranks = await prisma.$queryRaw`
       SELECT
-        rank_order,
+        id as rank_order,
         rank_name,
         rank_tag,
         rank_color,
         min_experience,
         max_experience
       FROM ranks
-      ORDER BY rank_order ASC
+      ORDER BY id ASC
     `;
 
     return data({
