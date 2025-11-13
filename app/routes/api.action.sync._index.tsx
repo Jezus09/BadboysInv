@@ -422,9 +422,7 @@ export const action = api(async ({ request }: Route.ActionArgs) => {
             // Apply the keychain and remove the keychain item
             inventory.edit(action.targetUid, { keychains: newKeychains });
             inventory.remove(action.keychainUid);
-            // REMOVED: needsInventoryRefresh = true;
-            // Reason: Keychains don't have visual representation in CS2 game,
-            // and refresh causes server freeze. Players can manually refresh with !ws
+            needsInventoryRefresh = true; // Keychain applied - refresh CS2 plugin
             break;
           case SyncAction.ApplyItemPatch:
             await inventoryItemAllowApplyPatch.for(userId).truthy();
