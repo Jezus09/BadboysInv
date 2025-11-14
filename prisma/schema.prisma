@@ -361,16 +361,18 @@ model Rank {
   id            Int           @id @default(autoincrement())
   rankName      String        @unique @map("rank_name")
   rankTag       String        @map("rank_tag")
-  rankImage     String?       @map("rank_image") // CS:GO rank icon filename (e.g., "1.svg", "18.svg")
+  rankIcon      String?       @map("rank_icon") // CS:GO rank icon filename (e.g., "1.svg", "18.svg")
+  rankOrder     Int           @map("rank_order")
   minExperience Int           @map("min_experience")
-  maxExperience Int           @map("max_experience")
-  rankColor     String        @map("rank_color")
+  maxExperience Int?          @map("max_experience")
+  rankColor     String        @default("#FFFFFF") @map("rank_color")
   createdAt     DateTime      @default(now()) @map("created_at")
 
   players       PlayerStats[]
 
   @@map("ranks")
   @@index([minExperience])
+  @@index([rankOrder])
 }
 
 model PlayerAdmin {
