@@ -18,6 +18,7 @@ interface Rank {
   rank_order: number;
   rank_name: string;
   rank_tag: string;
+  rank_image: string | null;
   rank_color: string;
   min_experience: number;
   max_experience: number | null;
@@ -95,6 +96,17 @@ export default function RanksPage() {
                 key={rank.rank_order}
                 className="bg-neutral-900/50 backdrop-blur-sm rounded-lg p-6 border border-neutral-700 hover:border-neutral-600 hover:bg-neutral-900/70 transition-all duration-300"
               >
+              {/* Rank Icon */}
+              {rank.rank_image && (
+                <div className="flex justify-center mb-4">
+                  <img
+                    src={`/images/ranks/${rank.rank_image}`}
+                    alt={rank.rank_name}
+                    className="w-24 h-24 object-contain drop-shadow-lg"
+                  />
+                </div>
+              )}
+
               <div className="flex items-center justify-between mb-4">
                 <span
                   className="font-display px-3 py-1 rounded font-bold text-sm border"

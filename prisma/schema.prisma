@@ -361,6 +361,7 @@ model Rank {
   id            Int           @id @default(autoincrement())
   rankName      String        @unique @map("rank_name")
   rankTag       String        @map("rank_tag")
+  rankImage     String?       @map("rank_image") // CS:GO rank icon filename (e.g., "1.svg", "18.svg")
   minExperience Int           @map("min_experience")
   maxExperience Int           @map("max_experience")
   rankColor     String        @map("rank_color")

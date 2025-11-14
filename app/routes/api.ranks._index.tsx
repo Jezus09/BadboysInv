@@ -23,6 +23,7 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
         id as rank_order,
         rank_name,
         rank_tag,
+        rank_image,
         rank_color,
         min_experience,
         max_experience
