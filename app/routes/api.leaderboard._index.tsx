@@ -54,6 +54,7 @@ export const loader = api(async ({ request }: Route.LoaderArgs) => {
         player_name: ps.playerName,
         rank_name: ps.rank!.rankName,
         rank_tag: ps.rank!.rankTag,
+        rank_icon: ps.rank!.rankIcon,
         rank_color: ps.rank!.rankColor,
         experience: ps.experience,
         kills: ps.kills,

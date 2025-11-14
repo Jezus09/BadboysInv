@@ -19,6 +19,7 @@ interface Player {
   player_name: string;
   rank_name: string;
   rank_tag: string;
+  rank_icon: string | null;
   rank_color: string;
   experience: number;
   kills: number;
@@ -37,6 +38,7 @@ export default function LeaderboardPage() {
   const [sortBy, setSortBy] = useState<'experience' | 'kd_ratio' | 'kills'>('experience');
 
   useEffect(() => {
+    setLoading(true);
     const fetchLeaderboard = async () => {
       try {
         const response = await fetch(`/api/leaderboard?sortBy=${sortBy}&limit=50`);
@@ -56,7 +58,7 @@ export default function LeaderboardPage() {
     };
 
     fetchLeaderboard();
-  }, [sortBy]);
+  }, [sortBy, translate]);
 
   const getMedalColor = (position: number) => {
     if (position === 1) return 'text-yellow-400';
@@ -172,16 +174,21 @@ export default function LeaderboardPage() {
                       <div className="font-display text-xs text-neutral-500">{player.steam_id}</div>
                     </td>
                     <td className="px-4 py-4">
-                      <span
-                        className="font-display px-2 py-1 rounded text-xs font-bold border"
-                        style={{
-                          backgroundColor: `${player.rank_color}15`,
-                          color: player.rank_color,
-                          borderColor: `${player.rank_color}40`
-                        }}
-                      >
-                        {player.rank_tag}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {player.rank_icon && (
+                          <img
+                            src={`/images/ranks/${player.rank_icon}`}
+                            alt={player.rank_name}
+                            className="w-8 h-8 object-contain"
+                          />
+                        )}
+                        <span
+                          className="font-display text-xs font-bold"
+                          style={{ color: player.rank_color }}
+                        >
+                          {player.rank_name}
+                        </span>
+                      </div>
                     </td>
                     <td className="font-display px-4 py-4 text-right font-bold text-white">
                       {player.experience.toLocaleString()}
