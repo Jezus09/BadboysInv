@@ -133,17 +133,17 @@ export default function MarketplacePage() {
             {/* Marketplace Title */}
             <div className="relative mb-6">
               <h1 className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-6xl font-black text-transparent drop-shadow-2xl">
-                MARKETPLACE
+                {translate("MarketplaceTitle")}
               </h1>
               <div className="absolute inset-0 text-6xl font-black text-purple-400/20 blur-sm">
-                MARKETPLACE
+                {translate("MarketplaceTitle")}
               </div>
             </div>
 
             {/* Description */}
             <div className="mb-4 text-center">
               <p className="font-display text-lg font-medium text-neutral-300">
-                Vásárolj és adj el skineket más játékosokkal
+                {translate("MarketplaceDescription")}
               </p>
             </div>
 
@@ -152,7 +152,7 @@ export default function MarketplacePage() {
               {user && (
                 <div className="flex items-center gap-3 rounded-lg border border-purple-500/30 bg-gradient-to-r from-purple-600/20 to-pink-600/20 px-4 py-2">
                   <span className="font-semibold text-purple-400">
-                    Egyenleg:
+                    {translate("Balance")}
                   </span>
                   <CurrencyDisplay
                     amount={(user as any).coins}
@@ -172,7 +172,7 @@ export default function MarketplacePage() {
                   selectedTab === "all" ? "bg-black/30" : ""
                 }`}
               >
-                Összes hirdetés
+                {translate("MarketplaceTabAll")}
               </button>
               <button
                 onClick={() => setSelectedTab("my")}
@@ -180,7 +180,7 @@ export default function MarketplacePage() {
                   selectedTab === "my" ? "bg-black/30" : ""
                 }`}
               >
-                Saját hirdetéseim
+                {translate("MarketplaceTabMine")}
               </button>
               <button
                 onClick={() => setSelectedTab("sold")}
@@ -188,7 +188,7 @@ export default function MarketplacePage() {
                   selectedTab === "sold" ? "bg-black/30" : ""
                 }`}
               >
-                Eladott tárgyak
+                {translate("MarketplaceTabSold")}
               </button>
             </div>
           </div>
@@ -198,14 +198,14 @@ export default function MarketplacePage() {
             <div className="flex justify-center">
               <div className="flex items-center gap-3">
                 <label className="font-display text-sm text-neutral-300">
-                  Szűrés:
+                  {translate("MarketplaceFilterLabel")}
                 </label>
                 <select
                   value={selectedFilter}
                   onChange={(e) => setSelectedFilter(e.target.value)}
                   className="font-display rounded border border-neutral-600 bg-neutral-800 px-3 py-1.5 text-sm text-white transition-colors hover:border-purple-500 focus:border-purple-500 focus:outline-none"
                 >
-                  <option value="all">Összes típus</option>
+                  <option value="all">{translate("MarketplaceFilterAll")}</option>
                   {ECONOMY_ITEM_FILTERS.map((filter) => (
                     <option key={filter.label} value={filter.label}>
                       {filter.label}
@@ -219,7 +219,7 @@ export default function MarketplacePage() {
           {/* Listings Grid */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-neutral-400">Betöltés...</div>
+              <div className="text-neutral-400">{translate("MarketplaceLoading")}</div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">

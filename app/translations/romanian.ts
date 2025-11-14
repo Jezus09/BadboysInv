@@ -212,6 +212,10 @@ export const romanian = {
   SettingsMasterVolume: /* csgo_romanian.txt */"Volum general",
   StickerPickerRemove: /* csgo_romanian.txt */"Șterge",
 
+  // Common
+  Balance: "Sold:",
+  Loading: "Se încarcă...",
+
   // Leaderboard
   LeaderboardDescription: "Cei mai buni jucători ai serverului",
   LeaderboardSortByXP: "Sortează după XP",
@@ -228,6 +232,7 @@ export const romanian = {
   LeaderboardEmptyPlayers: "Fără jucători",
 
   // Marketplace
+  MarketplaceTitle: "MARKETPLACE",
   MarketplaceDescription: "Cumpără și vinde skin-uri cu alți jucători",
   MarketplaceTabAll: "Toate anunțurile",
   MarketplaceTabMine: "Anunțurile mele",
@@ -243,13 +248,30 @@ export const romanian = {
   MarketplaceEmptySubMine: "Începe să vinzi din inventarul tău!",
 
   // Shop
+  ShopTitle: "SHOP",
+  ShopDescription: "Cumpără chei și containere cu banii tăi",
   ShopFilterAll: "Toate",
+  ShopFilterKeys: "Chei",
   ShopFilterWeaponCase: "Containere de arme",
   ShopFilterStickerCapsule: "Capsule de abțibilduri",
+  ShopFilterGraffitiBox: "Cutii de graffiti",
   ShopFilterSouvenirCase: "Containere souvenir",
   ShopFilterOtherContainer: "Alte containere",
+  ShopLoading: "Se încarcă...",
+  ShopEmpty: "Nu există produse disponibile",
+  ShopEmptySub: "Încearcă mai târziu sau selectează altă categorie.",
 
   // Trades
+  TradesTitle: "TRADES",
+  TradesDescription: "Schimbă cu alți jucători",
+  TradesHistory: "Istoric schimburi",
+  TradesReceived: "Primite",
+  TradesSent: "Trimise",
+  TradesCreateNew: "Creează schimb nou",
+  TradesAccept: "Acceptă",
+  TradesDecline: "Refuză",
+  TradesCancel: "Anulează",
+  TradesEmptyItems: "Fără obiecte sau bani",
   TradesReceivedTitle: "vrea să facă schimb cu tine",
   TradesSentTitle: "Cerere de schimb trimisă",
   TradesTheyOffer: "El oferă:",

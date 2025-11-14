@@ -210,5 +210,59 @@ export const hungarian = {
   ScrapeStickerUse: /* csgo_hungarian.txt */"Matrica kaparása",
   ScrapeStickerWarn: /* csgo_hungarian.txt */"Matrica lekaparása a(z)  tárgyról",
   SettingsMasterVolume: /* csgo_hungarian.txt */"Fő hangerő",
-  StickerPickerRemove: /* csgo_hungarian.txt */"Eltávolít"
+  StickerPickerRemove: /* csgo_hungarian.txt */"Eltávolít",
+
+  // Common
+  Balance: "Egyenleg:",
+  Loading: "Betöltés...",
+
+  // Marketplace
+  MarketplaceTitle: "MARKETPLACE",
+  MarketplaceDescription: "Vásárolj és adj el skineket más játékosokkal",
+  MarketplaceTabAll: "Összes hirdetés",
+  MarketplaceTabMine: "Saját hirdetéseim",
+  MarketplaceTabSold: "Eladott tárgyak",
+  MarketplaceFilterLabel: "Szűrés:",
+  MarketplaceFilterAll: "Összes típus",
+  MarketplaceLoading: "Betöltés...",
+  MarketplaceEmptyFilteredType: "Nincs ilyen típusú hirdetés",
+  MarketplaceEmptyAll: "Nincsenek elérhető hirdetések",
+  MarketplaceEmptyMine: "Még nincsenek aktív hirdetéseid",
+  MarketplaceEmptySubFilteredType: "Próbálj meg másik szűrőt választani",
+  MarketplaceEmptySubAll: "Légy az első aki elad valamit!",
+  MarketplaceEmptySubMine: "Kezdj el eladni az inventoryból!",
+
+  // Shop
+  ShopTitle: "SHOP",
+  ShopDescription: "Vásárolj kulcsokat és ládákat a pénzedből",
+  ShopFilterAll: "Összes",
+  ShopFilterKeys: "Kulcsok",
+  ShopFilterWeaponCase: "Fegyver ládák",
+  ShopFilterStickerCapsule: "Matrica kapszulák",
+  ShopFilterGraffitiBox: "Graffiti dobozok",
+  ShopFilterSouvenirCase: "Souvenir ládák",
+  ShopFilterOtherContainer: "Egyéb konténerek",
+  ShopLoading: "Betöltés...",
+  ShopEmpty: "Nincsenek elérhető termékek",
+  ShopEmptySub: "Próbáld meg később vagy válassz másik kategóriát.",
+
+  // Trades
+  TradesTitle: "TRADES",
+  TradesDescription: "Kereskedj más játékosokkal",
+  TradesHistory: "Kereskedési előzmények",
+  TradesReceived: "Kapott",
+  TradesSent: "Küldött",
+  TradesCreateNew: "Új kereskedés létrehozása",
+  TradesAccept: "Elfogad",
+  TradesDecline: "Elutasít",
+  TradesCancel: "Mégsem",
+  TradesEmptyItems: "Nincs item vagy pénz",
+  TradesReceivedTitle: "kereskedni szeretne veled",
+  TradesSentTitle: "Kereskedési ajánlat elküldve",
+  TradesTheyOffer: "Ő ajánl:",
+  TradesYouOffer: "Te ajánlod:",
+  TradesTheyRequest: "Ő kér:",
+  TradesYouRequest: "Te kérsz:",
+  TradesEmptyReceived: "Nincsenek kapott kereskedések",
+  TradesEmptySent: "Nincsenek küldött kereskedések"
 };

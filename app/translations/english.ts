@@ -322,7 +322,12 @@ export const english = {
   SyncErrorTitle: "Sync Error",
   SyncWarnText: "You are not authenticated, your changes will not by synchronized.",
 
+  // Common
+  Balance: "Balance:",
+  Loading: "Loading...",
+
   // Marketplace
+  MarketplaceTitle: "MARKETPLACE",
   MarketplaceDescription: "Buy and sell skins with other players",
   MarketplaceTabAll: "All Listings",
   MarketplaceTabMine: "My Listings",
@@ -338,13 +343,30 @@ export const english = {
   MarketplaceEmptySubMine: "Start selling from your inventory!",
 
   // Shop
+  ShopTitle: "SHOP",
+  ShopDescription: "Buy keys and cases with your money",
   ShopFilterAll: "All",
+  ShopFilterKeys: "Keys",
   ShopFilterWeaponCase: "Weapon Cases",
   ShopFilterStickerCapsule: "Sticker Capsules",
+  ShopFilterGraffitiBox: "Graffiti Boxes",
   ShopFilterSouvenirCase: "Souvenir Cases",
   ShopFilterOtherContainer: "Other Containers",
+  ShopLoading: "Loading...",
+  ShopEmpty: "No available products",
+  ShopEmptySub: "Try again later or select another category.",
 
   // Trades
+  TradesTitle: "TRADES",
+  TradesDescription: "Trade with other players",
+  TradesHistory: "Trade History",
+  TradesReceived: "Received",
+  TradesSent: "Sent",
+  TradesCreateNew: "Create New Trade",
+  TradesAccept: "Accept",
+  TradesDecline: "Decline",
+  TradesCancel: "Cancel",
+  TradesEmptyItems: "No items or money",
   TradesReceivedTitle: "wants to trade with you",
   TradesSentTitle: "Trade request sent",
   TradesTheyOffer: "They offer:",

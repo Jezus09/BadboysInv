@@ -123,25 +123,25 @@ export default function TradesPage() {
         <div className="mb-8 text-center">
           <div className="relative mb-6">
             <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 drop-shadow-2xl">
-              TRADES
+              {translate("TradesTitle")}
             </h1>
             <div className="absolute inset-0 text-6xl font-black text-blue-400/20 blur-sm">
-              TRADES
+              {translate("TradesTitle")}
             </div>
           </div>
-          
+
           <div className="text-center mb-4">
             <p className="font-display text-lg text-neutral-300 font-medium">
-              Kereskedj más játékosokkal
+              {translate("TradesDescription")}
             </p>
           </div>
-          
+
           <div className="mb-6">
             <Link
               to="/trades/history"
               className="font-display inline-flex items-center gap-2 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 bg-gray-600/20 border border-gray-500/30 rounded"
             >
-              📜 Kereskedési előzmények
+              📜 {translate("TradesHistory")}
             </Link>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function TradesPage() {
                   : ""
               }`}
             >
-              Kapott ({receivedTrades.length})
+              {translate("TradesReceived")} ({receivedTrades.length})
             </button>
             <button
               onClick={() => setSelectedTab("sent")}
@@ -167,7 +167,7 @@ export default function TradesPage() {
                   : ""
               }`}
             >
-              Küldött ({sentTrades.length})
+              {translate("TradesSent")} ({sentTrades.length})
             </button>
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function TradesPage() {
             to="/trades/create"
             className="font-display inline-flex items-center gap-2 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 bg-green-600/20 border border-green-500/30 rounded"
           >
-            + Új kereskedés létrehozása
+            + {translate("TradesCreateNew")}
           </Link>
         </div>
 
@@ -247,10 +247,10 @@ export default function TradesPage() {
                     )}
                     
                     {senderItems.length === 0 && (!(trade as any).senderCoins || Number((trade as any).senderCoins) === 0) && (
-                      <p className="text-neutral-500 text-sm">Nincs item vagy pénz</p>
+                      <p className="text-neutral-500 text-sm">{translate("TradesEmptyItems")}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <h4 className="font-display text-white font-medium mb-2">
                       {selectedTab === "received" ?  translate("TradesTheyRequest") :  translate("TradesYouRequest")}
@@ -263,20 +263,20 @@ export default function TradesPage() {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Receiver Coins */}
                     {(trade as any).receiverCoins && Number((trade as any).receiverCoins) > 0 && (
                       <div className="bg-blue-900/20 border border-blue-500/30 p-2 rounded flex items-center gap-2">
-                        <CurrencyDisplay 
-                          amount={(trade as any).receiverCoins.toString()} 
+                        <CurrencyDisplay
+                          amount={(trade as any).receiverCoins.toString()}
                           className="text-yellow-400 font-medium"
                           showIcon={true}
                         />
                       </div>
                     )}
-                    
+
                     {receiverItems.length === 0 && (!(trade as any).receiverCoins || Number((trade as any).receiverCoins) === 0) && (
-                      <p className="text-neutral-500 text-sm">Nincs item vagy pénz</p>
+                      <p className="text-neutral-500 text-sm">{translate("TradesEmptyItems")}</p>
                     )}
                   </div>
                 </div>
@@ -286,25 +286,25 @@ export default function TradesPage() {
                   <div className="flex space-x-2">
                     {selectedTab === "received" ? (
                       <>
-                        <button 
+                        <button
                           onClick={() => openModal(trade, "accept")}
                           className="font-display flex items-center gap-2 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 bg-green-600/20 border border-green-500/30 rounded"
                         >
-                          Elfogad
+                          {translate("TradesAccept")}
                         </button>
-                        <button 
+                        <button
                           onClick={() => openModal(trade, "decline")}
                           className="font-display flex items-center gap-2 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 bg-red-600/20 border border-red-500/30 rounded"
                         >
-                          Elutasít
+                          {translate("TradesDecline")}
                         </button>
                       </>
                     ) : (
-                      <button 
+                      <button
                         onClick={() => openModal(trade, "cancel")}
                         className="font-display flex items-center gap-2 px-2 py-1 text-base transition-all hover:bg-black/30 active:bg-black/70 bg-gray-600/20 border border-gray-500/30 rounded"
                       >
-                        Mégsem
+                        {translate("TradesCancel")}
                       </button>
                     )}
                   </div>
