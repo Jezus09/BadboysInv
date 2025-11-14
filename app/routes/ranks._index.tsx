@@ -107,17 +107,7 @@ export default function RanksPage() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between mb-4">
-                <span
-                  className="font-display px-3 py-1 rounded font-bold text-sm border"
-                  style={{
-                    backgroundColor: `${rank.rank_color}15`,
-                    color: rank.rank_color,
-                    borderColor: `${rank.rank_color}40`
-                  }}
-                >
-                  {rank.rank_tag}
-                </span>
+              <div className="flex items-center justify-end mb-4">
                 <span className="font-display text-neutral-400 text-sm">#{rank.rank_order}</span>
               </div>
 
