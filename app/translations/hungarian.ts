@@ -264,5 +264,12 @@ export const hungarian = {
   TradesTheyRequest: "Ő kér:",
   TradesYouRequest: "Te kérsz:",
   TradesEmptyReceived: "Nincsenek kapott kereskedések",
-  TradesEmptySent: "Nincsenek küldött kereskedések"
+  TradesEmptySent: "Nincsenek küldött kereskedések",
+
+  // Ranks
+  RanksTitle: "RANGOK",
+  RanksDescription: "Minden elérhető rang és XP követelmény",
+  RanksLoading: "Betöltés...",
+  RanksMinXP: "Min XP:",
+  RanksMaxXP: "Max XP:"
 };

@@ -396,6 +396,9 @@ export const english = {
   AdminShopCategoryOtherContainer: "Other Container",
 
   // Ranks
+  RanksTitle: "RANKS",
   RanksDescription: "All available ranks and XP requirements",
-  RanksLoading: "Loading..."
+  RanksLoading: "Loading...",
+  RanksMinXP: "Min XP:",
+  RanksMaxXP: "Max XP:"
 };

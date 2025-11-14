@@ -60,17 +60,17 @@ export default function RanksPage() {
           {/* Ranks Title */}
           <div className="relative mb-6">
             <h1 className="font-display text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 drop-shadow-2xl">
-              RANGOK
+              {translate("RanksTitle")}
             </h1>
             <div className="absolute inset-0 text-6xl font-black text-purple-400/20 blur-sm">
-              RANGOK
+              {translate("RanksTitle")}
             </div>
           </div>
 
           {/* Description */}
           <div className="text-center mb-4">
             <p className="font-display text-lg text-neutral-300 font-medium">
-              Minden elérhető rang és XP követelmény
+              {translate("RanksDescription")}
             </p>
           </div>
         </div>
@@ -113,12 +113,12 @@ export default function RanksPage() {
 
               <div className="space-y-2 text-sm text-neutral-300">
                 <div className="font-display flex justify-between">
-                  <span>Min XP:</span>
+                  <span>{translate("RanksMinXP")}</span>
                   <span className="font-bold text-white">{rank.min_experience.toLocaleString()}</span>
                 </div>
                 {rank.max_experience !== null && (
                   <div className="font-display flex justify-between">
-                    <span>Max XP:</span>
+                    <span>{translate("RanksMaxXP")}</span>
                     <span className="font-bold text-white">{rank.max_experience.toLocaleString()}</span>
                   </div>
                 )}

@@ -301,6 +301,9 @@ export const romanian = {
   AdminShopCategoryOtherContainer: "Alt container",
 
   // Ranks
+  RanksTitle: "RANGURI",
   RanksDescription: "Toate rangurile disponibile și cerințele XP",
-  RanksLoading: "Se încarcă..."
+  RanksLoading: "Se încarcă...",
+  RanksMinXP: "XP minim:",
+  RanksMaxXP: "XP maxim:"
 };
