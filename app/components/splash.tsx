@@ -32,18 +32,26 @@ export function Splash() {
         style={{
           border: "1px solid transparent",
           borderRadius: "4px",
-          minWidth: "216.859px",
-          minHeight: "44px"
+          minWidth: "280px",
+          minHeight: "80px",
+          textAlign: "center"
         }}
       >
         <div
           suppressHydrationWarning
-          style={{ padding: "0.25em 0.5em 0 0.5em" }}
+          style={{
+            padding: "0.5em",
+            fontFamily: "stratum2, sans-serif",
+            fontSize: "2rem",
+            fontWeight: "bold",
+            background: "linear-gradient(to right, #60a5fa, #a78bfa, #ec4899)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            marginBottom: "1rem"
+          }}
         >
-          <Logo
-            className="m-auto h-8"
-            style={{ margin: "auto", height: "2rem" }}
-          />
+          BADBOYS INVENTORY
         </div>
         <div
           style={{
