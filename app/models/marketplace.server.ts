@@ -37,7 +37,10 @@ export async function getUserListings(userId: string) {
   return await prisma.marketplaceListing.findMany({
     where: {
       userId,
-      status: "ACTIVE"
+      status: "ACTIVE",
+      expiresAt: {
+        gt: new Date()
+      }
     },
     include: {
       seller: {
@@ -392,7 +395,10 @@ export async function getUserActiveListingUids(userId: string): Promise<number[]
   const listings = await prisma.marketplaceListing.findMany({
     where: {
       userId,
-      status: "ACTIVE"
+      status: "ACTIVE",
+      expiresAt: {
+        gt: new Date()
+      }
     },
     select: {
       itemUid: true
