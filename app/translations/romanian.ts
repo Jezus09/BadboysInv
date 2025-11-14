@@ -210,5 +210,75 @@ export const romanian = {
   ScrapeStickerUse: /* csgo_romanian.txt */"Răzuiește abțibildul",
   ScrapeStickerWarn: /* csgo_romanian.txt */"Răzuiește un abțibild de pe",
   SettingsMasterVolume: /* csgo_romanian.txt */"Volum general",
-  StickerPickerRemove: /* csgo_romanian.txt */"Șterge"
+  StickerPickerRemove: /* csgo_romanian.txt */"Șterge",
+
+  // Leaderboard
+  LeaderboardDescription: "Cei mai buni jucători ai serverului",
+  LeaderboardSortByXP: "Sortează după XP",
+  LeaderboardSortByKD: "Sortează după K/D",
+  LeaderboardSortByKills: "Sortează după Ucideri",
+  LeaderboardLoading: "Se încarcă...",
+  LeaderboardRank: "Poziție",
+  LeaderboardPlayer: "Jucător",
+  LeaderboardXP: "XP",
+  LeaderboardKD: "K/D",
+  LeaderboardKills: "Ucideri",
+  LeaderboardHS: "HS%",
+  LeaderboardPlaytime: "Ore",
+  LeaderboardEmptyPlayers: "Fără jucători",
+
+  // Marketplace
+  MarketplaceDescription: "Cumpără și vinde skin-uri cu alți jucători",
+  MarketplaceTabAll: "Toate anunțurile",
+  MarketplaceTabMine: "Anunțurile mele",
+  MarketplaceTabSold: "Obiecte vândute",
+  MarketplaceFilterLabel: "Filtru:",
+  MarketplaceFilterAll: "Toate tipurile",
+  MarketplaceLoading: "Se încarcă...",
+  MarketplaceEmptyFilteredType: "Nu există anunțuri de acest tip",
+  MarketplaceEmptyAll: "Nu există anunțuri disponibile",
+  MarketplaceEmptyMine: "Nu ai încă anunțuri active",
+  MarketplaceEmptySubFilteredType: "Încearcă să selectezi un alt filtru",
+  MarketplaceEmptySubAll: "Fii primul care vinde ceva!",
+  MarketplaceEmptySubMine: "Începe să vinzi din inventarul tău!",
+
+  // Shop
+  ShopFilterAll: "Toate",
+  ShopFilterWeaponCase: "Containere de arme",
+  ShopFilterStickerCapsule: "Capsule de abțibilduri",
+  ShopFilterSouvenirCase: "Containere souvenir",
+  ShopFilterOtherContainer: "Alte containere",
+
+  // Trades
+  TradesReceivedTitle: "vrea să facă schimb cu tine",
+  TradesSentTitle: "Cerere de schimb trimisă",
+  TradesTheyOffer: "El oferă:",
+  TradesYouOffer: "Tu oferi:",
+  TradesTheyRequest: "El cere:",
+  TradesYouRequest: "Tu ceri:",
+  TradesEmptyReceived: "Nu există schimburi primite",
+  TradesEmptySent: "Nu există schimburi trimise",
+
+  // Trades History
+  TradesHistorySent: "Schimb trimis",
+  TradesHistoryReceived: "Schimb primit",
+  TradesHistoryYouOffered: "Tu ai oferit:",
+  TradesHistoryTheyOffered: "El a oferit:",
+  TradesHistoryYouRequested: "Tu ai cerut:",
+  TradesHistoryTheyRequested: "El a cerut:",
+  TradesStatusPending: "În așteptare",
+  TradesStatusAccepted: "Acceptat",
+  TradesStatusDeclined: "Refuzat",
+  TradesStatusCancelled: "Anulat",
+  TradesStatusExpired: "Expirat",
+
+  // Admin Shop
+  AdminShopDeleteConfirm: "Sigur vrei să ștergi acest obiect din magazin?",
+  AdminShopCategoryWeaponCase: "Container de arme",
+  AdminShopCategorySouvenirCase: "Container souvenir",
+  AdminShopCategoryOtherContainer: "Alt container",
+
+  // Ranks
+  RanksDescription: "Toate rangurile disponibile și cerințele XP",
+  RanksLoading: "Se încarcă..."
 };

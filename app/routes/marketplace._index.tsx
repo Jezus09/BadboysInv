@@ -8,6 +8,7 @@ import { data, useLoaderData, useRevalidator } from "react-router";
 import { CS2Economy } from "@ianlucas/cs2-lib";
 import { requireUser } from "~/auth.server";
 import { useUser } from "~/components/app-context";
+import { useTranslate } from "~/components/app-context";
 import { CurrencyDisplay } from "~/components/currency-display";
 import { MarketplaceItemCard } from "~/components/marketplace-item-card";
 import { MarketplacePurchaseModal } from "~/components/marketplace-purchase-modal";
@@ -36,6 +37,7 @@ interface MarketplaceListing {
 
 export default function MarketplacePage() {
   useLoaderData<typeof loader>();
+  const translate = useTranslate();
   const user = useUser();
   const revalidator = useRevalidator();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
@@ -236,17 +238,17 @@ export default function MarketplacePage() {
             <div className="py-12 text-center">
               <h3 className="mb-2 text-xl text-neutral-400">
                 {selectedFilter !== "all"
-                  ? "Nincs ilyen típusú hirdetés"
+                  ? translate("MarketplaceEmptyFilteredType")
                   : selectedTab === "all"
-                  ? "Nincsenek elérhető hirdetések"
-                  : "Még nincs aktív hirdetésed"}
+                  ? translate("MarketplaceEmptyAll")
+                  : translate("MarketplaceEmptyMine")}
               </h3>
               <p className="text-neutral-500">
                 {selectedFilter !== "all"
-                  ? "Próbálj meg más szűrőt választani"
+                  ? translate("MarketplaceEmptySubFilteredType")
                   : selectedTab === "all"
-                  ? "Legyél te az első aki elad valamit!"
-                  : "Kezdd el az eladást az inventory-dból!"}
+                  ? translate("MarketplaceEmptySubAll")
+                  : translate("MarketplaceEmptySubMine")}
               </p>
             </div>
           )}

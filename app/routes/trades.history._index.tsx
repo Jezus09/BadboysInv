@@ -64,12 +64,12 @@ const getStatusColor = (status: string) => {
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case "PENDING": return "Függőben";
+    case "PENDING": return translate("TradesStatusPending");
     case "ACCEPTED": return "Elfogadva";
     case "COMPLETED": return "Befejezve";
-    case "DECLINED": return "Elutasítva";
-    case "CANCELLED": return "Megszakítva";
-    case "EXPIRED": return "Lejárt";
+    case "DECLINED": return translate("TradesStatusDeclined");
+    case "CANCELLED": return translate("TradesStatusCancelled");
+    case "EXPIRED": return translate("TradesStatusExpired");
     default: return status;
   }
 };
@@ -182,7 +182,7 @@ export default function TradeHistoryPage() {
                     <div>
                       <h3 className="font-display text-white font-medium">{otherUser.name}</h3>
                       <p className="text-neutral-400 text-sm">
-                        {isUserSender ? "Küldött kereskedés" : "Kapott kereskedés"}
+                        {isUserSender ?  translate("TradesHistorySent") :  translate("TradesHistoryReceived")}
                       </p>
                     </div>
                   </div>
@@ -211,7 +211,7 @@ export default function TradeHistoryPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-display text-white font-medium mb-2">
-                      {isUserSender ? "Te ajánlottad:" : "Ő ajánlotta:"}
+                      {isUserSender ?  translate("TradesHistoryYouOffered") :  translate("TradesHistoryTheyOffered")}
                     </h4>
                     <div className="space-y-2">
                       {senderItems.length > 0 ? (
@@ -226,7 +226,7 @@ export default function TradeHistoryPage() {
                   
                   <div>
                     <h4 className="font-display text-white font-medium mb-2">
-                      {isUserSender ? "Te kérted:" : "Ő kérte:"}
+                      {isUserSender ?  translate("TradesHistoryYouRequested") :  translate("TradesHistoryTheyRequested")}
                     </h4>
                     <div className="space-y-2">
                       {receiverItems.length > 0 ? (

@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { data, useLoaderData } from "react-router";
 import { requireUser } from "~/auth.server";
+import { useTranslate } from "~/components/app-context";
 import type { Route } from "./+types/leaderboard._index";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -29,6 +30,7 @@ interface Player {
 
 export default function LeaderboardPage() {
   useLoaderData<typeof loader>();
+  const translate = useTranslate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,17 +80,17 @@ export default function LeaderboardPage() {
           {/* Leaderboard Title */}
           <div className="relative mb-6">
             <h1 className="font-display text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 drop-shadow-2xl">
-              TOPLISTA
+              {translate("LeaderboardTitle")}
             </h1>
             <div className="absolute inset-0 text-6xl font-black text-yellow-400/20 blur-sm">
-              TOPLISTA
+              {translate("LeaderboardTitle")}
             </div>
           </div>
 
           {/* Description */}
           <div className="text-center mb-4">
             <p className="font-display text-lg text-neutral-300 font-medium">
-              A szerver legjobb játékosai
+              {translate("LeaderboardDescription")}
             </p>
           </div>
         </div>
@@ -103,7 +105,7 @@ export default function LeaderboardPage() {
                 : 'text-neutral-400'
             }`}
           >
-            XP szerint
+            {translate("LeaderboardSortByXP")}
           </button>
           <button
             onClick={() => setSortBy('kd_ratio')}
@@ -113,7 +115,7 @@ export default function LeaderboardPage() {
                 : 'text-neutral-400'
             }`}
           >
-            K/D szerint
+            {translate("LeaderboardSortByKD")}
           </button>
           <button
             onClick={() => setSortBy('kills')}
@@ -123,14 +125,14 @@ export default function LeaderboardPage() {
                 : 'text-neutral-400'
             }`}
           >
-            Ölés szerint
+            {translate("LeaderboardSortByKills")}
           </button>
         </div>
 
         {loading && (
           <div className="text-center text-neutral-400 py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <span className="font-display">Betöltés...</span>
+            <span className="font-display">{translate("LeaderboardLoading")}</span>
           </div>
         )}
 
@@ -146,14 +148,14 @@ export default function LeaderboardPage() {
               <table className="w-full">
                 <thead className="bg-neutral-800/80 border-b border-neutral-700">
                   <tr>
-                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">Helyezés</th>
-                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">Játékos</th>
-                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">Rang</th>
-                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">XP</th>
-                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">K/D</th>
-                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">Ölés</th>
-                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">HS%</th>
-                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">Órák</th>
+                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">{translate("LeaderboardRank")}</th>
+                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">{translate("LeaderboardPlayer")}</th>
+                    <th className="font-display px-4 py-3 text-left text-neutral-400 font-semibold">{translate("LeaderboardRankBadge")}</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">{translate("LeaderboardXP")}</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">{translate("LeaderboardKD")}</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">{translate("LeaderboardKills")}</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">{translate("LeaderboardHS")}</th>
+                    <th className="font-display px-4 py-3 text-right text-neutral-400 font-semibold">{translate("LeaderboardPlaytime")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-800/50">
@@ -204,7 +206,7 @@ export default function LeaderboardPage() {
 
           {players.length === 0 && (
             <div className="text-center py-12 text-neutral-400">
-              <span className="font-display">Nincsenek játékosok</span>
+              <span className="font-display">{translate("LeaderboardEmptyPlayers")}</span>
             </div>
           )}
         </div>

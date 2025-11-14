@@ -17,6 +17,7 @@ import { getShopItems } from "~/models/shop.server";
 import { prisma } from "~/db.server";
 import { Decimal } from "@prisma/client/runtime/library";
 import type { Route } from "./+types/admin.shop._index";
+import { useTranslate } from "~/components/app-context";
 
 export const meta = getMetaTitle("Admin - Shop Management");
 
@@ -209,7 +210,7 @@ export default function AdminShop() {
   }
 
   function handleDelete(shopItemId: string) {
-    if (!confirm("Biztosan törlöd ezt az itemet a shopból?")) return;
+    if (!confirm( translate("AdminShopDeleteConfirm"))) return;
 
     const formData = new FormData();
     formData.append("action", "delete");
@@ -320,11 +321,11 @@ export default function AdminShop() {
                     className="w-full rounded-sm border border-neutral-500/30 bg-black/40 px-3 py-2 text-white focus:border-neutral-400 focus:outline-none"
                   >
                     <option value="key">Kulcs</option>
-                    <option value="weapon-case">Fegyver láda</option>
+                    <option value="weapon-case"> translate("AdminShopCategoryWeaponCase")</option>
                     <option value="sticker-capsule">Matrica kapszula</option>
                     <option value="graffiti-box">Graffiti doboz</option>
-                    <option value="souvenir-case">Souvenir láda</option>
-                    <option value="other-container">Egyéb láda</option>
+                    <option value="souvenir-case"> translate("AdminShopCategorySouvenirCase")</option>
+                    <option value="other-container"> translate("AdminShopCategoryOtherContainer")</option>
                   </select>
                 </div>
 
@@ -454,11 +455,11 @@ export default function AdminShop() {
                 className="w-full rounded-sm border border-neutral-500/30 bg-black/40 px-3 py-2 text-white focus:border-neutral-400 focus:outline-none"
               >
                 <option value="key">Kulcs</option>
-                <option value="weapon-case">Fegyver láda</option>
+                <option value="weapon-case"> translate("AdminShopCategoryWeaponCase")</option>
                 <option value="sticker-capsule">Matrica kapszula</option>
                 <option value="graffiti-box">Graffiti doboz</option>
-                <option value="souvenir-case">Souvenir láda</option>
-                <option value="other-container">Egyéb láda</option>
+                <option value="souvenir-case"> translate("AdminShopCategorySouvenirCase")</option>
+                <option value="other-container"> translate("AdminShopCategoryOtherContainer")</option>
               </select>
             </div>
 

@@ -11,6 +11,7 @@ import { ShopPurchaseModal } from "~/components/shop-purchase-modal";
 import { CurrencyDisplay } from "~/components/currency-display";
 import { useInventory, useUser } from "~/components/app-context";
 import type { Route } from "./+types/shop._index";
+import { useTranslate } from "~/components/app-context";
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireUser(request);
@@ -31,6 +32,7 @@ interface ShopItem {
 
 export default function ShopPage() {
   useLoaderData<typeof loader>();
+  const translate = useTranslate();
   const [inventory] = useInventory();
   const user = useUser();
   const [items, setItems] = useState<ShopItem[]>([]);
@@ -64,13 +66,13 @@ export default function ShopPage() {
   }, [selectedCategory]);
 
   const categories = [
-    { value: "all", label: "Összes" },
+    { value: "all", label: translate("ShopFilterAll") },
     { value: "key", label: "Kulcsok" },
-    { value: "weapon-case", label: "Fegyver ládák" },
-    { value: "sticker-capsule", label: "Matrica kapszulák" },
+    { value: "weapon-case", label: translate("ShopFilterWeaponCase") },
+    { value: "sticker-capsule", label: translate("ShopFilterStickerCapsule") },
     { value: "graffiti-box", label: "Graffiti dobozok" },
-    { value: "souvenir-case", label: "Souvenir ládák" },
-    { value: "other-container", label: "Egyéb ládák" }
+    { value: "souvenir-case", label: translate("ShopFilterSouvenirCase") },
+    { value: "other-container", label: translate("ShopFilterOtherContainer") }
   ];
 
   const inventoryIsFull = inventory.isFull();

@@ -49,6 +49,7 @@ interface Trade {
 }
 
 export default function TradesPage() {
+  const translate = useTranslate();
   const { trades } = useLoaderData<typeof loader>();
   const user = useUser();
   const revalidator = useRevalidator();
@@ -200,7 +201,7 @@ export default function TradesPage() {
                     <div>
                       <h3 className="font-display text-white font-medium">{otherUser.name}</h3>
                       <p className="text-neutral-400 text-sm">
-                        {selectedTab === "received" ? "Kereskedni szeretne veled" : "Kereskedési kérés elküldve"}
+                        {selectedTab === "received" ?  translate("TradesReceivedTitle") :  translate("TradesSentTitle")}
                       </p>
                     </div>
                   </div>
@@ -223,7 +224,7 @@ export default function TradesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <h4 className="font-display text-white font-medium mb-2">
-                      {selectedTab === "received" ? "Ő ajánlja:" : "Te ajánlod:"}
+                      {selectedTab === "received" ?  translate("TradesTheyOffer") :  translate("TradesYouOffer")}
                     </h4>
                     {/* Items Grid */}
                     {senderItems.length > 0 && (
@@ -252,7 +253,7 @@ export default function TradesPage() {
                   
                   <div>
                     <h4 className="font-display text-white font-medium mb-2">
-                      {selectedTab === "received" ? "Ő kéri:" : "Te kéred:"}
+                      {selectedTab === "received" ?  translate("TradesTheyRequest") :  translate("TradesYouRequest")}
                     </h4>
                     {/* Items Grid */}
                     {receiverItems.length > 0 && (
@@ -316,8 +317,8 @@ export default function TradesPage() {
             <div className="text-center py-12">
               <p className="font-display text-neutral-400 text-lg">
                 {selectedTab === "received" 
-                  ? "Nincsenek kapott kereskedések" 
-                  : "Nincsenek küldött kereskedések"
+                  ?  translate("TradesEmptyReceived") 
+                  :  translate("TradesEmptySent")
                 }
               </p>
             </div>

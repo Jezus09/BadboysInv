@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { data, useLoaderData } from "react-router";
 import { requireUser } from "~/auth.server";
 import type { Route } from "./+types/ranks._index";
+import { useTranslate } from "~/components/app-context";
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireUser(request);
@@ -23,6 +24,7 @@ interface Rank {
 }
 
 export default function RanksPage() {
+  const translate = useTranslate();
   useLoaderData<typeof loader>();
   const [ranks, setRanks] = useState<Rank[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function RanksPage() {
         {loading && (
           <div className="text-center text-neutral-400 py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <span className="font-display">Betöltés...</span>
+            <span className="font-display">{translate("RanksLoading")}</span>
           </div>
         )}
 

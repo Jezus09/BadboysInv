@@ -9,6 +9,23 @@ export const english = {
   APIPageHeader: "API for programmers",
   ApplyKeychainUse: /* csgo_english.txt */"Apply Keychain",
   ApplyKeychainWarn: /* csgo_english.txt */"A keychain can only be applied once",
+
+  // Leaderboard translations
+  LeaderboardTitle: "LEADERBOARD",
+  LeaderboardDescription: "The server's best players",
+  LeaderboardSortByXP: "Sort by XP",
+  LeaderboardSortByKD: "Sort by K/D",
+  LeaderboardSortByKills: "Sort by Kills",
+  LeaderboardLoading: "Loading...",
+  LeaderboardRank: "Rank",
+  LeaderboardPlayer: "Player",
+  LeaderboardRankBadge: "Rank",
+  LeaderboardXP: "XP",
+  LeaderboardKD: "K/D",
+  LeaderboardKills: "Kills",
+  LeaderboardHS: "HS%",
+  LeaderboardPlaytime: "Hours",
+  LeaderboardEmptyPlayers: "No players",
   ApplyPatchUse: /* csgo_english.txt */"Apply Patch",
   ApplyPatchWarn: /* csgo_english.txt */"A patch can only be applied once",
   ApplyStickerCancel: /* csgo_english.txt */"Cancel",
@@ -303,5 +320,60 @@ export const english = {
   SyncErrorContinue: "Try again",
   SyncErrorDesc: "An error occurred while syncing your changes.",
   SyncErrorTitle: "Sync Error",
-  SyncWarnText: "You are not authenticated, your changes will not by synchronized."
+  SyncWarnText: "You are not authenticated, your changes will not by synchronized.",
+
+  // Marketplace
+  MarketplaceDescription: "Buy and sell skins with other players",
+  MarketplaceTabAll: "All Listings",
+  MarketplaceTabMine: "My Listings",
+  MarketplaceTabSold: "Sold Items",
+  MarketplaceFilterLabel: "Filter:",
+  MarketplaceFilterAll: "All Types",
+  MarketplaceLoading: "Loading...",
+  MarketplaceEmptyFilteredType: "No listings of this type",
+  MarketplaceEmptyAll: "No listings available",
+  MarketplaceEmptyMine: "You don't have any active listings yet",
+  MarketplaceEmptySubFilteredType: "Try selecting a different filter",
+  MarketplaceEmptySubAll: "Be the first to sell something!",
+  MarketplaceEmptySubMine: "Start selling from your inventory!",
+
+  // Shop
+  ShopFilterAll: "All",
+  ShopFilterWeaponCase: "Weapon Cases",
+  ShopFilterStickerCapsule: "Sticker Capsules",
+  ShopFilterSouvenirCase: "Souvenir Cases",
+  ShopFilterOtherContainer: "Other Containers",
+
+  // Trades
+  TradesReceivedTitle: "wants to trade with you",
+  TradesSentTitle: "Trade request sent",
+  TradesTheyOffer: "They offer:",
+  TradesYouOffer: "You offer:",
+  TradesTheyRequest: "They request:",
+  TradesYouRequest: "You request:",
+  TradesEmptyReceived: "No received trades",
+  TradesEmptySent: "No sent trades",
+
+  // Trades History
+  TradesHistorySent: "Sent trade",
+  TradesHistoryReceived: "Received trade",
+  TradesHistoryYouOffered: "You offered:",
+  TradesHistoryTheyOffered: "They offered:",
+  TradesHistoryYouRequested: "You requested:",
+  TradesHistoryTheyRequested: "They requested:",
+  TradesStatusPending: "Pending",
+  TradesStatusAccepted: "Accepted",
+  TradesStatusDeclined: "Declined",
+  TradesStatusCancelled: "Cancelled",
+  TradesStatusExpired: "Expired",
+
+  // Admin Shop
+  AdminShopDeleteConfirm: "Are you sure you want to delete this item from the shop?",
+  AdminShopCategoryWeaponCase: "Weapon Case",
+  AdminShopCategorySouvenirCase: "Souvenir Case",
+  AdminShopCategoryOtherContainer: "Other Container",
+
+  // Ranks
+  RanksDescription: "All available ranks and XP requirements",
+  RanksLoading: "Loading..."
 };
